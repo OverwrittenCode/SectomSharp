@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SectomSharp": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
