@@ -11,7 +11,7 @@ namespace SectomSharp.Managers.Pagination;
 /// </summary>
 /// <typeparam name="T">
 ///     The type of the implementing pagination manager.
-///     Must inherit from <see cref="InstanceManager{T}" /> and provide a parameterless constructor.
+///     Must inherit from <see cref="InstanceManager{T}" />.
 /// </typeparam>
 internal abstract class BasePagination<T> : InstanceManager<T>
     where T : InstanceManager<T>
@@ -77,7 +77,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     ///     <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)"/>.
     /// </summary>
     /// <value>
-    ///     <see langword="null"/> if <see cref="RespondAsync(SocketInteractionContext, Int32)"/>
+    ///     <see langword="null"/> if <see cref="Init(SocketInteractionContext)"/>
     ///     has not been called yet.
     /// </value>
     public RestInteractionMessage? Message { get; protected set; }
