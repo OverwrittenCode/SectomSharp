@@ -215,11 +215,6 @@ internal abstract class BasePagination<T> : InstanceManager<T>
             });
         }
         catch (Discord.Net.HttpException ex)
-        {
-            if (ex.DiscordCode != DiscordErrorCode.UnknownMessage)
-            {
-                throw;
-            }
-        }
+            when (ex.DiscordCode == DiscordErrorCode.UnknownMessage) { }
     }
 }
