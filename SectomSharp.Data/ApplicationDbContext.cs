@@ -5,7 +5,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data;
 
-public class ApplicationDbContext : DbContext
+public sealed class ApplicationDbContext : DbContext
 {
     public DbSet<Guild> Guilds { get; set; }
     public DbSet<User> Users { get; set; }
