@@ -23,23 +23,6 @@ public sealed class InteractionEvent
     public async Task OnInteractionCreated(SocketInteraction interaction)
     {
         var ctx = new SocketInteractionContext(_client, interaction);
-        var result = await _interactionService.ExecuteCommandAsync(ctx, _services);
-
-        if (!result.IsSuccess)
-        {
-            var message =
-                result.Error == InteractionCommandError.UnmetPrecondition
-                    ? result.ErrorReason
-                    : $"{result.Error}: {result.ErrorReason}";
-
-            if (interaction.HasResponded)
-            {
-                await interaction.FollowupAsync(message, ephemeral: true);
-            }
-            else
-            {
-                await interaction.RespondAsync(message, ephemeral: true);
-            }
-        }
+        await _interactionService.ExecuteCommandAsync(ctx, _services);
     }
 }
