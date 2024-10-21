@@ -1,6 +1,7 @@
 namespace SectomSharp.Data.Models;
 
-public sealed class User : BaseGuildRelation
+public sealed class User : Snowflake
 {
-    public required ulong Id { get; init; }
+    public ICollection<Case> PerpetratorCases { get; } = [];
+    public ICollection<Case> TargetCases { get; } = [];
 }

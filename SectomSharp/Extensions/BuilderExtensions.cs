@@ -40,4 +40,26 @@ internal static class BuilderExtensions
         this ButtonBuilder builder,
         params object[] values
     ) => builder.WithCustomId(StringUtils.GenerateComponentId<T>(values));
+
+    /// <summary>
+    ///     Adds an indented field to the embed.
+    /// </summary>
+    /// <inheritdoc cref="EmbedBuilder.AddField(String, Object, Boolean)" path="/param[@name='name']"/>
+    /// <param name="kvp">A key-value pair of the indented name and value.</param>
+    /// <returns>The current builder.</returns>
+    public static EmbedBuilder AddIndentedField(
+        this EmbedBuilder builder,
+        string name,
+        Dictionary<string, object> kvp
+    )
+    {
+        var value = String.Join(
+            "\n",
+            kvp.Select(kvp =>
+                $"{Constants.DiscordInvisibleTab + Format.Bold($"{kvp.Key}:")} {kvp.Value}"
+            )
+        );
+
+        return builder.AddField(name, value);
+    }
 }

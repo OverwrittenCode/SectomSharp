@@ -73,6 +73,48 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     }
 
     /// <summary>
+    ///     Creates an array of embeds by splitting <paramref name="strings"/> into chunks of <see cref="ChunkSize"/>.
+    /// </summary>
+    /// <param name="strings">The strings to split into chunks</param>
+    /// <inheritdoc cref="GetEmbeds(String, String)" path="/param[@name='title']"/>
+    /// <returns>An array of embed objects.</returns>
+    /// <exception cref="InvalidOperationException">
+    ///     A chunk of <paramref name="strings"/> exceeds <see cref="EmbedBuilder.MaxDescriptionLength"/>
+    /// </exception>
+    public static Embed[] GetEmbeds(List<string> strings, string title)
+    {
+        var chunks = new List<string>();
+
+        for (int i = 0; i < strings.Count; i += ChunkSize)
+        {
+            var chunk = String.Join(
+                "\n",
+                strings.GetRange(i, Math.Min(ChunkSize, strings.Count - 1))
+            );
+
+            if (chunk.Length > EmbedBuilder.MaxDescriptionLength)
+            {
+                throw new InvalidOperationException("Value exceeds maximum description length.");
+            }
+
+            chunks.Add(chunk);
+        }
+
+        var embeds = new List<Embed>();
+
+        for (int i = 0; i <= chunks.Count; i++)
+        {
+            var embed = GetEmbedBuilder(chunks[i], title)
+                .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
+                .Build();
+
+            embeds.Add(embed);
+        }
+
+        return [.. embeds];
+    }
+
+    /// <summary>
     ///     Gets the original message structure from
     ///     <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)"/>.
     /// </summary>

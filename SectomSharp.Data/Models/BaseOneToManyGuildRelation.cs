@@ -1,6 +1,6 @@
 namespace SectomSharp.Data.Models;
 
-public abstract class BaseGuildRelation : BaseEntity
+public abstract class BaseOneToManyGuildRelation : BaseEntity
 {
     public required ulong GuildId { get; init; }
 
