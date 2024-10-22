@@ -30,11 +30,7 @@ public partial class ModerationModule
             guildEntity.Configuration is Configuration
             {
                 Warning: WarningConfiguration
-                    and {
-                        IsDisabled: false,
-                        GeometricDurationMultiplier: var multiplier,
-                        Thresholds: var thresholds and { Count: > 0 }
-                    }
+                    and { IsDisabled: false, Thresholds: var thresholds and { Count: > 0 } }
             }
         )
         {
@@ -63,18 +59,6 @@ public partial class ModerationModule
                 orderedThresholds.Length == 2 && orderedThresholds[1].Value == count
                     ? orderedThresholds[1]
                     : orderedThresholds[0];
-
-            var repeatedOffences =
-                orderedThresholds.Length == 2 && orderedThresholds[0].Value != count
-                    ? count - orderedThresholds[1].Value
-                    : 0;
-
-            TimeSpan? duration = null;
-
-            if (orderedThresholds[0].Span is TimeSpan baseSpan)
-            {
-                duration = baseSpan * Math.Pow(multiplier, repeatedOffences);
-            }
 
             var autoReason = $"A configured threshold was matched for [{count}] warnings.";
 
