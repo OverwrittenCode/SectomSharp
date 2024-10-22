@@ -54,15 +54,24 @@ public sealed class ApplicationDbContext : DbContext
 
     public override int SaveChanges()
     {
-        var entities = ChangeTracker
+        var entries = ChangeTracker
             .Entries()
-            .Where(entity => (entity.Entity is BaseEntity) && entity.State == EntityState.Modified);
+            .Where(entry =>
+                entry is { Entity: BaseEntity, State: EntityState.Added or EntityState.Modified }
+            );
 
-        foreach (var entity in entities)
+        foreach (var entry in entries)
         {
-            if (entity.Entity is BaseEntity baseEntity)
+            if (entry.Entity is BaseEntity baseEntity)
             {
-                baseEntity.UpdatedAt = DateTime.Now;
+                if (entry.State == EntityState.Added)
+                {
+                    baseEntity.CreatedAt = DateTime.UtcNow;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    baseEntity.UpdatedAt = DateTime.Now;
+                }
             }
         }
 

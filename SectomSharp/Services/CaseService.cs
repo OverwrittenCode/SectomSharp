@@ -16,11 +16,15 @@ internal sealed class CaseService
     public const int MaxReasonLength = 250;
 
     /// <summary>
-    ///     Generates a complete log embed for a <see cref="Case"/>.
+    ///     Generates two log embeds from a given <see cref="Case"/>.
     /// </summary>
     /// <param name="case">The case.</param>
-    /// <returns>A fully built <see cref="Embed"/> for the <see cref="Case"/> log.</returns>
-    public static Embed GenerateLogEmbed(Case @case)
+    /// <param name="serverLogEmbed">A complete log containing all the information.</param>
+    /// <param name="dmLogEmbed">
+    ///     A partial log that omits the target field and
+    ///     omits the perpetrator field for anonymity.
+    /// </param>
+    public static void GenerateLogEmbeds(Case @case, out Embed serverLogEmbed, out Embed dmLogEmbed)
     {
         var timestampKvp = new Dictionary<string, object>()
         {
@@ -30,10 +34,10 @@ internal sealed class CaseService
             },
         };
 
-        if (@case.UpdatedAt != @case.CreatedAt)
+        if (@case.UpdatedAt is DateTime updatedAt)
         {
             timestampKvp["Updated At"] = TimestampTag.FormatFromDateTime(
-                @case.UpdatedAt,
+                updatedAt,
                 TimestampTagStyles.Relative
             );
         }
@@ -46,18 +50,25 @@ internal sealed class CaseService
             );
         }
 
-        var embed = new EmbedBuilder()
-            .WithTimestamp(@case.CreatedAt)
-            .WithColor(
-                @case.PerpetratorId == Constants.BotId ? Color.Purple
-                : @case.OperationType == OperationType.Update ? Color.Orange
-                : Color.Red
-            )
-            .AddIndentedField("Timestamps", timestampKvp);
+        EmbedBuilder GetBaseEmbed() =>
+            new EmbedBuilder()
+                .WithTimestamp(@case.CreatedAt)
+                .WithColor(
+                    @case.PerpetratorId is null ? Color.Purple
+                    : @case.OperationType == OperationType.Update ? Color.Orange
+                    : Color.Red
+                )
+                .WithDescription($"{@case.LogType}{@case.OperationType} was invoked")
+                .AddIndentedField("Timestamps", timestampKvp);
+
+        var serverLogEmbedBuilder = GetBaseEmbed();
+        var dmLogEmbedBuilder = GetBaseEmbed();
+
+        dmLogEmbedBuilder.Description += " against you";
 
         if (@case.TargetId is ulong targetId)
         {
-            embed.AddIndentedField(
+            serverLogEmbedBuilder.AddIndentedField(
                 "Target",
                 new()
                 {
@@ -67,51 +78,54 @@ internal sealed class CaseService
             );
         }
 
-        embed.AddIndentedField(
-            "Perpetrator",
-            new()
-            {
-                { "User ID", DiscordUtils.GetHyperlinkedUserProfile(@case.PerpetratorId) },
-                { "User Mention", MentionUtils.MentionUser(@case.PerpetratorId) },
-            }
-        );
-
-        if (@case.Reason is string reason)
-        {
-            embed.AddField("Reason", reason);
-        }
-
-        var descriptionPrefix = @case.OperationType switch
-        {
-            OperationType.Create => "actioned",
-            OperationType.Update => "updated the action of",
-            OperationType.Delete => "deleted the action of",
-        };
-
         var title = $"CASE {@case.Id}";
+        var actionName = $"{@case.LogType}{@case.OperationType}";
+        var channelMention = MentionUtils.MentionChannel(@case.ChannelId);
+        Color colour;
 
-        if (@case.PerpetratorId == Constants.BotId)
+        if (@case.PerpetratorId is ulong perpetratorId)
         {
-            title = $"[AUTO] {title}";
-        }
+            colour = @case.OperationType == OperationType.Update ? Color.Orange : Color.Red;
 
-        var description =
-            $"{descriptionPrefix} {Format.Code(@case.LogType.ToString())} in {MentionUtils.MentionChannel(@case.ChannelId)}";
+            var dmDescription = $"{actionName} was invoked";
 
-        embed.WithTitle(title);
+            dmLogEmbedBuilder.WithDescription(dmDescription);
 
-        if (@case.PerpetratorId == Constants.BotId)
-        {
-            embed.WithDescription($"I {description}");
+            serverLogEmbedBuilder
+                .WithDescription(
+                    $"{dmDescription} by {MentionUtils.MentionUser(perpetratorId)} in {channelMention}"
+                )
+                .AddIndentedField(
+                    "Perpetrator",
+                    new()
+                    {
+                        { "User ID", DiscordUtils.GetHyperlinkedUserProfile(perpetratorId) },
+                        { "User Mention", MentionUtils.MentionUser(perpetratorId) },
+                    }
+                );
         }
         else
         {
-            embed.WithDescription(
-                $"Perpetrator {MentionUtils.MentionUser(@case.PerpetratorId)} {description}"
-            );
+            var dmDescription = $"I invoked {actionName}";
+
+            dmLogEmbedBuilder.WithDescription(dmDescription);
+            serverLogEmbedBuilder.WithDescription($"{dmDescription} in {channelMention}");
+
+            colour = Color.Purple;
+            title = $"[AUTO] {title}";
         }
 
-        return embed.Build();
+        dmLogEmbedBuilder.Color = serverLogEmbedBuilder.Color = colour;
+        dmLogEmbedBuilder.Title = serverLogEmbedBuilder.Title = title;
+
+        if (@case.Reason is string reason)
+        {
+            serverLogEmbedBuilder.AddField("Reason", reason);
+            dmLogEmbedBuilder.AddField("Reason", reason);
+        }
+
+        serverLogEmbed = serverLogEmbedBuilder.Build();
+        dmLogEmbed = dmLogEmbedBuilder.Build();
     }
 
     /// <summary>
@@ -206,7 +220,7 @@ internal sealed class CaseService
             Reason = reason,
         };
 
-        var logEmbed = GenerateLogEmbed(@case);
+        GenerateLogEmbeds(@case, out var serverLogEmbed, out var dmLogEmbed);
 
         Guild guildEntity;
 
@@ -286,7 +300,7 @@ internal sealed class CaseService
                     $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength)
                 );
 
-                var message = await logChannel.SendMessageAsync(embeds: [logEmbed]);
+                var message = await logChannel.SendMessageAsync(embeds: [serverLogEmbed]);
                 @case.LogMessageId = message.Id;
             }
 
@@ -311,7 +325,7 @@ internal sealed class CaseService
             {
                 await context
                     .Guild.Users.Single(user => user.Id == targetId)
-                    .SendMessageAsync(embeds: [logEmbed]);
+                    .SendMessageAsync(embeds: [dmLogEmbed]);
             }
             catch (HttpException ex)
                 when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
@@ -322,9 +336,9 @@ internal sealed class CaseService
 
         var successEmbed = new EmbedBuilder()
         {
-            Description = logEmbed.Description,
-            Color = logEmbed.Color,
-            Footer = new() { Text = logEmbed.Footer?.Text },
+            Description = serverLogEmbed.Description,
+            Color = serverLogEmbed.Color,
+            Footer = new() { Text = serverLogEmbed.Footer?.Text },
         };
 
         if (successfulDm == false)

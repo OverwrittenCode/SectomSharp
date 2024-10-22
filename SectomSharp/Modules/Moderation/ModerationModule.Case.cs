@@ -34,8 +34,10 @@ public partial class ModerationModule
 
             dbContext.Entry(@case).State = EntityState.Detached;
 
+            CaseService.GenerateLogEmbeds(@case, out var serverLogEmbed, out var _);
+
             await Context.Interaction.FollowupAsync(
-                embeds: [CaseService.GenerateLogEmbed(@case)],
+                embeds: [serverLogEmbed],
                 components: CaseService.GenerateLogMessageButton(@case)
             );
         }

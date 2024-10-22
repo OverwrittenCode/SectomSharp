@@ -6,8 +6,8 @@ public sealed class Case : BaseOneToManyGuildRelation
 {
     public required string Id { get; init; }
 
-    public required ulong PerpetratorId { get; init; }
-    public User Perpetrator { get; init; } = null!;
+    public ulong? PerpetratorId { get; init; }
+    public User? Perpetrator { get; init; }
 
     public ulong? TargetId { get; init; }
     public User? Target { get; init; }

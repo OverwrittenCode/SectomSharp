@@ -17,8 +17,7 @@ internal sealed class CaseConfiguration : BaseEntityConfiguration<Case>
         builder
             .HasOne(@case => @case.Perpetrator)
             .WithMany(user => user.PerpetratorCases)
-            .HasForeignKey(@case => @case.PerpetratorId)
-            .IsRequired();
+            .HasForeignKey(@case => @case.PerpetratorId);
 
         builder
             .HasOne(@case => @case.Target)
