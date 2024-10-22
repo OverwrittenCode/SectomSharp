@@ -10,7 +10,7 @@ internal static class InteractionExtensions
     /// </summary>
     /// <returns>
     ///     A task representing the asynchronous operation of
-    ///     responding or following up the module.
+    ///     responding or following up the interaction.
     /// </returns>
     /// <inheritdoc cref="IDiscordInteraction.RespondAsync"/>
     public static async Task RespondOrFollowupAsync(
