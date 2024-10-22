@@ -78,7 +78,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasIndex("GuildId", "TargetId", "LogType", "OperationType");
 
-                    b.ToTable("Cases");
+                    b.ToTable("Cases", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.Guild", b =>
@@ -98,7 +98,7 @@ namespace SectomSharp.Data.Migrations
                     b.HasIndex("Id")
                         .IsUnique();
 
-                    b.ToTable("Guilds");
+                    b.ToTable("Guilds", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.Snowflake", b =>
@@ -121,7 +121,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Snowflake");
+                    b.ToTable("Snowflake", (string)null);
 
                     b.HasDiscriminator<SnowflakeType>("Type").HasValue(SnowflakeType.None);
 
@@ -135,7 +135,7 @@ namespace SectomSharp.Data.Migrations
                     b.Property<AuditLogType>("AuditLogType")
                         .HasColumnType("audit_log_type");
 
-                    b.Property<OperationType?>("OperationType")
+                    b.Property<OperationType>("OperationType")
                         .HasColumnType("operation_type");
 
                     b.Property<string>("WebhookUrl")
@@ -147,7 +147,7 @@ namespace SectomSharp.Data.Migrations
                     b.HasIndex("Id")
                         .IsUnique();
 
-                    b.ToTable("Snowflake", t =>
+                    b.ToTable("Snowflake", null, t =>
                         {
                             t.Property("OperationType")
                                 .HasColumnName("AuditLogChannel_OperationType");
@@ -240,7 +240,7 @@ namespace SectomSharp.Data.Migrations
 
             modelBuilder.Entity("SectomSharp.Data.Models.Guild", b =>
                 {
-                    b.OwnsOne("SectomSharp.Data.Models.Configuration", "Configuration", b1 =>
+                    b.OwnsOne("SectomSharp.Data.Models.Guild.Configuration#SectomSharp.Data.Models.Configuration", "Configuration", b1 =>
                         {
                             b1.Property<decimal>("GuildId")
                                 .HasColumnType("numeric(20,0)");
@@ -250,14 +250,14 @@ namespace SectomSharp.Data.Migrations
 
                             b1.HasKey("GuildId");
 
-                            b1.ToTable("Guilds");
+                            b1.ToTable("Guilds", (string)null);
 
                             b1.ToJson("Configuration");
 
                             b1.WithOwner()
                                 .HasForeignKey("GuildId");
 
-                            b1.OwnsOne("SectomSharp.Data.Models.WarningConfiguration", "Warning", b2 =>
+                            b1.OwnsOne("SectomSharp.Data.Models.Guild.Configuration#SectomSharp.Data.Models.Configuration.Warning#SectomSharp.Data.Models.WarningConfiguration", "Warning", b2 =>
                                 {
                                     b2.Property<decimal>("ConfigurationGuildId")
                                         .HasColumnType("numeric(20,0)");
@@ -267,12 +267,12 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.HasKey("ConfigurationGuildId");
 
-                                    b2.ToTable("Guilds");
+                                    b2.ToTable("Guilds", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("ConfigurationGuildId");
 
-                                    b2.OwnsMany("SectomSharp.Data.Models.WarningThreshold", "Thresholds", b3 =>
+                                    b2.OwnsMany("SectomSharp.Data.Models.Guild.Configuration#SectomSharp.Data.Models.Configuration.Warning#SectomSharp.Data.Models.WarningConfiguration.Thresholds#SectomSharp.Data.Models.WarningThreshold", "Thresholds", b3 =>
                                         {
                                             b3.Property<decimal>("WarningConfigurationConfigurationGuildId")
                                                 .HasColumnType("numeric(20,0)");
@@ -292,7 +292,7 @@ namespace SectomSharp.Data.Migrations
 
                                             b3.HasKey("WarningConfigurationConfigurationGuildId", "Id");
 
-                                            b3.ToTable("Guilds");
+                                            b3.ToTable("Guilds", (string)null);
 
                                             b3.WithOwner()
                                                 .HasForeignKey("WarningConfigurationConfigurationGuildId");
@@ -301,12 +301,10 @@ namespace SectomSharp.Data.Migrations
                                     b2.Navigation("Thresholds");
                                 });
 
-                            b1.Navigation("Warning")
-                                .IsRequired();
+                            b1.Navigation("Warning");
                         });
 
-                    b.Navigation("Configuration")
-                        .IsRequired();
+                    b.Navigation("Configuration");
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.AuditLogChannel", b =>

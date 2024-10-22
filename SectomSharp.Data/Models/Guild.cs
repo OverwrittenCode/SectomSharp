@@ -4,7 +4,7 @@ public sealed class Guild : BaseEntity
 {
     public required ulong Id { get; init; }
 
-    public Configuration Configuration { get; set; } = new();
+    public Configuration? Configuration { get; set; }
 
     public ICollection<User> Users { get; } = [];
     public ICollection<Role> Roles { get; } = [];
