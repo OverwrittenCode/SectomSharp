@@ -147,7 +147,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     protected override async Task RespondOrFollowupAsync(SocketInteractionContext context) =>
         await context.Interaction.RespondOrFollowupAsync(
             embeds: CurrentEmbeds,
-            components: MessageComponent,
+            components: _embeds.Length == 1 ? null : MessageComponent,
             ephemeral: IsEphemeral
         );
 }

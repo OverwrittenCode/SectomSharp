@@ -25,6 +25,27 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
     public const string PaginationExpiredMessage = "The pagination for this message has expired.";
 
+    private static Embed[] ToSanitisedEmbeds(string title, List<string> chunks)
+    {
+        var embeds = new List<Embed>();
+
+        if (chunks.Count == 1)
+        {
+            return [GetEmbedBuilder(chunks[0], title).Build()];
+        }
+
+        for (var i = 0; i < chunks.Count; i++)
+        {
+            var embed = GetEmbedBuilder(chunks[i], title)
+                .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
+                .Build();
+
+            embeds.Add(embed);
+        }
+
+        return [.. embeds];
+    }
+
     protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) =>
         await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
 
@@ -62,18 +83,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
             chunks.Add(content.Substring(i, Math.Min(ChunkSize, content.Length - i)));
         }
 
-        var embeds = new List<Embed>();
-
-        for (var i = 0; i < chunks.Count; i++)
-        {
-            var embed = GetEmbedBuilder(chunks[i], title)
-                .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
-                .Build();
-
-            embeds.Add(embed);
-        }
-
-        return [.. embeds];
+        return ToSanitisedEmbeds(title, chunks);
     }
 
     /// <summary>
@@ -104,18 +114,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
             chunks.Add(chunk);
         }
 
-        var embeds = new List<Embed>();
-
-        for (int i = 0; i < chunks.Count; i++)
-        {
-            var embed = GetEmbedBuilder(chunks[i], title)
-                .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
-                .Build();
-
-            embeds.Add(embed);
-        }
-
-        return [.. embeds];
+        return ToSanitisedEmbeds(title, chunks);
     }
 
     /// <summary>
