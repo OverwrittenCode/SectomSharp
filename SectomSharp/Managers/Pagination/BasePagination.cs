@@ -93,7 +93,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         {
             var chunk = String.Join(
                 "\n",
-                strings.GetRange(i, Math.Min(ChunkSize, strings.Count - 1))
+                strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i))
             );
 
             if (chunk.Length > EmbedBuilder.MaxDescriptionLength)
