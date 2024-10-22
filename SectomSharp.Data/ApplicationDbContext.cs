@@ -64,11 +64,7 @@ public sealed class ApplicationDbContext : DbContext
         {
             if (entry.Entity is BaseEntity baseEntity)
             {
-                if (entry.State == EntityState.Added)
-                {
-                    baseEntity.CreatedAt = DateTime.UtcNow;
-                }
-                else if (entry.State == EntityState.Modified)
+                if (entry.State == EntityState.Modified)
                 {
                     baseEntity.UpdatedAt = DateTime.Now;
                 }
