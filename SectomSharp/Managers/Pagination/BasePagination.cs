@@ -102,7 +102,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
         var embeds = new List<Embed>();
 
-        for (int i = 0; i <= chunks.Count; i++)
+        for (int i = 0; i < chunks.Count; i++)
         {
             var embed = GetEmbedBuilder(chunks[i], title)
                 .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
