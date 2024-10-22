@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Services;
 using SectomSharp.Utils;
@@ -13,10 +14,7 @@ public partial class ModerationModule
     [RequireBotPermission(GuildPermission.ModerateMembers)]
     public async Task Timeout(
         [DoHierarchyCheck] IGuildUser user,
-        [Summary(
-            description: "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)"
-        )]
-            TimeSpan duration,
+        [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
         [MaxLength(CaseService.MaxReasonLength)] string? reason = null
     )
     {

@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Modules\Admin\" />
     <Folder Include="Modules\Games\" />
   </ItemGroup>
 

@@ -188,6 +188,7 @@ internal sealed class CaseService
         OperationType operationType,
         ulong? perpetratorId = null,
         ulong? targetId = null,
+        ulong? channelId = null,
         DateTime? expiresAt = null,
         string? reason = null,
         bool includeGuildCases = false
@@ -199,13 +200,14 @@ internal sealed class CaseService
         }
 
         var perpetratorKey = perpetratorId ??= context.User.Id;
+        var channelKey = channelId ?? context.Channel.Id;
 
         var @case = new Case()
         {
             Id = StringUtils.GenerateUniqueId(IdLength),
             PerpetratorId = perpetratorKey,
             TargetId = targetId,
-            ChannelId = context.Channel.Id,
+            ChannelId = channelKey,
             GuildId = context.Guild.Id,
             LogType = logType,
             OperationType = operationType,
@@ -253,11 +255,9 @@ internal sealed class CaseService
                 await db.Users.AddRangeAsync(users);
             }
 
-            if (await db.Channels.FindAsync(context.Channel.Id) is null)
+            if (await db.Channels.FindAsync(channelKey) is null)
             {
-                await db.Channels.AddAsync(
-                    new() { Id = context.Channel.Id, GuildId = context.Guild.Id }
-                );
+                await db.Channels.AddAsync(new() { Id = channelKey, GuildId = context.Guild.Id });
             }
 
             IQueryable<Guild> guildQuery = db
