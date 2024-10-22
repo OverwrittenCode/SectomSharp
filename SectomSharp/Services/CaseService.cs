@@ -173,7 +173,6 @@ internal sealed class CaseService
     /// <param name="targetId">The targeted user.</param>
     /// <param name="expiresAt">When the case has expired.</param>
     /// <param name="reason">The reason.</param>
-    /// <param name="notifyTargetUser">Whether to notify the target user about the case.</param>
     /// <param name="includeGuildCases">If <see cref="Guild.Cases"/> should be included.</param>
     /// <returns>
     ///     The current <see cref="Guild"/> entity.
@@ -183,10 +182,6 @@ internal sealed class CaseService
     ///     If <paramref name="includeGuildCases"/> is <see langword="true"/>;
     ///     <see cref="Guild.Cases"/> will be included.
     /// </value>
-    /// <exception cref="InvalidOperationException">
-    ///     <see cref="Case.TargetId"/> is <see langword="null"/> but
-    ///     <paramref name="notifyTargetUser"/> is <see langword="true"/>.
-    /// </exception>
     public static async Task<Guild> LogAsync(
         SocketInteractionContext context,
         BotLogType logType,
@@ -195,7 +190,6 @@ internal sealed class CaseService
         ulong? targetId = null,
         DateTime? expiresAt = null,
         string? reason = null,
-        bool notifyTargetUser = true,
         bool includeGuildCases = false
     )
     {
@@ -311,15 +305,8 @@ internal sealed class CaseService
 
         bool? successfulDm = null;
 
-        if (notifyTargetUser)
+        if (targetId is not null)
         {
-            if (targetId is null)
-            {
-                throw new InvalidOperationException(
-                    $"{nameof(targetId)} is null but {nameof(notifyTargetUser)} is true."
-                );
-            }
-
             try
             {
                 await context
