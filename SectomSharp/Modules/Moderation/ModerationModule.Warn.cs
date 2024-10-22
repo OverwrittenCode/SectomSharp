@@ -76,9 +76,7 @@ public partial class ModerationModule
                     OperationType.Create,
                     perpetratorId: Context.Client.CurrentUser.Id,
                     targetId: user.Id,
-                    expiresAt: punishmentThreshold.Span is TimeSpan span
-                        ? DateTime.Now.Add(span)
-                        : null,
+                    expiresAt: user.TimedOutUntil?.Date,
                     reason: autoReason
                 );
 
