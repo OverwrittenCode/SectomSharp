@@ -22,7 +22,7 @@ public partial class ModerationModule
     {
         if (duration > Constants.MaxTimeout)
         {
-            await Context.Interaction.RespondAsync(
+            await RespondOrFollowUpAsync(
                 $"Duration cannot exceed {Constants.MaxTimeout.Days} days.",
                 ephemeral: true
             );
@@ -31,7 +31,7 @@ public partial class ModerationModule
 
         if (duration < Constants.MinTimeout)
         {
-            await Context.Interaction.RespondAsync(
+            await RespondOrFollowUpAsync(
                 $"Duration must be at least {Constants.MinTimeout.Seconds} seconds.",
                 ephemeral: true
             );
@@ -42,7 +42,7 @@ public partial class ModerationModule
             ? OperationType.Create
             : OperationType.Update;
 
-        await Context.Interaction.DeferAsync();
+        await DeferAsync();
         await user.SetTimeOutAsync(
             duration,
             DiscordUtils.GetAuditReasonRequestOptions(Context, reason)
@@ -68,14 +68,14 @@ public partial class ModerationModule
     {
         if (user.TimedOutUntil is null)
         {
-            await Context.Interaction.RespondAsync(
+            await RespondOrFollowUpAsync(
                 "This user is not timed out on the server.",
                 ephemeral: true
             );
             return;
         }
 
-        await Context.Interaction.DeferAsync();
+        await DeferAsync();
         await user.RemoveTimeOutAsync(DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
 
         await CaseService.LogAsync(

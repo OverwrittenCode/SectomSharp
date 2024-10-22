@@ -19,6 +19,6 @@ public sealed partial class MiscModule
             .WithAuthor(restUser.GlobalName)
             .WithImageUrl(avatarUrl);
 
-        await RespondAsync(embeds: [embed.Build()]);
+        await RespondOrFollowUpAsync(embeds: [embed.Build()]);
     }
 }

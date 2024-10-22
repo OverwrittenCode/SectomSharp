@@ -60,7 +60,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
         }
         catch (KeyNotFoundException)
         {
-            await context.RespondAsync(PaginationExpiredMessage, ephemeral: true);
+            await SendExpiredMessageAsync(context);
         }
     }
 
@@ -144,8 +144,8 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     )
         : this(GetEmbeds(content, embedTitle), extraActionRows, timeout, isEphemeral) { }
 
-    protected override async Task RespondAsync(SocketInteractionContext context) =>
-        await context.Interaction.RespondAsync(
+    protected override async Task RespondOrFollowupAsync(SocketInteractionContext context) =>
+        await context.Interaction.RespondOrFollowupAsync(
             embeds: CurrentEmbeds,
             components: MessageComponent,
             ephemeral: IsEphemeral

@@ -21,14 +21,14 @@ public partial class ModerationModule
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
-            await Context.Interaction.RespondAsync(
+            await RespondOrFollowUpAsync(
                 "This user is already banned on the server.",
                 ephemeral: true
             );
             return;
         }
 
-        await Context.Interaction.DeferAsync();
+        await DeferAsync();
 
         await Context.Guild.BanUserAsync(
             user,
@@ -59,7 +59,7 @@ public partial class ModerationModule
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
-            await Context.Interaction.RespondAsync(
+            await RespondOrFollowUpAsync(
                 "This user is already banned on the server.",
                 ephemeral: true
             );
@@ -72,7 +72,7 @@ public partial class ModerationModule
             [new("Operation", BotLogType.Softban)]
         );
 
-        await Context.Interaction.DeferAsync();
+        await DeferAsync();
         await Context.Guild.BanUserAsync(user, GetPruneSeconds(pruneDays), requestOptions);
         await Context.Guild.RemoveBanAsync(user, requestOptions);
         await CaseService.LogAsync(
@@ -94,14 +94,14 @@ public partial class ModerationModule
     {
         if (await Context.Guild.GetBanAsync(user) is null)
         {
-            await Context.Interaction.RespondAsync(
+            await RespondOrFollowUpAsync(
                 "This user is not banned from the server.",
                 ephemeral: true
             );
             return;
         }
 
-        await Context.Interaction.DeferAsync();
+        await DeferAsync();
 
         await Context.Guild.RemoveBanAsync(
             user,

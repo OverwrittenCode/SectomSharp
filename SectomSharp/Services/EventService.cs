@@ -1,6 +1,7 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using SectomSharp.Events;
+using SectomSharp.Extensions;
 
 namespace SectomSharp.Services;
 
@@ -39,14 +40,7 @@ internal sealed class EventService
                         ? result.ErrorReason
                         : $"{result.Error}: {result.ErrorReason}";
 
-                if (context.Interaction.HasResponded)
-                {
-                    await context.Interaction.FollowupAsync(message, ephemeral: true);
-                }
-                else
-                {
-                    await context.Interaction.RespondAsync(message, ephemeral: true);
-                }
+                await context.Interaction.RespondOrFollowupAsync(message, ephemeral: true);
             }
         };
     }

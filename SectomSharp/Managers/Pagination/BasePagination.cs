@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.Rest;
+using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Managers.Pagination;
@@ -23,6 +24,9 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     private const int ChunkSize = 10;
 
     public const string PaginationExpiredMessage = "The pagination for this message has expired.";
+
+    protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) =>
+        await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
 
     /// <summary>
     ///     Creates an embed builder with standard formatting.
@@ -163,25 +167,25 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     }
 
     /// <summary>
-    ///     Responds to a Discord interaction with the initial pagination state.
+    ///     Responds or follows up a Discord interaction with the initial pagination state.
     /// </summary>
     /// <param name="context">
     ///     The interaction context containing information about the Discord interaction
     ///     that triggered the pagination.
     /// </param>
     /// <returns>
-    ///     A Task representing the asynchronous operation
-    ///     of responding to the interaction.
+    ///     A task representing the asynchronous operation of
+    ///     responding or following up the interaction.
     /// </returns>
-    protected abstract Task RespondAsync(SocketInteractionContext context);
+    protected abstract Task RespondOrFollowupAsync(SocketInteractionContext context);
 
     /// <summary>
     ///     Starts the pagination.
     /// </summary>
-    /// <inheritdoc cref="RespondAsync(SocketInteractionContext, Int32)"/>
+    /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)"/>
     public async Task Init(SocketInteractionContext context)
     {
-        await RespondAsync(context);
+        await RespondOrFollowupAsync(context);
 
         Message = await context.Interaction.GetOriginalResponseAsync();
 
@@ -205,7 +209,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         if (Message is null)
         {
             throw new InvalidOperationException(
-                $"{nameof(Message)} is null as it has not been called yet with {nameof(RespondAsync)}"
+                $"{nameof(Message)} is null as it has not been called yet with {nameof(RespondOrFollowupAsync)}"
             );
         }
 

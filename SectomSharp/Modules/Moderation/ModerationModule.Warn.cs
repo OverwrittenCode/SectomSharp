@@ -16,7 +16,7 @@ public partial class ModerationModule
         [MaxLength(CaseService.MaxReasonLength)] string? reason = null
     )
     {
-        await Context.Interaction.DeferAsync();
+        await DeferAsync();
         Guild guildEntity = await CaseService.LogAsync(
             Context,
             BotLogType.Warn,
@@ -81,7 +81,7 @@ public partial class ModerationModule
             var botPermissions = Context.Guild.CurrentUser.GuildPermissions;
 
             async Task SendFailureMessageAsync() =>
-                await Context.Interaction.FollowupAsync(
+                await RespondOrFollowUpAsync(
                     $"Warning configuration is setup to {punishmentThreshold.LogType} a user on reaching [{count}] warnings but I lack permission to do so. Please contact a server administrator to fix this."
                 );
 

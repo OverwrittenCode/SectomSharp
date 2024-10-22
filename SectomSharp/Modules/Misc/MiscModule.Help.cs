@@ -8,7 +8,7 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Misc;
 
-public sealed partial class MiscModule : InteractionModuleBase<SocketInteractionContext>
+public partial class MiscModule
 {
     [SlashCommand("help", "Displays a help menu")]
     public async Task Help()
@@ -60,7 +60,7 @@ public sealed partial class MiscModule : InteractionModuleBase<SocketInteraction
             command.Name == values[0]
         );
 
-        await RespondAsync(
+        await RespondOrFollowUpAsync(
             embeds:
             [
                 new EmbedBuilder()

@@ -1,4 +1,3 @@
-using Discord.Interactions;
 using Discord.WebSocket;
 using SectomSharp.Attributes;
 using SectomSharp.Managers.Pagination.Button;
@@ -6,7 +5,7 @@ using SectomSharp.Managers.Pagination.SelectMenu;
 
 namespace SectomSharp.Modules.Pagination;
 
-public sealed class PaginationModule : InteractionModuleBase<SocketInteractionContext>
+public sealed class PaginationModule : BaseModule
 {
     /// <inheritdoc cref="ButtonPaginationManager.OnHit(SocketMessageComponent, String, PageNavigationButton)"/>
     [RegexComponentInteraction<ButtonPaginationManager>("id", "position")]

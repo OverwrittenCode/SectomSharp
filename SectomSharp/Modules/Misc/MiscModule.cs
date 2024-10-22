@@ -8,7 +8,7 @@ namespace SectomSharp.Modules.Misc;
 [Category("Misc", "🛠️")]
 [RateLimit]
 [CommandContextType(InteractionContextType.Guild)]
-public sealed partial class MiscModule : InteractionModuleBase<SocketInteractionContext>
+public sealed partial class MiscModule : BaseModule
 {
     private readonly InteractionService _commands;
 

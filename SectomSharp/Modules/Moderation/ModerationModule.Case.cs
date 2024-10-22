@@ -13,14 +13,14 @@ public partial class ModerationModule
 {
     [Group("case", "Container of all cases in the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
-    public sealed class CaseModule : InteractionModuleBase<SocketInteractionContext>
+    public sealed class CaseModule : BaseModule
     {
         [SlashCommand("view", "View a specific case on the server")]
         public async Task View(
             [MinLength(CaseService.IdLength)] [MaxLength(CaseService.IdLength)] string id
         )
         {
-            await Context.Interaction.DeferAsync();
+            await DeferAsync();
 
             using var dbContext = new ApplicationDbContext();
 
@@ -28,7 +28,7 @@ public partial class ModerationModule
 
             if (@case is null)
             {
-                await Context.Interaction.FollowupAsync("Invalid case id provided.");
+                await RespondOrFollowUpAsync("Invalid case id provided.");
                 return;
             }
 
@@ -36,7 +36,7 @@ public partial class ModerationModule
 
             CaseService.GenerateLogEmbeds(@case, out var serverLogEmbed, out var _);
 
-            await Context.Interaction.FollowupAsync(
+            await RespondOrFollowUpAsync(
                 embeds: [serverLogEmbed],
                 components: CaseService.GenerateLogMessageButton(@case)
             );
@@ -51,7 +51,7 @@ public partial class ModerationModule
             OperationType? operationType = null
         )
         {
-            await Context.Interaction.DeferAsync();
+            await DeferAsync();
 
             using var dbContext = new ApplicationDbContext();
 
@@ -118,7 +118,7 @@ public partial class ModerationModule
             [MaxLength(CaseService.MaxReasonLength)] string newReason
         )
         {
-            await Context.Interaction.DeferAsync();
+            await DeferAsync();
 
             using var dbContext = new ApplicationDbContext();
 
@@ -128,15 +128,13 @@ public partial class ModerationModule
 
             if (@case is null)
             {
-                await Context.Interaction.FollowupAsync("Invalid case id provided.");
+                await RespondOrFollowUpAsync("Invalid case id provided.");
                 return;
             }
 
             if (@case.PerpetratorId != Context.User.Id)
             {
-                await Context.Interaction.FollowupAsync(
-                    "You may only amend cases actioned by yourself."
-                );
+                await RespondOrFollowUpAsync("You may only amend cases actioned by yourself.");
                 return;
             }
 
@@ -149,7 +147,7 @@ public partial class ModerationModule
                 // - check if guild has a log channel for the action and send then send embed in the channel
             }
 
-            await Context.Interaction.FollowupAsync(
+            await RespondOrFollowUpAsync(
                 "Case reason has been amended.",
                 components: CaseService.GenerateLogMessageButton(@case)
             );

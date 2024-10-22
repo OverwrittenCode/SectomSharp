@@ -30,7 +30,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
 
             if (instance._responseType == SelectMenuResponse.Reply)
             {
-                await context.RespondAsync(
+                await context.RespondOrFollowupAsync(
                     components: components,
                     embeds: page.Embeds,
                     ephemeral: instance.IsEphemeral
@@ -49,7 +49,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         }
         catch (KeyNotFoundException)
         {
-            await context.RespondAsync(PaginationExpiredMessage, ephemeral: true);
+            await SendExpiredMessageAsync(context);
         }
     }
 
@@ -104,20 +104,10 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         }
     }
 
-    protected override async Task RespondAsync(SocketInteractionContext context) =>
-        await context.Interaction.RespondAsync(
+    protected override async Task RespondOrFollowupAsync(SocketInteractionContext context) =>
+        await context.Interaction.RespondOrFollowupAsync(
             embeds: _firstPage.Embeds,
-            components: new ComponentBuilder()
-            {
-                ActionRows = _firstPage.ActionRows,
-                //_isStickySelectMenu // Component custom id cannot be duplicated
-                //    ? _firstPage.ActionRows
-                //    :
-                //    [
-                //        new ActionRowBuilder() { Components = [SelectMenuBuilder.Build()] },
-                //        .. _firstPage.ActionRows,
-                //    ],
-            }.Build(),
+            components: new ComponentBuilder() { ActionRows = _firstPage.ActionRows }.Build(),
             ephemeral: IsEphemeral
         );
 }
