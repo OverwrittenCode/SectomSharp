@@ -58,7 +58,6 @@ internal sealed class CaseService
                     : @case.OperationType == OperationType.Update ? Color.Orange
                     : Color.Red
                 )
-                .WithDescription($"{@case.LogType}{@case.OperationType} was invoked")
                 .AddIndentedField("Timestamps", timestampKvp);
 
         var serverLogEmbedBuilder = GetBaseEmbed();
@@ -79,7 +78,7 @@ internal sealed class CaseService
         }
 
         var title = $"CASE {@case.Id}";
-        var actionName = $"{@case.LogType}{@case.OperationType}";
+        var actionDisplayText = Format.Code($"{@case.LogType}{@case.OperationType}");
         var channelMention = MentionUtils.MentionChannel(@case.ChannelId);
         Color colour;
 
@@ -87,7 +86,7 @@ internal sealed class CaseService
         {
             colour = @case.OperationType == OperationType.Update ? Color.Orange : Color.Red;
 
-            var dmDescription = $"{actionName} was invoked";
+            var dmDescription = $"{actionDisplayText} was invoked";
 
             dmLogEmbedBuilder.WithDescription(dmDescription);
 
@@ -106,7 +105,7 @@ internal sealed class CaseService
         }
         else
         {
-            var dmDescription = $"I invoked {actionName}";
+            var dmDescription = $"I invoked {actionDisplayText}";
 
             dmLogEmbedBuilder.WithDescription(dmDescription);
             serverLogEmbedBuilder.WithDescription($"{dmDescription} in {channelMention}");
