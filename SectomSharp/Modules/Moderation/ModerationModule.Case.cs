@@ -94,6 +94,12 @@ public partial class ModerationModule
                 })
                 .ToListAsync();
 
+            if (cases.Count == 0)
+            {
+                await RespondOrFollowUpAsync("No cases found.");
+                return;
+            }
+
             var embedDescriptions = cases
                 .Select(@case =>
                     $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {TimestampTag.FormatFromDateTime(@case.CreatedAt, TimestampTagStyles.Relative)}"
