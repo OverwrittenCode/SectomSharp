@@ -18,9 +18,6 @@ public partial class AdminModule
         [Group("log-channel", "Log Channel configuration")]
         public sealed class LogChannelModule : BaseModule
         {
-            private const string SetOperationDescription =
-                "Not providing this value means all variations of the given action will be included";
-
             [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
@@ -73,7 +70,7 @@ public partial class AdminModule
             }
 
             [SlashCommand("set-audit-log", "Add or modify an audit log channel configuration")]
-            [RequireBotPermission(ChannelPermission.ManageWebhooks)]
+            [RequireBotPermission(GuildPermission.ViewAuditLog)]
             public async Task SetAuditLog(
                 [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
@@ -84,6 +81,14 @@ public partial class AdminModule
                     out var operation,
                     out var reason
                 );
+
+                if (!Context.Guild.CurrentUser.GetPermissions(logChannel).ManageWebhooks)
+                {
+                    await RespondOrFollowUpAsync(
+                        $"Bot requires channel permission {ChannelPermission.ManageWebhooks} in {MentionUtils.MentionChannel(logChannel.Id)}",
+                        ephemeral: true
+                    );
+                }
 
                 await DeferAsync();
 
