@@ -18,24 +18,6 @@ public partial class ModerationModule
         [MaxLength(CaseService.MaxReasonLength)] string? reason = null
     )
     {
-        if (duration > Constants.MaxTimeout)
-        {
-            await RespondOrFollowUpAsync(
-                $"Duration cannot exceed {Constants.MaxTimeout.Days} days.",
-                ephemeral: true
-            );
-            return;
-        }
-
-        if (duration < Constants.MinTimeout)
-        {
-            await RespondOrFollowUpAsync(
-                $"Duration must be at least {Constants.MinTimeout.Seconds} seconds.",
-                ephemeral: true
-            );
-            return;
-        }
-
         var operationType = user.TimedOutUntil is null
             ? OperationType.Create
             : OperationType.Update;
