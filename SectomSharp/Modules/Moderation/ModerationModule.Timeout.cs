@@ -18,6 +18,12 @@ public partial class ModerationModule
         [MaxLength(CaseService.MaxReasonLength)] string? reason = null
     )
     {
+        if (user.IsBot)
+        {
+            await RespondOrFollowUpAsync("Bot users cannot be timed out.", ephemeral: true);
+            return;
+        }
+
         var operationType = user.TimedOutUntil is null
             ? OperationType.Create
             : OperationType.Update;
