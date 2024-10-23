@@ -1,9 +1,12 @@
+using Discord;
 using Discord.Interactions;
+using Microsoft.EntityFrameworkCore;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
 using SectomSharp.Services;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
 
@@ -143,6 +146,138 @@ public partial class AdminModule
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
                 [MaxLength(CaseService.MaxReasonLength)] string? reason = null
             ) => await RemovePunishmentAsync(threshold, reason, BotLogType.Ban);
+
+            public async Task SetIsDisabledAsync(bool isDisabled, string? reason)
+            {
+                await DeferAsync();
+
+                Configuration disabledEntry = new() { Warning = new() { IsDisabled = isDisabled } };
+
+                using var db = new ApplicationDbContext();
+
+                var guild = await db.Guilds.FindAsync(Context.Guild.Id);
+                if (guild is null)
+                {
+                    await db.Guilds.AddAsync(
+                        new() { Id = Context.Guild.Id, Configuration = disabledEntry }
+                    );
+
+                    await db.SaveChangesAsync();
+                    await LogAsync(Context, reason);
+                    return;
+                }
+
+                if (guild.Configuration is not Configuration configuration)
+                {
+                    guild.Configuration = disabledEntry;
+
+                    await db.SaveChangesAsync();
+                    await LogAsync(Context, reason);
+                    return;
+                }
+
+                if (configuration.Warning.IsDisabled == isDisabled)
+                {
+                    await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                    return;
+                }
+
+                configuration.Warning.IsDisabled = isDisabled;
+                await db.SaveChangesAsync();
+                await LogAsync(Context, reason);
+            }
+
+            [SlashCommand("disable", "Disable this configuration")]
+            public async Task Disable(
+                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
+            ) => await SetIsDisabledAsync(true, reason);
+
+            [SlashCommand("enable", "Enable this configuration")]
+            public async Task Enable(
+                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
+            ) => await SetIsDisabledAsync(false, reason);
+
+            [SlashCommand("view-thresholds", "View the configured warning thresholds")]
+            public async Task ViewThresholds()
+            {
+                async Task SendErrorAsync() => await RespondOrFollowUpAsync("Nothing to view yet.");
+
+                await DeferAsync();
+
+                using var db = new ApplicationDbContext();
+
+                var guild = await db.Guilds.FindAsync(Context.Guild.Id);
+
+                if (guild is null)
+                {
+                    await db.Guilds.AddAsync(
+                        new() { Id = Context.Guild.Id, Configuration = new() }
+                    );
+                    await db.SaveChangesAsync();
+                    await SendErrorAsync();
+                    return;
+                }
+
+                if (guild.Configuration is not Configuration { Warning: var warningConfiguration })
+                {
+                    guild.Configuration = new();
+                    await db.SaveChangesAsync();
+                    await SendErrorAsync();
+                    return;
+                }
+
+                db.Entry(guild).State = EntityState.Detached;
+
+                if (warningConfiguration.Thresholds.Count == 0)
+                {
+                    await SendErrorAsync();
+                    return;
+                }
+
+                var descriptionArray = warningConfiguration
+                    .Thresholds.OrderBy(threshold => threshold.Value)
+                    .Select(threshold =>
+                    {
+                        var ordinalSuffix =
+                            (threshold.Value % 100 is >= 11 and <= 13)
+                                ? "th"
+                                : (threshold.Value % 10) switch
+                                {
+                                    1 => "st",
+                                    2 => "nd",
+                                    3 => "rd",
+                                    _ => "th",
+                                };
+
+                        var strikePosition = threshold.Value + ordinalSuffix;
+
+                        var durationText = threshold.Span is not TimeSpan timeSpan
+                            ? ""
+                            : timeSpan switch
+                            {
+                                { Days: var d and > 0 } => $"{d} day",
+                                { Hours: var h and > 0 } => $"{h} hour",
+                                { Minutes: var m and > 0 } => $"{m} minute",
+                                _ => $"{timeSpan.Seconds} second",
+                            };
+
+                        return $"- {strikePosition} Strike: {Format.Bold($"{durationText} {threshold.LogType}")}";
+                    });
+
+                var embed = new EmbedBuilder()
+                {
+                    Title = $"{Context.Guild.Name} Warning Thresholds",
+                    Color = Constants.LightGold,
+                    Description = String.Join("\n", descriptionArray),
+                };
+
+                if (warningConfiguration.IsDisabled)
+                {
+                    embed.WithFooter("Module is currently disabled: /config warn enable");
+                }
+
+                await RespondOrFollowUpAsync(embeds: [embed.Build()]);
+            }
         }
     }
 }
