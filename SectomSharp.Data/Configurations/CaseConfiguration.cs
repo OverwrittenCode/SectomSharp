@@ -27,11 +27,11 @@ internal sealed class CaseConfiguration : BaseEntityConfiguration<Case>
         builder
             .HasOne(@case => @case.Channel)
             .WithMany(channel => channel.Cases)
-            .HasForeignKey(@case => @case.ChannelId)
-            .IsRequired();
+            .HasForeignKey(@case => @case.ChannelId);
 
         builder.Property(@case => @case.ExpiresAt).HasColumnType(Constants.PostgreSQL.Timestamptz);
         builder.Property(@case => @case.LogType).IsRequired();
+        builder.Property(@case => @case.OperationType).IsRequired();
 
         builder.HasIndex(@case => @case.Id).IsUnique();
         builder.HasIndex(@case => new

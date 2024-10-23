@@ -52,7 +52,7 @@ public sealed class ApplicationDbContext : DbContext
         base.OnConfiguring(optionsBuilder);
     }
 
-    public override int SaveChanges()
+    private void UpdateEntities()
     {
         var entries = ChangeTracker
             .Entries()
@@ -66,11 +66,21 @@ public sealed class ApplicationDbContext : DbContext
             {
                 if (entry.State == EntityState.Modified)
                 {
-                    baseEntity.UpdatedAt = DateTime.Now;
+                    baseEntity.UpdatedAt = DateTime.UtcNow;
                 }
             }
         }
+    }
 
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateEntities();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        UpdateEntities();
         return base.SaveChanges();
     }
 }

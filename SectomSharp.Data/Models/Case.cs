@@ -12,13 +12,13 @@ public sealed class Case : BaseOneToManyGuildRelation
     public ulong? TargetId { get; init; }
     public User? Target { get; init; }
 
-    public required ulong ChannelId { get; init; }
-    public Channel Channel { get; init; } = null!;
+    public ulong? ChannelId { get; init; }
+    public Channel? Channel { get; init; }
 
     public required BotLogType LogType { get; init; }
     public required OperationType OperationType { get; init; }
 
     public DateTime? ExpiresAt { get; init; }
     public string? Reason { get; set; }
-    public ulong? LogMessageId { get; set; }
+    public string? LogMessageURL { get; set; }
 }

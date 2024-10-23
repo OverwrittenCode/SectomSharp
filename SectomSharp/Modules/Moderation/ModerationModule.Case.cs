@@ -34,10 +34,8 @@ public partial class ModerationModule
 
             dbContext.Entry(@case).State = EntityState.Detached;
 
-            CaseService.GenerateLogEmbeds(@case, out var serverLogEmbed, out var _);
-
             await RespondOrFollowUpAsync(
-                embeds: [serverLogEmbed],
+                embeds: [CaseService.GenerateLogEmbeds(@case).ServerLog.Build()],
                 components: CaseService.GenerateLogMessageButton(@case)
             );
         }
@@ -140,12 +138,12 @@ public partial class ModerationModule
 
             @case.Reason = newReason;
 
-            if (@case.LogMessageId is null)
-            {
-                // TODOs:
-                // - setup logging system
-                // - check if guild has a log channel for the action and send then send embed in the channel
-            }
+            //if (@case.LogMessageId is null)
+            //{
+            //    // TODOs:
+            //    // - setup logging system
+            //    // - check if guild has a log channel for the action and send then send embed in the channel
+            //}
 
             await RespondOrFollowUpAsync(
                 "Case reason has been amended.",

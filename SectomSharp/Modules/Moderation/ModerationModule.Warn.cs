@@ -60,13 +60,11 @@ public partial class ModerationModule
                     ? orderedThresholds[1]
                     : orderedThresholds[0];
 
-            var autoReason = $"A configured threshold was matched for [{count}] warnings.";
-
-            var botPermissions = Context.Guild.CurrentUser.GuildPermissions;
+            var warningDisplayText = $"{Format.Code(count.ToString())} warnings";
 
             async Task SendFailureMessageAsync() =>
                 await RespondOrFollowUpAsync(
-                    $"Warning configuration is setup to {punishmentThreshold.LogType} a user on reaching [{count}] warnings but I lack permission to do so. Please contact a server administrator to fix this."
+                    $"Warning configuration is setup to {punishmentThreshold.LogType} a user on reaching {warningDisplayText} but I lack permission to do so. Please contact a server administrator to fix this."
                 );
 
             async Task LogCaseAsync() =>
@@ -74,11 +72,12 @@ public partial class ModerationModule
                     Context,
                     punishmentThreshold.LogType,
                     OperationType.Create,
-                    perpetratorId: Context.Client.CurrentUser.Id,
                     targetId: user.Id,
                     expiresAt: user.TimedOutUntil?.Date,
-                    reason: autoReason
+                    reason: $"A configured threshold was matched for {warningDisplayText}."
                 );
+
+            var botPermissions = Context.Guild.CurrentUser.GuildPermissions;
 
             switch (punishmentThreshold.LogType)
             {

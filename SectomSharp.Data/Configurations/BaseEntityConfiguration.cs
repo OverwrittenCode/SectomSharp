@@ -12,7 +12,7 @@ internal abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
         builder
             .Property(entity => entity.CreatedAt)
             .HasColumnType(Constants.PostgreSQL.Timestamptz)
-            .HasDefaultValueSql(Constants.PostgreSQL.CurrentDate);
+            .IsRequired();
 
         builder
             .Property(entity => entity.UpdatedAt)
