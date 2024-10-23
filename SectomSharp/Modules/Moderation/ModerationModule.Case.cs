@@ -109,48 +109,5 @@ public partial class ModerationModule
 
             await pagination.Build().Init(Context);
         }
-
-        [SlashCommand("amend-reason", "Amend the reason of a specific case on the server")]
-        public async Task AmendReason(
-            [MinLength(CaseService.IdLength)] [MaxLength(CaseService.IdLength)] string id,
-            [MaxLength(CaseService.MaxReasonLength)] string newReason
-        )
-        {
-            await DeferAsync();
-
-            using var dbContext = new ApplicationDbContext();
-
-            var @case = await dbContext
-                .Cases.Where(@case => @case.Id == id && @case.GuildId == Context.Guild.Id)
-                .FirstOrDefaultAsync();
-
-            if (@case is null)
-            {
-                await RespondOrFollowUpAsync("Invalid case id provided.");
-                return;
-            }
-
-            if (@case.PerpetratorId != Context.User.Id)
-            {
-                await RespondOrFollowUpAsync("You may only amend cases actioned by yourself.");
-                return;
-            }
-
-            @case.Reason = newReason;
-
-            //if (@case.LogMessageId is null)
-            //{
-            //    // TODOs:
-            //    // - setup logging system
-            //    // - check if guild has a log channel for the action and send then send embed in the channel
-            //}
-
-            await RespondOrFollowUpAsync(
-                "Case reason has been amended.",
-                components: CaseService.GenerateLogMessageButton(@case)
-            );
-
-            await dbContext.SaveChangesAsync();
-        }
     }
 }
