@@ -15,6 +15,8 @@ public partial class AdminModule
         internal const string NotConfiguredMessage =
             "You cannot remove this configuration as it has not been configured.";
 
+        internal const string NothingToView = "Nothing to view yet.";
+
         internal static async Task LogAsync(
             SocketInteractionContext context,
             string? reason = null,

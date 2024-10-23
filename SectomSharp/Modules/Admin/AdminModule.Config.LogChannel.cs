@@ -3,6 +3,9 @@ using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
+using SectomSharp.Data.Models;
+using SectomSharp.Managers.Pagination.Builders;
+using SectomSharp.Managers.Pagination.Button;
 using SectomSharp.Services;
 using SectomSharp.Utils;
 
@@ -226,6 +229,88 @@ public partial class AdminModule
 
                 await LogAsync(Context, options.Reason, options.LogChannel.Id);
             }
+
+            public async Task ViewAsync<TChannel, TLogType>(
+                string titleSuffix,
+                Func<Guild, ICollection<TChannel>> channelSelector,
+                Func<IQueryable<Guild>, IQueryable<Guild>> withInclude,
+                Func<TChannel, TLogType> logTypeSelector,
+                Func<TChannel, OperationType?> operationTypeSelector
+            )
+                where TLogType : struct, Enum
+                where TChannel : Snowflake
+            {
+                await DeferAsync();
+
+                using var db = new ApplicationDbContext();
+
+                var query = db.Guilds.Where(guild => guild.Id == Context.Guild.Id);
+
+                query = withInclude(query);
+
+                var guild = await query.SingleOrDefaultAsync();
+
+                if (guild is null)
+                {
+                    await db.Guilds.AddAsync(
+                        new() { Id = Context.Guild.Id, Configuration = new() }
+                    );
+                    await db.SaveChangesAsync();
+                    await RespondOrFollowUpAsync(NothingToView);
+                    return;
+                }
+
+                db.Entry(guild).State = EntityState.Detached;
+
+                var channels = channelSelector(guild);
+
+                if (channels.Count == 0)
+                {
+                    await RespondOrFollowUpAsync(NothingToView);
+                    return;
+                }
+
+                var embedDescriptions = channels
+                    .Select(channel =>
+                    {
+                        var logType = logTypeSelector(channel);
+                        var displayName = operationTypeSelector(channel) is OperationType operation
+                            ? logType.ToString() + operation.ToString()
+                            : logType.ToString();
+
+                        return $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{displayName}]")}";
+                    })
+                    .ToList();
+
+                var embeds = ButtonPaginationManager.GetEmbeds(
+                    embedDescriptions,
+                    $"{Context.Guild.Name} {titleSuffix}"
+                );
+
+                var pagination = new ButtonPaginationBuilder() { Embeds = [.. embeds] };
+
+                await pagination.Build().Init(Context);
+            }
+
+            [SlashCommand("view-bot-log", "View the bot log channel configuration")]
+            public async Task ViewBotLog() =>
+                await ViewAsync(
+                    $"Bot Log Channels",
+                    guild => guild.BotLogChannels,
+                    query => query.Include(guild => guild.BotLogChannels),
+                    channel => channel.BotLogType,
+                    channel => channel.OperationType
+                );
+
+            [SlashCommand("view-audit-log", "View the audit log channel configuration")]
+            public async Task ViewAuditLog() =>
+                await ViewAsync(
+                    $"Audit Log Channels",
+                    guild => guild.AuditLogChannels,
+                    query => query.Include(guild => guild.AuditLogChannels),
+                    channel => channel.AuditLogType,
+                    channel => channel.OperationType
+                );
 
             public readonly record struct LogChannelOptions<T>(
                 ITextChannel LogChannel,

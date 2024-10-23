@@ -200,8 +200,6 @@ public partial class AdminModule
             [SlashCommand("view-thresholds", "View the configured warning thresholds")]
             public async Task ViewThresholds()
             {
-                async Task SendErrorAsync() => await RespondOrFollowUpAsync("Nothing to view yet.");
-
                 await DeferAsync();
 
                 using var db = new ApplicationDbContext();
@@ -214,7 +212,7 @@ public partial class AdminModule
                         new() { Id = Context.Guild.Id, Configuration = new() }
                     );
                     await db.SaveChangesAsync();
-                    await SendErrorAsync();
+                    await RespondOrFollowUpAsync(NothingToView);
                     return;
                 }
 
@@ -222,7 +220,7 @@ public partial class AdminModule
                 {
                     guild.Configuration = new();
                     await db.SaveChangesAsync();
-                    await SendErrorAsync();
+                    await RespondOrFollowUpAsync(NothingToView);
                     return;
                 }
 
@@ -230,7 +228,7 @@ public partial class AdminModule
 
                 if (warningConfiguration.Thresholds.Count == 0)
                 {
-                    await SendErrorAsync();
+                    await RespondOrFollowUpAsync(NothingToView);
                     return;
                 }
 
