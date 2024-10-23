@@ -19,13 +19,15 @@ public partial class AdminModule
                 "Not providing this value means all variations of the given action will be included";
 
             [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
-            public async Task SetBotLog(
-                ITextChannel logChannel,
-                BotLogType action,
-                [Summary(description: SetOperationDescription)] OperationType? operation = null,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            )
+            public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
+                options.Deconstruct(
+                    out var logChannel,
+                    out var action,
+                    out var operation,
+                    out var reason
+                );
+
                 await DeferAsync();
 
                 using (var db = new ApplicationDbContext())
@@ -70,12 +72,16 @@ public partial class AdminModule
             [SlashCommand("set-audit-log", "Add or modify an audit log channel configuration")]
             [RequireBotPermission(ChannelPermission.ManageWebhooks)]
             public async Task SetAuditLog(
-                ITextChannel logChannel,
-                AuditLogType action,
-                [Summary(description: SetOperationDescription)] OperationType? operation = null,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
+                [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
             {
+                options.Deconstruct(
+                    out var logChannel,
+                    out var action,
+                    out var operation,
+                    out var reason
+                );
+
                 await DeferAsync();
 
                 var webhook =
@@ -138,12 +144,7 @@ public partial class AdminModule
             }
 
             [SlashCommand("remove-bot-log", "Remove a bot log channel configuration")]
-            public async Task RemoveBotLog(
-                ITextChannel logChannel,
-                BotLogType action,
-                OperationType? operation = null,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            )
+            public async Task RemoveBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
                 await DeferAsync();
 
@@ -164,9 +165,9 @@ public partial class AdminModule
 
                     var match = guild
                         .BotLogChannels.Where(channel =>
-                            channel.Id == logChannel.Id
-                            && channel.BotLogType == action
-                            && channel.OperationType == operation
+                            channel.Id == options.LogChannel.Id
+                            && channel.BotLogType == options.Action
+                            && channel.OperationType == options.Operation
                         )
                         .SingleOrDefault();
 
@@ -180,15 +181,12 @@ public partial class AdminModule
                     await db.SaveChangesAsync();
                 }
 
-                await LogAsync(Context, reason, logChannel.Id);
+                await LogAsync(Context, options.Reason, options.LogChannel.Id);
             }
 
             [SlashCommand("remove-audit-log", "Remove an audit log channel configuration")]
             public async Task RemoveAuditLog(
-                ITextChannel logChannel,
-                AuditLogType action,
-                OperationType? operation = null,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
+                [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
             {
                 await DeferAsync();
@@ -210,9 +208,9 @@ public partial class AdminModule
 
                     var match = guild
                         .AuditLogChannels.Where(channel =>
-                            channel.Id == logChannel.Id
-                            && channel.AuditLogType == action
-                            && channel.OperationType == operation
+                            channel.Id == options.LogChannel.Id
+                            && channel.AuditLogType == options.Action
+                            && channel.OperationType == options.Operation
                         )
                         .SingleOrDefault();
 
@@ -226,8 +224,16 @@ public partial class AdminModule
                     await db.SaveChangesAsync();
                 }
 
-                await LogAsync(Context, reason, logChannel.Id);
+                await LogAsync(Context, options.Reason, options.LogChannel.Id);
             }
+
+            public readonly record struct LogChannelOptions<T>(
+                ITextChannel LogChannel,
+                T Action,
+                OperationType? Operation = null,
+                [MaxLength(CaseService.MaxReasonLength)] string? Reason = null
+            )
+                where T : struct, Enum { }
         }
     }
 }
