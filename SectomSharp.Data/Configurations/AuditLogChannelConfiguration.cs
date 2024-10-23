@@ -15,8 +15,6 @@ internal sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<Aud
 
         builder.Property(channel => channel.AuditLogType).IsRequired();
 
-        builder.HasIndex(channel => channel.Id).IsUnique();
-
         base.Configure(builder);
     }
 }

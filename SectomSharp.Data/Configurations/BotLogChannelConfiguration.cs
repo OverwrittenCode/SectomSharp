@@ -15,8 +15,6 @@ internal sealed class BotLogChannelConfiguration : BaseEntityConfiguration<BotLo
 
         builder.Property(channel => channel.BotLogType).IsRequired();
 
-        builder.HasIndex(channel => channel.Id).IsUnique();
-
         base.Configure(builder);
     }
 }

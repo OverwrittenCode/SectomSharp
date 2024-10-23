@@ -13,8 +13,6 @@ internal sealed class RoleConfiguration : BaseEntityConfiguration<Role>
             .HasForeignKey(role => role.GuildId)
             .IsRequired();
 
-        builder.HasIndex(role => role.Id).IsUnique();
-
         base.Configure(builder);
     }
 }

@@ -200,11 +200,6 @@ internal sealed class CaseService
                 await db.Users.AddRangeAsync(users);
             }
 
-            if (channelId is ulong channelKey && await db.Channels.FindAsync(channelKey) is null)
-            {
-                await db.Channels.AddAsync(new() { Id = channelKey, GuildId = context.Guild.Id });
-            }
-
             IQueryable<Guild> guildQuery = db
                 .Guilds.Where(guild => guild.Id == context.Guild.Id)
                 .Include(guild => guild.BotLogChannels);

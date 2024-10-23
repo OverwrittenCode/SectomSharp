@@ -13,8 +13,6 @@ internal sealed class ChannelConfiguration : BaseEntityConfiguration<Channel>
             .HasForeignKey(channel => channel.GuildId)
             .IsRequired();
 
-        builder.HasIndex(channel => channel.Id).IsUnique();
-
         base.Configure(builder);
     }
 }
