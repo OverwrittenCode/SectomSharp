@@ -51,6 +51,16 @@ public partial class AdminModule
                         return;
                     }
 
+                    guild.BotLogChannels.Add(
+                        new()
+                        {
+                            Id = logChannel.Id,
+                            GuildId = Context.Guild.Id,
+                            BotLogType = action,
+                            OperationType = operation,
+                        }
+                    );
+
                     await db.SaveChangesAsync();
                 }
 
