@@ -3,13 +3,13 @@ using Discord.WebSocket;
 
 namespace SectomSharp.Events;
 
-public sealed class InteractionEvent
+public sealed partial class DiscordEvent
 {
     private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactionService;
 
-    public InteractionEvent(
+    public DiscordEvent(
         IServiceProvider services,
         DiscordSocketClient client,
         InteractionService interactionService
@@ -18,11 +18,5 @@ public sealed class InteractionEvent
         _services = services;
         _client = client;
         _interactionService = interactionService;
-    }
-
-    public async Task OnInteractionCreated(SocketInteraction interaction)
-    {
-        var ctx = new SocketInteractionContext(_client, interaction);
-        await _interactionService.ExecuteCommandAsync(ctx, _services);
     }
 }

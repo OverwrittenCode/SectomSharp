@@ -8,28 +8,25 @@ namespace SectomSharp.Services;
 internal sealed class EventService
 {
     private readonly DiscordSocketClient _client;
-    private readonly InteractionEvent _interactionEvent;
-    private readonly ReadyEvent _readyEvent;
+    private readonly DiscordEvent _discord;
     private readonly InteractionService _interactionService;
 
     public EventService(
         DiscordSocketClient client,
-        InteractionEvent interactionEvent,
-        ReadyEvent readyEvent,
+        DiscordEvent discord,
         InteractionService interactionService
     )
     {
         _client = client;
-        _interactionEvent = interactionEvent;
-        _readyEvent = readyEvent;
+        _discord = discord;
         _interactionService = interactionService;
     }
 
     public void RegisterEvents()
     {
-        _client.Ready += _readyEvent.OnReady;
+        _client.Ready += _discord.OnReady;
 
-        _client.InteractionCreated += _interactionEvent.OnInteractionCreated;
+        _client.InteractionCreated += _discord.OnInteractionCreated;
 
         _interactionService.SlashCommandExecuted += async (arg1, context, result) =>
         {
