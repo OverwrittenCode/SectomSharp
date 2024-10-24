@@ -2,7 +2,7 @@ using Discord;
 
 namespace SectomSharp.Extensions;
 
-internal static class InteractionExtensions
+internal static class DiscordExtensions
 {
     /// <summary>
     ///     Asynchronously responds or follows up an module
