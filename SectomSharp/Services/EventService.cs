@@ -36,7 +36,7 @@ internal sealed class EventService
         _client.ChannelDestroyed += _discord.HandleChannelDestroyedAsync;
         _client.ChannelUpdated += _discord.HandleChannelUpdatedAsync;
 
-        _interactionService.SlashCommandExecuted += async (arg1, context, result) =>
+        _interactionService.SlashCommandExecuted += async (_, context, result) =>
         {
             if (!result.IsSuccess)
             {

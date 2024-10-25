@@ -53,7 +53,6 @@ internal sealed class SelectMenuPaginationBuilder
     /// </summary>
     /// <param name="timeout"></param>
     /// <returns>The current builder.</returns>
-    /// <inheritdoc cref="ValidateTimeout(Int32)"/>
     public SelectMenuPaginationBuilder WithTimeout(int timeout)
     {
         Timeout = timeout;
@@ -73,7 +72,6 @@ internal sealed class SelectMenuPaginationBuilder
     /// <summary>
     ///     Initialises a new instance of the <see cref="SelectMenuPaginationBuilder"/> class.
     /// </summary>
-    /// <param name="timeout">The timeout duration for the pagination.</param>
     /// <param name="placeholder">The placeholder text for the select menu.</param>
     public SelectMenuPaginationBuilder(string placeholder = "Select an item")
     {

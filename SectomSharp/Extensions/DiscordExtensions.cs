@@ -5,7 +5,7 @@ namespace SectomSharp.Extensions;
 internal static class DiscordExtensions
 {
     /// <summary>
-    ///     Asynchronously responds or follows up an module
+    ///     Asynchronously responds or follows up a module
     ///     based on <see cref="IDiscordInteraction.HasResponded"/>.
     /// </summary>
     /// <returns>
@@ -62,6 +62,6 @@ internal static class DiscordExtensions
     public static string ToHyperlinkedColourPicker(this Color colour) =>
         Format.Url(
             colour.ToString(),
-            $"https://imagecolorpicker.com/color-code/{String.Format("{0:X6}", colour.RawValue)}"
+            $"https://imagecolorpicker.com/color-code/{colour.RawValue:X6}"
         );
 }

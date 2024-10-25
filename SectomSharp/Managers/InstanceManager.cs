@@ -42,7 +42,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     protected InstanceManager(string? id = null)
     {
         Id = id ?? StringUtils.GenerateUniqueId();
-        T instance = (T)this;
+        var instance = (T)this;
         Instances[instance.Id] = instance;
     }
 
@@ -80,7 +80,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
             CancelCleanup();
 
             _timeoutCts = new CancellationTokenSource();
-            var token = _timeoutCts.Token;
+            CancellationToken token = _timeoutCts.Token;
 
             _expirationTimer?.Dispose();
             _expirationTimer = new Timer(
@@ -119,7 +119,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     ///     Removes this instance from the static instance collection.
     /// </summary>
     /// <inheritdoc cref="ThrowIfDisposed" path="/exception"/>
-    protected void RemoveInstance()
+    private void RemoveInstance()
     {
         ThrowIfDisposed();
         Instances.Remove(Id);
@@ -129,7 +129,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     ///     Cancels any pending cleanup operation and disposes associated resources.
     /// </summary>
     /// <inheritdoc cref="ThrowIfDisposed" path="/exception"/>
-    protected void CancelCleanup()
+    private void CancelCleanup()
     {
         ThrowIfDisposed();
 
@@ -161,16 +161,18 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     /// </param>
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposedValue)
+        if (_disposedValue)
         {
-            if (disposing)
-            {
-                CancelCleanup();
-                RemoveInstance();
-            }
-
-            _disposedValue = true;
+            return;
         }
+
+        if (disposing)
+        {
+            CancelCleanup();
+            RemoveInstance();
+        }
+
+        _disposedValue = true;
     }
 
     /// <summary>

@@ -24,12 +24,12 @@ internal sealed class RegexComponentInteractionAttribute : ComponentInteractionA
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
 internal sealed class RegexComponentInteractionAttribute<T> : ComponentInteractionAttribute
 {
-    /// <inheritdoc cref="RegexComponentInteractionAttribute{T}.RegexComponentInteractionAttribute(RunMode, global::System.String[])"/>
+    /// <inheritdoc cref="RegexComponentInteractionAttribute{T}(RunMode, global::System.String[])" />
     public RegexComponentInteractionAttribute(params string[] wildcardNames)
         : this(RunMode.Default, wildcardNames) { }
 
     /// <inheritdoc cref="RegexComponentInteractionAttribute(RunMode, String, global::System.String[])"/>
-    public RegexComponentInteractionAttribute(
+    private RegexComponentInteractionAttribute(
         RunMode runMode = RunMode.Default,
         params string[] wildcardNames
     )

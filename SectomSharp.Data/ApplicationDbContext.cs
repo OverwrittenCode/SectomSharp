@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using SectomSharp.Data.Configurations;
@@ -48,20 +49,15 @@ public sealed class ApplicationDbContext : DbContext
 
     private void UpdateEntities()
     {
-        var entries = ChangeTracker
+        IEnumerable<EntityEntry> entries = ChangeTracker
             .Entries()
-            .Where(entry =>
-                entry is { Entity: BaseEntity, State: EntityState.Added or EntityState.Modified }
-            );
+            .Where(entry => entry is { Entity: BaseEntity, State: EntityState.Modified });
 
-        foreach (var entry in entries)
+        foreach (EntityEntry entry in entries)
         {
-            if (entry.Entity is BaseEntity baseEntity)
+            if (entry is { Entity: BaseEntity baseEntity, State: EntityState.Modified })
             {
-                if (entry.State == EntityState.Modified)
-                {
-                    baseEntity.UpdatedAt = DateTime.UtcNow;
-                }
+                baseEntity.UpdatedAt = DateTime.UtcNow;
             }
         }
     }

@@ -11,12 +11,12 @@ internal sealed class ButtonPaginationBuilder
     /// <summary>
     ///     Gets or sets the list of embeds used in the pagination.
     /// </summary>
-    public List<Embed> Embeds { get; set; } = [];
+    public List<Embed> Embeds { get; init; } = [];
 
     /// <summary>
     ///     Gets or sets the list of extra action rows to be added to the pagination.
     /// </summary>
-    public List<ActionRowBuilder> ExtraActionRows { get; set; } = [];
+    private List<ActionRowBuilder> ExtraActionRows { get; } = [];
 
     /// <summary>
     ///     Gets or sets the timeout duration for the pagination in seconds.
@@ -26,14 +26,13 @@ internal sealed class ButtonPaginationBuilder
     /// <summary>
     ///     Gets or sets a value indicating whether the pagination response should be ephemeral.
     /// </summary>
-    public bool IsEphemeral { get; set; }
+    private bool IsEphemeral { get; set; }
 
     /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
     /// </summary>
     /// <param name="timeout"></param>
     /// <returns>The current builder.</returns>
-    /// <inheritdoc cref="ValidateTimeout(Int32)"/>
     public ButtonPaginationBuilder WithTimeout(int timeout)
     {
         Timeout = timeout;

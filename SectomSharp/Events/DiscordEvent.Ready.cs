@@ -22,6 +22,6 @@ public partial class DiscordEvent
         );
 
         await interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
-        await interactions.RegisterCommandsToGuildAsync(Constants.ServerID);
+        await interactions.RegisterCommandsToGuildAsync(Constants.ServerId);
     }
 }

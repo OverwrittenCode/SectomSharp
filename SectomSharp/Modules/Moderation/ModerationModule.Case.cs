@@ -22,7 +22,7 @@ public partial class ModerationModule
         {
             await DeferAsync();
 
-            using var dbContext = new ApplicationDbContext();
+            await using var dbContext = new ApplicationDbContext();
 
             var @case = await dbContext.Cases.FindAsync(id, Context.Guild.Id);
 
@@ -51,7 +51,7 @@ public partial class ModerationModule
         {
             await DeferAsync();
 
-            using var dbContext = new ApplicationDbContext();
+            await using var dbContext = new ApplicationDbContext();
 
             var query = dbContext
                 .Cases.Where(@case => @case.GuildId == Context.Guild.Id)
@@ -100,18 +100,18 @@ public partial class ModerationModule
                 return;
             }
 
-            var embedDescriptions = cases
+            List<string> embedDescriptions = cases
                 .Select(@case =>
                     $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {TimestampTag.FormatFromDateTime(@case.CreatedAt, TimestampTagStyles.Relative)}"
                 )
                 .ToList();
 
-            var embeds = ButtonPaginationManager.GetEmbeds(
+            Embed[] embeds = ButtonPaginationManager.GetEmbeds(
                 embedDescriptions,
                 $"{Context.Guild.Name} Cases ({cases.Count})"
             );
 
-            var pagination = new ButtonPaginationBuilder() { Embeds = [.. embeds] };
+            ButtonPaginationBuilder pagination = new() { Embeds = [.. embeds] };
 
             await pagination.Build().Init(Context);
         }

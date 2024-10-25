@@ -17,15 +17,15 @@ public partial class DiscordEvent
         IEnumerable<AuditLogEntry> entries,
         string footerPrefix,
         string authorName,
-        string? authorIconURL = null,
+        string? authorIconUrl = null,
         Color? colour = null
     )
     {
         DiscordWebhookClient webhookClient;
 
-        using (var db = new ApplicationDbContext())
+        await using (var db = new ApplicationDbContext())
         {
-            var logChannels = await db
+            ICollection<AuditLogChannel>? logChannels = await db
                 .Guilds.Where(x => x.Id == guild.Id)
                 .AsNoTracking()
                 .Include(x => x.AuditLogChannels)
@@ -33,9 +33,8 @@ public partial class DiscordEvent
                 .FirstOrDefaultAsync();
 
             if (
-                logChannels is null
-                || logChannels.FirstOrDefault(channel => channel.AuditLogType.HasFlag(auditLogType))
-                    is not AuditLogChannel auditLogChannel
+                logChannels?.FirstOrDefault(channel => channel.AuditLogType.HasFlag(auditLogType))
+                is not { } auditLogChannel
             )
             {
                 return;
@@ -47,7 +46,7 @@ public partial class DiscordEvent
         try
         {
             var embed = new EmbedBuilder()
-                .WithAuthor(authorName, authorIconURL)
+                .WithAuthor(authorName, authorIconUrl)
                 .WithColor(
                     colour
                         ?? operationType switch

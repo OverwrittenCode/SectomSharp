@@ -28,7 +28,7 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                using (var db = new ApplicationDbContext())
+                await using (var db = new ApplicationDbContext())
                 {
                     var guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
@@ -86,7 +86,7 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                using (var db = new ApplicationDbContext())
+                await using (var db = new ApplicationDbContext())
                 {
                     var guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
@@ -101,17 +101,15 @@ public partial class AdminModule
 
                     if (auditLogChannel is null)
                     {
-                        var webhook =
+                        IWebhook webhook =
                             (await logChannel.GetWebhooksAsync()).FirstOrDefault(webhook =>
                                 webhook.Creator.Id == Context.Guild.CurrentUser.Id
                             )
-                            ?? (
-                                await logChannel.CreateWebhookAsync(
-                                    Context.Guild.CurrentUser.DisplayName,
-                                    options: DiscordUtils.GetAuditReasonRequestOptions(
-                                        Context,
-                                        "Automated request for audit logging."
-                                    )
+                            ?? await logChannel.CreateWebhookAsync(
+                                Context.Guild.CurrentUser.DisplayName,
+                                options: DiscordUtils.GetAuditReasonRequestOptions(
+                                    Context,
+                                    "Automated request for audit logging."
                                 )
                             );
 
@@ -153,7 +151,7 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                using (var db = new ApplicationDbContext())
+                await using (var db = new ApplicationDbContext())
                 {
                     var guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
@@ -169,7 +167,7 @@ public partial class AdminModule
                     }
 
                     var botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
-                        channel.Id == options.LogChannel.Id
+                        channel.Id == logChannel.Id
                     );
 
                     if (botLogChannel is null)
@@ -195,7 +193,7 @@ public partial class AdminModule
                     await db.SaveChangesAsync();
                 }
 
-                await LogAsync(Context, options.Reason, options.LogChannel.Id);
+                await LogAsync(Context, reason, options.LogChannel.Id);
             }
 
             [SlashCommand("remove-audit-log", "Remove an audit log channel configuration")]
@@ -207,7 +205,7 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                using (var db = new ApplicationDbContext())
+                await using (var db = new ApplicationDbContext())
                 {
                     var guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
@@ -223,7 +221,7 @@ public partial class AdminModule
                     }
 
                     var auditLogChannel = guild.AuditLogChannels.FirstOrDefault(channel =>
-                        channel.Id == options.LogChannel.Id
+                        channel.Id == logChannel.Id
                     );
 
                     if (auditLogChannel is null)
@@ -249,10 +247,10 @@ public partial class AdminModule
                     await db.SaveChangesAsync();
                 }
 
-                await LogAsync(Context, options.Reason, options.LogChannel.Id);
+                await LogAsync(Context, reason, logChannel.Id);
             }
 
-            public async Task ViewAsync<TChannel, TLogType>(
+            private async Task ViewAsync<TChannel, TLogType>(
                 string titleSuffix,
                 TLogType[] logTypes,
                 Func<Guild, ICollection<TChannel>> channelSelector,
@@ -264,9 +262,9 @@ public partial class AdminModule
             {
                 await DeferAsync();
 
-                using var db = new ApplicationDbContext();
+                await using var db = new ApplicationDbContext();
 
-                var query = db.Guilds.Where(guild => guild.Id == Context.Guild.Id);
+                IQueryable<Guild> query = db.Guilds.Where(guild => guild.Id == Context.Guild.Id);
 
                 query = withInclude(query);
 
@@ -317,7 +315,7 @@ public partial class AdminModule
                     $"{Context.Guild.Name} {titleSuffix}"
                 );
 
-                var pagination = new ButtonPaginationBuilder() { Embeds = [.. embeds] };
+                var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
 
                 await pagination.Build().Init(Context);
             }

@@ -124,7 +124,7 @@ public partial class DiscordEvent
             new("Position", details.Position),
         ];
 
-        if (details.CategoryId is ulong categoryId)
+        if (details.CategoryId is { } categoryId)
         {
             entries.Add(new("Category", categoryId));
         }
@@ -139,17 +139,17 @@ public partial class DiscordEvent
             entries.Add(new("NSFW", true));
         }
 
-        if (details.SlowMode is int slowmode and > 0)
+        if (details.SlowMode is { } slowmode and > 0)
         {
             entries.Add(new("Slowmode", TimeSpan.FromSeconds(slowmode)));
         }
 
-        if (details.Bitrate is int bitrate)
+        if (details.Bitrate is { } bitrate)
         {
             entries.Add(new("Bitrate", bitrate));
         }
 
-        if (details.UserLimit is int userLimit)
+        if (details.UserLimit is { } userLimit)
         {
             entries.Add(new("User Limit", userLimit));
         }
@@ -276,7 +276,7 @@ public partial class DiscordEvent
                 string value = "";
                 switch (beforeOverwrite, afterOverwrite)
                 {
-                    case (Overwrite prev, Overwrite curr):
+                    case ({ } prev, { } curr):
                         var beforeAllowed = prev.Permissions.ToAllowList();
                         var afterAllowed = curr.Permissions.ToAllowList();
                         var newlyAllowed = afterAllowed.Except(beforeAllowed).ToList();
@@ -285,14 +285,14 @@ public partial class DiscordEvent
                         value = FormatPermissionLists(newlyAllowed, newlyDenied);
 
                         break;
-                    case (null, Overwrite added):
+                    case (null, { } added):
                         value = FormatPermissionLists(
                             added.Permissions.ToAllowList(),
                             added.Permissions.ToDenyList()
                         );
 
                         break;
-                    case (Overwrite removed, null):
+                    case ({ } removed, null):
                         value = FormatPermissionLists(
                             removed.Permissions.ToAllowList(),
                             removed.Permissions.ToDenyList()

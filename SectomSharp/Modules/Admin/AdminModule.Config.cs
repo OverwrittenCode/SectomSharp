@@ -9,15 +9,15 @@ public partial class AdminModule
     [Group("config", "Master configuration of the server")]
     public sealed partial class ConfigModule : BaseModule
     {
-        internal const string AlreadyConfiguredMessage =
+        private const string AlreadyConfiguredMessage =
             "You cannot add this new configuration as there is already a matching configuration.";
 
-        internal const string NotConfiguredMessage =
+        private const string NotConfiguredMessage =
             "You cannot remove this configuration as it has not been configured.";
 
-        internal const string NothingToView = "Nothing to view yet.";
+        private const string NothingToView = "Nothing to view yet.";
 
-        internal static async Task LogAsync(
+        private static async Task LogAsync(
             SocketInteractionContext context,
             string? reason = null,
             ulong? channelId = null

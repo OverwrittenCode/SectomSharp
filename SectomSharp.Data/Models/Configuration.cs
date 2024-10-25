@@ -4,5 +4,5 @@ public sealed class Configuration
 {
     public int Id { get; set; }
 
-    public WarningConfiguration Warning { get; set; } = new();
+    public WarningConfiguration Warning { get; init; } = new();
 }

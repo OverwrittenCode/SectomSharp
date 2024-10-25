@@ -4,8 +4,8 @@ namespace SectomSharp.Data.Models;
 
 public sealed class WarningThreshold
 {
-    public required BotLogType LogType { get; set; }
-    public required int Value { get; set; }
+    public required BotLogType LogType { get; init; }
+    public required int Value { get; init; }
 
-    public TimeSpan? Span { get; set; }
+    public TimeSpan? Span { get; init; }
 }

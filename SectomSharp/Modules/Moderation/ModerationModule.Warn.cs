@@ -27,24 +27,20 @@ public partial class ModerationModule
         );
 
         if (
-            guildEntity.Configuration is Configuration
+            guildEntity.Configuration is
             {
-                Warning: WarningConfiguration
+                Warning: not null
                     and { IsDisabled: false, Thresholds: var thresholds and { Count: > 0 } }
             }
         )
         {
-            var count = guildEntity
-                .Cases.Where(@case =>
-                    /// Include GuildId to fully utilise the index in <see cref="Data.Configurations.CaseConfiguration"/>.
-                    @case.GuildId == guildEntity.Id
-                    && @case.TargetId == user.Id
-                    && @case.LogType == BotLogType.Warn
-                    && @case.OperationType == OperationType.Create
-                )
-                .Count();
+            var count = guildEntity.Cases.Count(@case =>
+                @case.GuildId == guildEntity.Id
+                && @case.TargetId == user.Id
+                && @case is { LogType: BotLogType.Warn, OperationType: OperationType.Create }
+            );
 
-            var orderedThresholds = thresholds
+            WarningThreshold[] orderedThresholds = thresholds
                 .Where(threshold => count <= threshold.Value)
                 .OrderByDescending(threshold => threshold.Value)
                 .Take(2)
@@ -55,7 +51,7 @@ public partial class ModerationModule
                 return;
             }
 
-            var punishmentThreshold =
+            WarningThreshold punishmentThreshold =
                 orderedThresholds.Length == 2 && orderedThresholds[1].Value == count
                     ? orderedThresholds[1]
                     : orderedThresholds[0];
@@ -77,7 +73,7 @@ public partial class ModerationModule
                     reason: $"A configured threshold was matched for {warningDisplayText}."
                 );
 
-            var botPermissions = Context.Guild.CurrentUser.GuildPermissions;
+            GuildPermissions botPermissions = Context.Guild.CurrentUser.GuildPermissions;
 
             switch (punishmentThreshold.LogType)
             {
@@ -115,7 +111,7 @@ public partial class ModerationModule
                             return;
                         }
 
-                        if (punishmentThreshold.Span is not TimeSpan span)
+                        if (punishmentThreshold.Span is not { } span)
                         {
                             throw new InvalidOperationException(
                                 $"{punishmentThreshold.LogType} requires a timespan."

@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using Discord.Net;
 using Discord.Rest;
 using SectomSharp.Extensions;
 using SectomSharp.Utils;
@@ -27,21 +28,19 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
     private static Embed[] ToSanitisedEmbeds(string title, List<string> chunks)
     {
-        var embeds = new List<Embed>();
-
         if (chunks.Count == 1)
         {
             return [GetEmbedBuilder(chunks[0], title).Build()];
         }
 
-        for (var i = 0; i < chunks.Count; i++)
-        {
-            var embed = GetEmbedBuilder(chunks[i], title)
-                .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
-                .Build();
-
-            embeds.Add(embed);
-        }
+        List<Embed> embeds = chunks
+            .Select(
+                (t, i) =>
+                    GetEmbedBuilder(t, title)
+                        .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
+                        .Build()
+            )
+            .ToList();
 
         return [.. embeds];
     }
@@ -55,13 +54,15 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <param name="description">The content to display in the embed.</param>
     /// <param name="title">The title of the embed.</param>
     /// <returns>A configured EmbedBuilder instance.</returns>
-    public static EmbedBuilder GetEmbedBuilder(string description, string title) =>
-        new()
+    private static EmbedBuilder GetEmbedBuilder(string description, string title)
+    {
+        return new()
         {
             Description = description,
             Title = title,
             Color = Constants.LightGold,
         };
+    }
 
     /// <summary>
     ///     Creates an array of embeds by splitting content into chunks if it exceeds Discord's maximum length.
@@ -89,7 +90,8 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <summary>
     ///     Creates an array of embeds by splitting <paramref name="strings"/> into chunks of <see cref="ChunkSize"/>.
     /// </summary>
-    /// <param name="strings">The strings to split into chunks</param>
+    /// <param name="strings">The strings to split into chunks.</param>
+    /// <param name="title">The title of each embed.</param>
     /// <inheritdoc cref="GetEmbeds(String, String)" path="/param[@name='title']"/>
     /// <returns>An array of embed objects.</returns>
     /// <exception cref="InvalidOperationException">
@@ -99,7 +101,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     {
         var chunks = new List<string>();
 
-        for (int i = 0; i < strings.Count; i += ChunkSize)
+        for (var i = 0; i < strings.Count; i += ChunkSize)
         {
             var chunk = String.Join(
                 "\n",
@@ -130,12 +132,12 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <summary>
     ///     Gets the time in seconds to wait before invoking <see cref="CleanupAsync"/>.
     /// </summary>
-    public int Timeout { get; }
+    protected int Timeout { get; }
 
     /// <summary>
     ///     Gets whether the pagination response should be ephemeral.
     /// </summary>
-    public bool IsEphemeral { get; }
+    protected bool IsEphemeral { get; }
 
     /// <summary>
     ///     Initialises a new instance of the <typeparamref name="T"/> class with specified visibility settings.
@@ -151,7 +153,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <param name="timeout">
     ///     The time in seconds to wait before invoking <see cref="CleanupAsync"/>.
     /// </param>
-    /// <inheritdoc cref="InstanceManager{T}.InstanceManager(global::System.String?)" path="/param"/>
+    /// <inheritdoc cref="InstanceManager{T}(string?)" path="/param"/>
     /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
     protected BasePagination(int timeout, bool isEphemeral = false, string? id = null)
         : base(id)
@@ -218,7 +220,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
             foreach (var actionRow in componentBuilder.ActionRows)
             {
-                for (int i = 0; i < actionRow.Components.Count; i++)
+                for (var i = 0; i < actionRow.Components.Count; i++)
                 {
                     var component = actionRow.Components[i];
 
@@ -226,7 +228,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
                     {
                         case ComponentType.Button:
                             {
-                                var builder = ((ButtonComponent)component).ToBuilder();
+                                ButtonBuilder builder = ((ButtonComponent)component).ToBuilder();
                                 builder.IsDisabled = true;
                                 actionRow.Components[i] = builder.Build();
                             }
@@ -235,7 +237,9 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
                         case ComponentType.SelectMenu:
                             {
-                                var builder = ((SelectMenuComponent)component).ToBuilder();
+                                SelectMenuBuilder builder = (
+                                    (SelectMenuComponent)component
+                                ).ToBuilder();
                                 builder.IsDisabled = true;
                                 actionRow.Components[i] = builder.Build();
                             }
@@ -252,14 +256,13 @@ internal abstract class BasePagination<T> : InstanceManager<T>
                 }
             }
 
-            var components = componentBuilder.Build();
+            MessageComponent components = componentBuilder.Build();
 
             await Message.ModifyAsync(props =>
             {
                 props.Components = components;
             });
         }
-        catch (Discord.Net.HttpException ex)
-            when (ex.DiscordCode == DiscordErrorCode.UnknownMessage) { }
+        catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMessage) { }
     }
 }

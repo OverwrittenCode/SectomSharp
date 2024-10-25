@@ -13,9 +13,10 @@ public partial class MiscModule
     [SlashCommand("help", "Displays a help menu")]
     public async Task Help()
     {
-        var groupedItems = _commands.SlashCommands.GroupBy(cmd =>
-            (CategoryAttribute)cmd.Module.Attributes.First(attr => attr is CategoryAttribute)
-        );
+        IEnumerable<IGrouping<CategoryAttribute, SlashCommandInfo>> groupedItems =
+            _commands.SlashCommands.GroupBy(cmd =>
+                (CategoryAttribute)cmd.Module.Attributes.First(attr => attr is CategoryAttribute)
+            );
 
         var categoryConfig = new CategoryConfig<CategoryAttribute>
         {

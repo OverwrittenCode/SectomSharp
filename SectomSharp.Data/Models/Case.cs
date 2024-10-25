@@ -19,6 +19,6 @@ public sealed class Case : BaseOneToManyGuildRelation
     public required OperationType OperationType { get; init; }
 
     public DateTime? ExpiresAt { get; init; }
-    public string? Reason { get; set; }
-    public string? LogMessageURL { get; set; }
+    public string? Reason { get; init; }
+    public string? LogMessageUrl { get; set; }
 }

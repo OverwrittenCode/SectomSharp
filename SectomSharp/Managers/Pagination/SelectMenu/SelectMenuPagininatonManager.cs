@@ -53,11 +53,9 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         }
     }
 
-    private readonly SelectMenuBuilder _selectMenuBuilder;
     private readonly List<KeyValuePair<string, SelectMenuPaginatorPage>> _optionKvp;
     private readonly SelectMenuResponse _responseType;
     private readonly SelectMenuPaginatorPage _firstPage;
-    private readonly bool _isStickySelectMenu;
 
     /// <summary>
     ///     Initialises a new instance of the <see cref="SelectMenuPaginationManager"/> class.
@@ -71,7 +69,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
     ///     <see langword="true"/>; all pages
     ///     <see langword="false"/>; the first page
     /// </param>
-    /// <inheritdoc cref="BasePagination{T}.BasePagination(Int32, Boolean, global::System.String?)"/>
+    /// <inheritdoc cref="BasePagination{T}(Int32, Boolean, global::System.String?)"/>
     public SelectMenuPaginationManager(
         SelectMenuBuilder selectMenuBuilder,
         List<KeyValuePair<string, SelectMenuPaginatorPage>> optionKvp,
@@ -83,19 +81,19 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
     )
         : base(timeout, isEphemeral, id)
     {
-        _selectMenuBuilder = selectMenuBuilder.WithComponentId<SelectMenuPaginationManager>(Id);
+        SelectMenuBuilder selectMenuBuilder1 =
+            selectMenuBuilder.WithComponentId<SelectMenuPaginationManager>(Id);
         _optionKvp = optionKvp;
         _responseType = replyType;
         _firstPage = _optionKvp.First().Value;
-        _isStickySelectMenu = isStickySelectMenu;
 
-        var actionRow = new ActionRowBuilder() { Components = [_selectMenuBuilder.Build()] };
+        var actionRow = new ActionRowBuilder { Components = [selectMenuBuilder1.Build()] };
 
-        if (_isStickySelectMenu)
+        if (isStickySelectMenu)
         {
-            for (var i = 0; i < _optionKvp.Count; i++)
+            foreach (KeyValuePair<string, SelectMenuPaginatorPage> pair in _optionKvp)
             {
-                _optionKvp[i].Value.ActionRows.Insert(0, actionRow);
+                pair.Value.ActionRows.Insert(0, actionRow);
             }
         }
         else

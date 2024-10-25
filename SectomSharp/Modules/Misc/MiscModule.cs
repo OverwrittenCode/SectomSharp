@@ -1,6 +1,5 @@
 using Discord;
 using Discord.Interactions;
-using Microsoft.Extensions.DependencyInjection;
 using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Misc;
@@ -12,7 +11,7 @@ public sealed partial class MiscModule : BaseModule
 {
     private readonly InteractionService _commands;
 
-    public MiscModule(InteractionService commands, IServiceScopeFactory scopeFactory)
+    public MiscModule(InteractionService commands)
     {
         _commands = commands;
     }

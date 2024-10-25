@@ -24,7 +24,7 @@ public partial class ModerationModule
             return;
         }
 
-        var operationType = user.TimedOutUntil is null
+        OperationType operationType = user.TimedOutUntil is null
             ? OperationType.Create
             : OperationType.Update;
 

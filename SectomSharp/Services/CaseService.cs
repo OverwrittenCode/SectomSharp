@@ -24,7 +24,7 @@ internal sealed class CaseService
     {
         Dictionary<string, object> kvp = [];
 
-        if (@case.UpdatedAt is DateTime updatedAt)
+        if (@case.UpdatedAt is { } updatedAt)
         {
             kvp["Modified"] = TimestampTag.FormatFromDateTime(
                 updatedAt,
@@ -32,12 +32,12 @@ internal sealed class CaseService
             );
         }
 
-        if (@case.ExpiresAt is DateTime expiresAt)
+        if (@case.ExpiresAt is { } expiresAt)
         {
             kvp["Expiry"] = TimestampTag.FormatFromDateTime(expiresAt, TimestampTagStyles.Relative);
         }
 
-        if (@case.ChannelId is ulong channelId)
+        if (@case.ChannelId is { } channelId)
         {
             kvp["Channel"] = MentionUtils.MentionChannel(channelId);
         }
@@ -61,12 +61,12 @@ internal sealed class CaseService
                 .WithTimestamp(@case.CreatedAt);
         var dmLog = GetEmbed();
 
-        if (@case.PerpetratorId is ulong perpetratorId)
+        if (@case.PerpetratorId is { } perpetratorId)
         {
             kvp["Perpetrator"] = MentionUtils.MentionUser(perpetratorId);
         }
 
-        if (@case.TargetId is ulong targetId)
+        if (@case.TargetId is { } targetId)
         {
             kvp["Target"] = MentionUtils.MentionUser(targetId);
         }
@@ -79,19 +79,19 @@ internal sealed class CaseService
     /// <summary>
     ///     Generates a <see cref="MessageComponent"/>.
     /// </summary>
-    /// <inheritdoc cref="GenerateLogEmbedTemplate(Case)" path="/param"/>
+    /// <inheritdoc cref="GenerateLogEmbeds" path="/param"/>
     /// <returns>A <see cref="MessageComponent"/>.</returns>
     /// <value>
-    ///     If <see cref="Case.LogMessageURL"/> is <see langword="string"/>;
+    ///     If <see cref="Case.LogMessageUrl"/> is <see langword="string"/>;
     ///         a component with the log message button.<br/>
-    ///     If <see cref="Case.LogMessageURL"/> is <see langword="null"/>;
+    ///     If <see cref="Case.LogMessageUrl"/> is <see langword="null"/>;
     ///         an empty component.
     /// </value>
     public static MessageComponent GenerateLogMessageButton(Case @case)
     {
         var component = new ComponentBuilder();
 
-        if (@case.LogMessageURL is string url)
+        if (@case.LogMessageUrl is { } url)
         {
             component.AddRow(
                 new ActionRowBuilder().AddComponent(
@@ -111,8 +111,8 @@ internal sealed class CaseService
     /// <summary>
     ///     Creates a new case, logs it, and notifies relevant parties.
     /// </summary>
-    /// <inheritdoc cref="GenerateLogEmbedTemplate(Case)" path="/param"/>
-    /// <param name="context">The interactionContext interactionContext.</param>
+    /// <inheritdoc cref="GenerateLogEmbeds" path="/param"/>
+    /// <param name="context">The interaction context.</param>
     /// <param name="logType">The log type.</param>
     /// <param name="operationType">The operation type.</param>
     /// <param name="targetId">The targeted user.</param>
@@ -145,11 +145,11 @@ internal sealed class CaseService
             await context.Interaction.DeferAsync();
         }
 
-        var perpetratorKey = perpetratorId ??= context.User.Id;
+        var perpetratorKey = perpetratorId ?? context.User.Id;
 
         var @case = new Case()
         {
-            Id = StringUtils.GenerateUniqueId(IdLength),
+            Id = StringUtils.GenerateUniqueId(),
             PerpetratorId = perpetratorKey,
             TargetId = targetId,
             ChannelId = channelId,
@@ -164,7 +164,7 @@ internal sealed class CaseService
 
         Guild guildEntity;
 
-        using (var db = new ApplicationDbContext())
+        await using (var db = new ApplicationDbContext())
         {
             List<User> users = [];
 
@@ -181,15 +181,13 @@ internal sealed class CaseService
             }
 
             if (
-                targetId is ulong targetKey1
-                && (
-                    await db
-                        .Users.Where(target =>
-                            target.Id == targetKey1 && target.GuildId == context.Guild.Id
-                        )
-                        .SingleOrDefaultAsync()
+                targetId is { } targetKey1
+                && await db
+                    .Users.Where(target =>
+                        target.Id == targetKey1 && target.GuildId == context.Guild.Id
+                    )
+                    .SingleOrDefaultAsync()
                     is null
-                )
             )
             {
                 users.Add(new() { Id = targetKey1, GuildId = context.Guild.Id });
@@ -218,7 +216,7 @@ internal sealed class CaseService
             }
             else if (
                 guild.BotLogChannels.FirstOrDefault(channel => channel.BotLogType.HasFlag(logType))
-                    is BotLogChannel botLogChannel
+                    is { } botLogChannel
                 && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id)
                     is ITextChannel logChannel
                 && context
@@ -227,7 +225,7 @@ internal sealed class CaseService
             )
             {
                 var message = await logChannel.SendMessageAsync(embeds: [serverLogEmbed.Build()]);
-                @case.LogMessageURL = message.GetJumpUrl();
+                @case.LogMessageUrl = message.GetJumpUrl();
             }
 
             guildEntity = guild;
@@ -238,7 +236,7 @@ internal sealed class CaseService
 
         bool? successfulDm = null;
 
-        if (targetId is ulong targetKey2)
+        if (targetId is { } targetKey2)
         {
             var component = new ComponentBuilder().WithButton(
                 $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),

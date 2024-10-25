@@ -3,16 +3,10 @@ using Discord.Interactions;
 
 namespace SectomSharp.Attributes;
 
-internal sealed record class RateLimitLog
+internal sealed record RateLimitLog
 {
-    public DateTime LastExecutedAt { get; set; }
-    public ICommandInfo CommandInfo { get; init; }
-
-    public RateLimitLog(ICommandInfo commandInfo)
-    {
-        CommandInfo = commandInfo;
-        LastExecutedAt = DateTime.UtcNow;
-    }
+    public DateTime LastExecutedAt { get; set; } = DateTime.UtcNow;
+    public required ICommandInfo CommandInfo { get; init; }
 }
 
 /// <summary>
@@ -70,7 +64,10 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
         {
             _rateLimits[userId] = new Dictionary<string, RateLimitLog>
             {
-                { commandName, new RateLimitLog(commandInfo) },
+                {
+                    commandName,
+                    new() { CommandInfo = commandInfo }
+                },
             };
 
             return Task.FromResult(PreconditionResult.FromSuccess());
@@ -96,7 +93,7 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
         }
         else
         {
-            userRateLimits[commandName] = new RateLimitLog(commandInfo);
+            userRateLimits[commandName] = new() { CommandInfo = commandInfo };
         }
 
         return Task.FromResult(PreconditionResult.FromSuccess());

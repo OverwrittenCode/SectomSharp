@@ -37,9 +37,9 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                using (var db = new ApplicationDbContext())
+                await using (var db = new ApplicationDbContext())
                 {
-                    var guild = await db.Guilds.FindAsync(Context.Guild.Id);
+                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
 
                     if (guild is null)
                     {
@@ -84,7 +84,7 @@ public partial class AdminModule
             {
                 await DeferAsync();
 
-                using (var db = new ApplicationDbContext())
+                await using (var db = new ApplicationDbContext())
                 {
                     var guild = await db.Guilds.FindAsync(Context.Guild.Id);
 
@@ -147,15 +147,15 @@ public partial class AdminModule
                 [MaxLength(CaseService.MaxReasonLength)] string? reason = null
             ) => await RemovePunishmentAsync(threshold, reason, BotLogType.Ban);
 
-            public async Task SetIsDisabledAsync(bool isDisabled, string? reason)
+            private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
             {
                 await DeferAsync();
 
                 Configuration disabledEntry = new() { Warning = new() { IsDisabled = isDisabled } };
 
-                using var db = new ApplicationDbContext();
+                await using var db = new ApplicationDbContext();
 
-                var guild = await db.Guilds.FindAsync(Context.Guild.Id);
+                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
                 if (guild is null)
                 {
                     await db.Guilds.AddAsync(
@@ -167,7 +167,7 @@ public partial class AdminModule
                     return;
                 }
 
-                if (guild.Configuration is not Configuration configuration)
+                if (guild.Configuration is not { } configuration)
                 {
                     guild.Configuration = disabledEntry;
 
@@ -202,7 +202,7 @@ public partial class AdminModule
             {
                 await DeferAsync();
 
-                using var db = new ApplicationDbContext();
+                await using var db = new ApplicationDbContext();
 
                 var guild = await db.Guilds.FindAsync(Context.Guild.Id);
 
@@ -216,7 +216,7 @@ public partial class AdminModule
                     return;
                 }
 
-                if (guild.Configuration is not Configuration { Warning: var warningConfiguration })
+                if (guild.Configuration is not { Warning: var warningConfiguration })
                 {
                     guild.Configuration = new();
                     await db.SaveChangesAsync();
@@ -236,20 +236,19 @@ public partial class AdminModule
                     .Thresholds.OrderBy(threshold => threshold.Value)
                     .Select(threshold =>
                     {
-                        var ordinalSuffix =
-                            (threshold.Value % 100 is >= 11 and <= 13)
-                                ? "th"
-                                : (threshold.Value % 10) switch
-                                {
-                                    1 => "st",
-                                    2 => "nd",
-                                    3 => "rd",
-                                    _ => "th",
-                                };
+                        var ordinalSuffix = threshold.Value % 100 is >= 11 and <= 13
+                            ? "th"
+                            : (threshold.Value % 10) switch
+                            {
+                                1 => "st",
+                                2 => "nd",
+                                3 => "rd",
+                                _ => "th",
+                            };
 
                         var strikePosition = threshold.Value + ordinalSuffix;
 
-                        var durationText = threshold.Span is not TimeSpan timeSpan
+                        var durationText = threshold.Span is not { } timeSpan
                             ? ""
                             : timeSpan switch
                             {

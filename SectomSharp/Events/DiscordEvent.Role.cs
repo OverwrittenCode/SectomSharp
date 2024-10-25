@@ -1,3 +1,4 @@
+using Discord;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
@@ -22,9 +23,9 @@ public partial class DiscordEvent
             new("Permissions", String.Join(", ", role.Permissions.ToList())),
         ];
 
-        if (role.GetIconUrl() is string iconURL)
+        if (role.GetIconUrl() is { } iconUrl)
         {
-            entries.Add(new("Icon", iconURL));
+            entries.Add(new("Icon", iconUrl));
         }
 
         await LogAsync(
@@ -34,7 +35,7 @@ public partial class DiscordEvent
             entries,
             footerPrefix: role.Id.ToString(),
             authorName: GetRoleDisplayName(role),
-            authorIconURL: role.GetIconUrl(),
+            role.GetIconUrl(),
             colour: role.Color
         );
     }
@@ -87,14 +88,16 @@ public partial class DiscordEvent
         {
             var (added, removed) = GetPermissionChanges(before.Permissions, after.Permissions);
 
-            if (added.Any())
+            List<GuildPermission> guildPermissions = added.ToList();
+            if (guildPermissions.Count != 0)
             {
-                entries.Add(new("Added Permissions", String.Join(", ", added)));
+                entries.Add(new("Added Permissions", String.Join(", ", guildPermissions)));
             }
 
-            if (removed.Any())
+            List<GuildPermission> permissions = removed.ToList();
+            if (permissions.Count != 0)
             {
-                entries.Add(new("Removed Permissions", String.Join(", ", removed)));
+                entries.Add(new("Removed Permissions", String.Join(", ", permissions)));
             }
         }
 

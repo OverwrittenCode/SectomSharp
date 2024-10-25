@@ -30,13 +30,10 @@ internal sealed class TimeoutRangeAttribute : ParameterPreconditionAttribute
             );
         }
 
-        if (timeSpan > Max)
-        {
-            return Task.FromResult(
-                PreconditionResult.FromError($"Duration cannot exceed {Max.Days}")
-            );
-        }
-
-        return Task.FromResult(PreconditionResult.FromSuccess());
+        return Task.FromResult(
+            timeSpan > Max
+                ? PreconditionResult.FromError($"Duration cannot exceed {Max.Days}")
+                : PreconditionResult.FromSuccess()
+        );
     }
 }

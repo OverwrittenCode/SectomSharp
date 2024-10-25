@@ -31,8 +31,10 @@ internal static class DiscordUtils
     /// <returns>
     ///     The URL for the message.
     /// </returns>
-    public static string GetMessageURL(ulong guildId, ulong channelId, ulong messageId) =>
-        $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
+    public static string GetMessageUrl(ulong guildId, ulong channelId, ulong messageId)
+    {
+        return $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
+    }
 
     /// <summary>
     ///     Creates a new instance of <see cref="RequestOptions"/>

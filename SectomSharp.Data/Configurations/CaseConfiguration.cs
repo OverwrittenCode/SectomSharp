@@ -29,7 +29,7 @@ internal sealed class CaseConfiguration : BaseEntityConfiguration<Case>
             .WithMany(channel => channel.Cases)
             .HasForeignKey(@case => @case.ChannelId);
 
-        builder.Property(@case => @case.ExpiresAt).HasColumnType(Constants.PostgreSQL.Timestamptz);
+        builder.Property(@case => @case.ExpiresAt).HasColumnType(Constants.PostgreSql.Timestamptz);
         builder.Property(@case => @case.LogType).IsRequired();
         builder.Property(@case => @case.OperationType).IsRequired();
 
