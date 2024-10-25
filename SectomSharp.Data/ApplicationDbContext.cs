@@ -11,11 +11,7 @@ public sealed class ApplicationDbContext : DbContext
 {
 #pragma warning disable CS0618 // Type or member is obsolete
     static ApplicationDbContext() =>
-        NpgsqlConnection
-            .GlobalTypeMapper.MapEnum<SnowflakeType>()
-            .MapEnum<OperationType>()
-            .MapEnum<AuditLogType>()
-            .MapEnum<BotLogType>();
+        NpgsqlConnection.GlobalTypeMapper.MapEnum<SnowflakeType>().MapEnum<OperationType>();
 #pragma warning restore CS0618 // Type or member is obsolete
 
     public DbSet<Guild> Guilds { get; set; } = null!;
@@ -30,8 +26,6 @@ public sealed class ApplicationDbContext : DbContext
         builder
             .HasPostgresEnum<SnowflakeType>()
             .HasPostgresEnum<OperationType>()
-            .HasPostgresEnum<AuditLogType>()
-            .HasPostgresEnum<BotLogType>()
             .ApplyConfiguration(new GuildConfiguration())
             .ApplyConfiguration(new SnowflakeConfiguration())
             .ApplyConfiguration(new UserConfiguration())

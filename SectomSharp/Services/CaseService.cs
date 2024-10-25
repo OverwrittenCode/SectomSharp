@@ -217,10 +217,7 @@ internal sealed class CaseService
                 await db.Guilds.AddAsync(guild);
             }
             else if (
-                guild.BotLogChannels.FirstOrDefault(channel =>
-                    channel.BotLogType == logType
-                    && (channel.OperationType is null || channel.OperationType == operationType)
-                )
+                guild.BotLogChannels.FirstOrDefault(channel => channel.BotLogType.HasFlag(logType))
                     is BotLogChannel botLogChannel
                 && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id)
                     is ITextChannel logChannel

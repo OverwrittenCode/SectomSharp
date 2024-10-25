@@ -18,15 +18,13 @@ public partial class AdminModule
         [Group("log-channel", "Log Channel configuration")]
         public sealed class LogChannelModule : BaseModule
         {
+            private static readonly BotLogType[] BotLogTypes = Enum.GetValues<BotLogType>();
+            private static readonly AuditLogType[] AuditLogTypes = Enum.GetValues<AuditLogType>();
+
             [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(
-                    out var logChannel,
-                    out var action,
-                    out var operation,
-                    out var reason
-                );
+                options.Deconstruct(out var logChannel, out var action, out var reason);
 
                 await DeferAsync();
 
@@ -37,31 +35,32 @@ public partial class AdminModule
                         .Include(guild => guild.BotLogChannels)
                         .SingleOrDefaultAsync();
 
-                    if (guild is null)
+                    guild ??= (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
+
+                    var botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
+                        channel.Id == logChannel.Id
+                    );
+
+                    if (botLogChannel is null)
                     {
-                        guild = (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
+                        guild.BotLogChannels.Add(
+                            new()
+                            {
+                                Id = logChannel.Id,
+                                GuildId = Context.Guild.Id,
+                                BotLogType = action,
+                            }
+                        );
                     }
-                    else if (
-                        guild.BotLogChannels.Any(channel =>
-                            channel.Id == logChannel.Id
-                            && channel.BotLogType == action
-                            && (channel.OperationType == null || channel.OperationType == operation)
-                        )
-                    )
+                    else if (!botLogChannel.BotLogType.HasFlag(action))
+                    {
+                        botLogChannel.BotLogType |= action;
+                    }
+                    else
                     {
                         await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
                         return;
                     }
-
-                    guild.BotLogChannels.Add(
-                        new()
-                        {
-                            Id = logChannel.Id,
-                            GuildId = Context.Guild.Id,
-                            BotLogType = action,
-                            OperationType = operation,
-                        }
-                    );
 
                     await db.SaveChangesAsync();
                 }
@@ -75,12 +74,7 @@ public partial class AdminModule
                 [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
             {
-                options.Deconstruct(
-                    out var logChannel,
-                    out var action,
-                    out var operation,
-                    out var reason
-                );
+                options.Deconstruct(out var logChannel, out var action, out var reason);
 
                 if (!Context.Guild.CurrentUser.GetPermissions(logChannel).ManageWebhooks)
                 {
@@ -92,20 +86,6 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                var webhook =
-                    (await logChannel.GetWebhooksAsync()).FirstOrDefault(webhook =>
-                        webhook.Creator.Id == Context.Guild.CurrentUser.Id
-                    )
-                    ?? (
-                        await logChannel.CreateWebhookAsync(
-                            Context.Guild.CurrentUser.DisplayName,
-                            options: DiscordUtils.GetAuditReasonRequestOptions(
-                                Context,
-                                "Automated request for audit logging."
-                            )
-                        )
-                    );
-
                 using (var db = new ApplicationDbContext())
                 {
                     var guild = await db
@@ -113,37 +93,52 @@ public partial class AdminModule
                         .Include(guild => guild.AuditLogChannels)
                         .SingleOrDefaultAsync();
 
-                    if (guild is null)
+                    guild ??= (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
+
+                    var auditLogChannel = guild.AuditLogChannels.SingleOrDefault(channel =>
+                        channel.Id == logChannel.Id
+                    );
+
+                    if (auditLogChannel is null)
                     {
-                        guild = (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
+                        var webhook =
+                            (await logChannel.GetWebhooksAsync()).FirstOrDefault(webhook =>
+                                webhook.Creator.Id == Context.Guild.CurrentUser.Id
+                            )
+                            ?? (
+                                await logChannel.CreateWebhookAsync(
+                                    Context.Guild.CurrentUser.DisplayName,
+                                    options: DiscordUtils.GetAuditReasonRequestOptions(
+                                        Context,
+                                        "Automated request for audit logging."
+                                    )
+                                )
+                            );
+
+                        guild.AuditLogChannels.Add(
+                            (
+                                await db.AuditLogChannels.AddAsync(
+                                    new()
+                                    {
+                                        Id = logChannel.Id,
+                                        GuildId = Context.Guild.Id,
+                                        WebhookUrl =
+                                            $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}",
+                                        AuditLogType = action,
+                                    }
+                                )
+                            ).Entity
+                        );
                     }
-                    else if (
-                        guild.AuditLogChannels.Any(channel =>
-                            channel.Id == logChannel.Id
-                            && channel.AuditLogType == action
-                            && (channel.OperationType == null || channel.OperationType == operation)
-                        )
-                    )
+                    else if (!auditLogChannel.AuditLogType.HasFlag(action))
+                    {
+                        auditLogChannel.AuditLogType |= action;
+                    }
+                    else
                     {
                         await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
                         return;
                     }
-
-                    guild.AuditLogChannels.Add(
-                        (
-                            await db.AuditLogChannels.AddAsync(
-                                new()
-                                {
-                                    Id = logChannel.Id,
-                                    GuildId = Context.Guild.Id,
-                                    WebhookUrl =
-                                        $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}",
-                                    AuditLogType = action,
-                                    OperationType = operation,
-                                }
-                            )
-                        ).Entity
-                    );
 
                     await db.SaveChangesAsync();
                 }
@@ -154,6 +149,8 @@ public partial class AdminModule
             [SlashCommand("remove-bot-log", "Remove a bot log channel configuration")]
             public async Task RemoveBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
+                options.Deconstruct(out var logChannel, out var action, out var reason);
+
                 await DeferAsync();
 
                 using (var db = new ApplicationDbContext())
@@ -171,21 +168,30 @@ public partial class AdminModule
                         return;
                     }
 
-                    var match = guild
-                        .BotLogChannels.Where(channel =>
-                            channel.Id == options.LogChannel.Id
-                            && channel.BotLogType == options.Action
-                            && channel.OperationType == options.Operation
-                        )
-                        .SingleOrDefault();
+                    var botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
+                        channel.Id == options.LogChannel.Id
+                    );
 
-                    if (match is null)
+                    if (botLogChannel is null)
                     {
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;
                     }
 
-                    guild.BotLogChannels.Remove(match);
+                    if (botLogChannel.BotLogType == action)
+                    {
+                        guild.BotLogChannels.Remove(botLogChannel);
+                    }
+                    else if (botLogChannel.BotLogType.HasFlag(action))
+                    {
+                        botLogChannel.BotLogType &= ~action;
+                    }
+                    else
+                    {
+                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        return;
+                    }
+
                     await db.SaveChangesAsync();
                 }
 
@@ -197,6 +203,8 @@ public partial class AdminModule
                 [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
             {
+                options.Deconstruct(out var logChannel, out var action, out var reason);
+
                 await DeferAsync();
 
                 using (var db = new ApplicationDbContext())
@@ -214,21 +222,30 @@ public partial class AdminModule
                         return;
                     }
 
-                    var match = guild
-                        .AuditLogChannels.Where(channel =>
-                            channel.Id == options.LogChannel.Id
-                            && channel.AuditLogType == options.Action
-                            && channel.OperationType == options.Operation
-                        )
-                        .SingleOrDefault();
+                    var auditLogChannel = guild.AuditLogChannels.FirstOrDefault(channel =>
+                        channel.Id == options.LogChannel.Id
+                    );
 
-                    if (match is null)
+                    if (auditLogChannel is null)
                     {
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;
                     }
 
-                    guild.AuditLogChannels.Remove(match);
+                    if (auditLogChannel.AuditLogType == action)
+                    {
+                        guild.AuditLogChannels.Remove(auditLogChannel);
+                    }
+                    else if (auditLogChannel.AuditLogType.HasFlag(action))
+                    {
+                        auditLogChannel.AuditLogType &= ~action;
+                    }
+                    else
+                    {
+                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        return;
+                    }
+
                     await db.SaveChangesAsync();
                 }
 
@@ -237,10 +254,10 @@ public partial class AdminModule
 
             public async Task ViewAsync<TChannel, TLogType>(
                 string titleSuffix,
+                TLogType[] logTypes,
                 Func<Guild, ICollection<TChannel>> channelSelector,
                 Func<IQueryable<Guild>, IQueryable<Guild>> withInclude,
-                Func<TChannel, TLogType> logTypeSelector,
-                Func<TChannel, OperationType?> operationTypeSelector
+                Func<TChannel, TLogType> logTypeSelector
             )
                 where TLogType : struct, Enum
                 where TChannel : Snowflake
@@ -276,14 +293,22 @@ public partial class AdminModule
                 }
 
                 var embedDescriptions = channels
-                    .Select(channel =>
+                    .SelectMany(channel =>
                     {
-                        var logType = logTypeSelector(channel);
-                        var displayName = operationTypeSelector(channel) is OperationType operation
-                            ? logType.ToString() + operation.ToString()
-                            : logType.ToString();
+                        List<string> descriptions = [];
+                        TLogType logType = logTypeSelector(channel);
 
-                        return $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{displayName}]")}";
+                        foreach (TLogType log in logTypes)
+                        {
+                            if (logType.HasFlag(log))
+                            {
+                                descriptions.Add(
+                                    $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{log}]")}"
+                                );
+                            }
+                        }
+
+                        return descriptions;
                     })
                     .ToList();
 
@@ -301,26 +326,25 @@ public partial class AdminModule
             public async Task ViewBotLog() =>
                 await ViewAsync(
                     $"Bot Log Channels",
+                    BotLogTypes,
                     guild => guild.BotLogChannels,
                     query => query.Include(guild => guild.BotLogChannels),
-                    channel => channel.BotLogType,
-                    channel => channel.OperationType
+                    channel => channel.BotLogType
                 );
 
             [SlashCommand("view-audit-log", "View the audit log channel configuration")]
             public async Task ViewAuditLog() =>
                 await ViewAsync(
                     $"Audit Log Channels",
+                    AuditLogTypes,
                     guild => guild.AuditLogChannels,
                     query => query.Include(guild => guild.AuditLogChannels),
-                    channel => channel.AuditLogType,
-                    channel => channel.OperationType
+                    channel => channel.AuditLogType
                 );
 
             public readonly record struct LogChannelOptions<T>(
                 ITextChannel LogChannel,
                 T Action,
-                OperationType? Operation = null,
                 [MaxLength(CaseService.MaxReasonLength)] string? Reason = null
             )
                 where T : struct, Enum { }
