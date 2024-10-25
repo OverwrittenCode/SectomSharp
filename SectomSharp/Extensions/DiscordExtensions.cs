@@ -53,4 +53,15 @@ internal static class DiscordExtensions
             );
         }
     }
+
+    /// <summary>
+    ///     Converts a Discord <see cref="Color"/> to a hyperlinked
+    ///     URL that displays its hex code.
+    /// </summary>
+    /// <returns>The URL.</returns>
+    public static string ToHyperlinkedColourPicker(this Color colour) =>
+        Format.Url(
+            colour.ToString(),
+            $"https://imagecolorpicker.com/color-code/{String.Format("{0:X6}", colour.RawValue)}"
+        );
 }

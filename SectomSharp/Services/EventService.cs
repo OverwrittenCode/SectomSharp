@@ -28,6 +28,14 @@ internal sealed class EventService
 
         _client.InteractionCreated += _discord.OnInteractionCreated;
 
+        _client.RoleCreated += _discord.HandleRoleCreatedAsync;
+        _client.RoleDeleted += _discord.HandleRoleDeletedAsync;
+        _client.RoleUpdated += _discord.HandleRoleUpdateAsync;
+
+        _client.ChannelCreated += _discord.HandleChannelCreatedAsync;
+        _client.ChannelDestroyed += _discord.HandleChannelDestroyedAsync;
+        _client.ChannelUpdated += _discord.HandleChannelUpdatedAsync;
+
         _interactionService.SlashCommandExecuted += async (arg1, context, result) =>
         {
             if (!result.IsSuccess)
