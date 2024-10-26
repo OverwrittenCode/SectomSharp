@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.Net;
+using Discord.Rest;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -16,7 +17,7 @@ internal sealed class CaseService
     public const int MaxReasonLength = 250;
 
     /// <summary>
-    ///     Generates two log embeds from a given <see cref="Case"/>.
+    ///     Generates two log embeds from a given <see cref="Case" />.
     /// </summary>
     /// <param name="case">The case.</param>
     /// <returns>A tuple with the necessary embed information.</returns>
@@ -42,10 +43,26 @@ internal sealed class CaseService
             kvp["Channel"] = MentionUtils.MentionChannel(channelId);
         }
 
-        var colour =
+        Color colour =
             @case.PerpetratorId is null ? Color.Purple
             : @case.OperationType == OperationType.Update ? Color.Orange
             : Color.Red;
+
+        EmbedBuilder dmLog = GetEmbed();
+
+        if (@case.PerpetratorId is { } perpetratorId)
+        {
+            kvp["Perpetrator"] = MentionUtils.MentionUser(perpetratorId);
+        }
+
+        if (@case.TargetId is { } targetId)
+        {
+            kvp["Target"] = MentionUtils.MentionUser(targetId);
+        }
+
+        EmbedBuilder serverLog = GetEmbed();
+
+        return (dmLog, serverLog);
 
         EmbedBuilder GetEmbed() =>
             new EmbedBuilder()
@@ -59,33 +76,18 @@ internal sealed class CaseService
                 )
                 .WithFooter($"{@case.Id} | {@case.LogType}{@case.OperationType}")
                 .WithTimestamp(@case.CreatedAt);
-        var dmLog = GetEmbed();
-
-        if (@case.PerpetratorId is { } perpetratorId)
-        {
-            kvp["Perpetrator"] = MentionUtils.MentionUser(perpetratorId);
-        }
-
-        if (@case.TargetId is { } targetId)
-        {
-            kvp["Target"] = MentionUtils.MentionUser(targetId);
-        }
-
-        var serverLog = GetEmbed();
-
-        return (dmLog, serverLog);
     }
 
     /// <summary>
-    ///     Generates a <see cref="MessageComponent"/>.
+    ///     Generates a <see cref="MessageComponent" />.
     /// </summary>
-    /// <inheritdoc cref="GenerateLogEmbeds" path="/param"/>
-    /// <returns>A <see cref="MessageComponent"/>.</returns>
+    /// <inheritdoc cref="GenerateLogEmbeds" path="/param" />
+    /// <returns>A <see cref="MessageComponent" />.</returns>
     /// <value>
-    ///     If <see cref="Case.LogMessageUrl"/> is <see langword="string"/>;
-    ///         a component with the log message button.<br/>
-    ///     If <see cref="Case.LogMessageUrl"/> is <see langword="null"/>;
-    ///         an empty component.
+    ///     If <see cref="Case.LogMessageUrl" /> is <see langword="string" />;
+    ///     a component with the log message button.<br />
+    ///     If <see cref="Case.LogMessageUrl" /> is <see langword="null" />;
+    ///     an empty component.
     /// </value>
     public static MessageComponent GenerateLogMessageButton(Case @case)
     {
@@ -95,7 +97,7 @@ internal sealed class CaseService
         {
             component.AddRow(
                 new ActionRowBuilder().AddComponent(
-                    new ButtonBuilder()
+                    new ButtonBuilder
                     {
                         Style = ButtonStyle.Link,
                         Label = "View Log Message",
@@ -111,22 +113,23 @@ internal sealed class CaseService
     /// <summary>
     ///     Creates a new case, logs it, and notifies relevant parties.
     /// </summary>
-    /// <inheritdoc cref="GenerateLogEmbeds" path="/param"/>
+    /// <inheritdoc cref="GenerateLogEmbeds" path="/param" />
     /// <param name="context">The interaction context.</param>
     /// <param name="logType">The log type.</param>
     /// <param name="operationType">The operation type.</param>
-    /// <param name="targetId">The targeted user.</param>
+    /// <param name="perpetratorId">The id of the responsible user.</param>
+    /// <param name="targetId">The id of the targeted user.</param>
     /// <param name="channelId">The targeted channel.</param>
     /// <param name="expiresAt">When the case has expired.</param>
     /// <param name="reason">The reason.</param>
-    /// <param name="includeGuildCases">If <see cref="Guild.Cases"/> should be included.</param>
+    /// <param name="includeGuildCases">If <see cref="Guild.Cases" /> should be included.</param>
     /// <returns>
-    ///     The current <see cref="Guild"/> entity.
+    ///     The current <see cref="Guild" /> entity.
     /// </returns>
     /// <value>
-    ///     Includes <see cref="Guild.BotLogChannels"/>.<br/>
-    ///     If <paramref name="includeGuildCases"/> is <see langword="true"/>;
-    ///     <see cref="Guild.Cases"/> will be included.
+    ///     Includes <see cref="Guild.BotLogChannels" />.<br />
+    ///     If <paramref name="includeGuildCases" /> is <see langword="true" />;
+    ///     <see cref="Guild.Cases" /> will be included.
     /// </value>
     public static async Task<Guild> LogAsync(
         SocketInteractionContext context,
@@ -147,7 +150,7 @@ internal sealed class CaseService
 
         var perpetratorKey = perpetratorId ?? context.User.Id;
 
-        var @case = new Case()
+        var @case = new Case
         {
             Id = StringUtils.GenerateUniqueId(),
             PerpetratorId = perpetratorKey,
@@ -160,7 +163,7 @@ internal sealed class CaseService
             Reason = reason,
         };
 
-        var (dmLogEmbed, serverLogEmbed) = GenerateLogEmbeds(@case);
+        (EmbedBuilder dmLogEmbed, EmbedBuilder serverLogEmbed) = GenerateLogEmbeds(@case);
 
         Guild guildEntity;
 
@@ -207,7 +210,7 @@ internal sealed class CaseService
                 guildQuery = guildQuery.Include(guild => guild.Cases);
             }
 
-            var guild = await guildQuery.SingleOrDefaultAsync();
+            Guild? guild = await guildQuery.SingleOrDefaultAsync();
 
             if (guild is null)
             {
@@ -224,7 +227,9 @@ internal sealed class CaseService
                     .Has(ChannelPermission.SendMessages)
             )
             {
-                var message = await logChannel.SendMessageAsync(embeds: [serverLogEmbed.Build()]);
+                IUserMessage message = await logChannel.SendMessageAsync(
+                    embeds: [serverLogEmbed.Build()]
+                );
                 @case.LogMessageUrl = message.GetJumpUrl();
             }
 
@@ -238,7 +243,7 @@ internal sealed class CaseService
 
         if (targetId is { } targetKey2)
         {
-            var component = new ComponentBuilder().WithButton(
+            ComponentBuilder component = new ComponentBuilder().WithButton(
                 $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
                 "notice",
                 ButtonStyle.Secondary,
@@ -247,7 +252,7 @@ internal sealed class CaseService
 
             try
             {
-                var restUser = await context.Client.Rest.GetUserAsync(targetKey2);
+                RestUser? restUser = await context.Client.Rest.GetUserAsync(targetKey2);
 
                 if (restUser is null)
                 {

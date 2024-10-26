@@ -28,10 +28,7 @@ public partial class ModerationModule
 
         if (
             guildEntity.Configuration is
-            {
-                Warning: not null
-                    and { IsDisabled: false, Thresholds: var thresholds and { Count: > 0 } }
-            }
+            { Warning: { IsDisabled: false, Thresholds: { Count: > 0 } thresholds } }
         )
         {
             var count = guildEntity.Cases.Count(@case =>

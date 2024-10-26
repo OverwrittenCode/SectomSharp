@@ -26,7 +26,7 @@ internal readonly record struct SelectMenuPaginatorPage
         ActionRows = actionRows;
     }
 
-    ///<inheritdoc cref="SelectMenuPaginatorPage(Embed[], List{ActionRowBuilder})"/>
+    /// <inheritdoc cref="SelectMenuPaginatorPage(Embed[], List{ActionRowBuilder})" />
     public SelectMenuPaginatorPage(Embed[] embeds)
         : this(embeds, []) { }
 }

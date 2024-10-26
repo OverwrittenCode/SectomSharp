@@ -3,7 +3,7 @@ using Discord.Interactions;
 
 namespace SectomSharp.Attributes;
 
-[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Parameter)]
 internal sealed class TimeoutRangeAttribute : ParameterPreconditionAttribute
 {
     private static readonly TimeSpan Min = TimeSpan.FromSeconds(20);

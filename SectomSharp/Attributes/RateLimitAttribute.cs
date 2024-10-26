@@ -3,34 +3,24 @@ using Discord.Interactions;
 
 namespace SectomSharp.Attributes;
 
-internal sealed record RateLimitLog
-{
-    public DateTime LastExecutedAt { get; set; } = DateTime.UtcNow;
-    public required ICommandInfo CommandInfo { get; init; }
-}
-
 /// <summary>
-///     Enforce a rate limit on a module or command by <see cref="InteractionType"/>.
+///     Enforce a rate limit on a module or command by <see cref="InteractionType" />.
 /// </summary>
-[AttributeUsage(
-    AttributeTargets.Class | AttributeTargets.Method,
-    AllowMultiple = true,
-    Inherited = true
-)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 internal sealed class RateLimitAttribute : PreconditionAttribute
 {
     private const int DefaultSeconds = 3;
+    private readonly InteractionType _interactionType;
+    private readonly TimeSpan _rateLimit;
 
     /// <summary>
     ///     A dictionary storing user ids with their corresponding command rate limits.
     /// </summary>
     /// <remarks>
-    ///     Each user ID maps to another dictionary that maps <see cref="ICommandInfo.Name"/>
-    ///     to <see cref="RateLimitLog"/>.
+    ///     Each user ID maps to another dictionary that maps <see cref="ICommandInfo.Name" />
+    ///     to a <see cref="DateTime" />.
     /// </remarks>
-    private readonly Dictionary<ulong, Dictionary<string, RateLimitLog>> _rateLimits = [];
-    private readonly InteractionType _interactionType;
-    private readonly TimeSpan _rateLimit;
+    private readonly Dictionary<ulong, Dictionary<string, DateTime>> _rateLimits = [];
 
     /// <summary>
     ///     Extend a module or command by enforcing a rate limit on executing commands.
@@ -60,22 +50,16 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
         var userId = context.User.Id;
         var commandName = commandInfo.Name;
 
-        if (!_rateLimits.TryGetValue(userId, out var userRateLimits))
+        if (!_rateLimits.TryGetValue(userId, out Dictionary<string, DateTime>? userRateLimits))
         {
-            _rateLimits[userId] = new Dictionary<string, RateLimitLog>
-            {
-                {
-                    commandName,
-                    new() { CommandInfo = commandInfo }
-                },
-            };
+            _rateLimits[userId] = new() { { commandName, new() } };
 
             return Task.FromResult(PreconditionResult.FromSuccess());
         }
 
-        if (userRateLimits.TryGetValue(commandName, out var rateLimitLog))
+        if (userRateLimits.TryGetValue(commandName, out DateTime lastExecutedAt))
         {
-            var timeDifference = DateTime.UtcNow - rateLimitLog.LastExecutedAt;
+            TimeSpan timeDifference = DateTime.UtcNow - lastExecutedAt;
 
             if (timeDifference < _rateLimit)
             {
@@ -89,11 +73,11 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
                 return Task.FromResult(PreconditionResult.FromError(message));
             }
 
-            rateLimitLog.LastExecutedAt = DateTime.UtcNow;
+            userRateLimits[commandName] = DateTime.UtcNow;
         }
         else
         {
-            userRateLimits[commandName] = new() { CommandInfo = commandInfo };
+            userRateLimits[commandName] = DateTime.UtcNow;
         }
 
         return Task.FromResult(PreconditionResult.FromSuccess());

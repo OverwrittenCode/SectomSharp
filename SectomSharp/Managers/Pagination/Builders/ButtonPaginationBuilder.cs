@@ -9,24 +9,24 @@ namespace SectomSharp.Managers.Pagination.Builders;
 internal sealed class ButtonPaginationBuilder
 {
     /// <summary>
-    ///     Gets or sets the list of embeds used in the pagination.
-    /// </summary>
-    public List<Embed> Embeds { get; init; } = [];
-
-    /// <summary>
     ///     Gets or sets the list of extra action rows to be added to the pagination.
     /// </summary>
     private List<ActionRowBuilder> ExtraActionRows { get; } = [];
 
     /// <summary>
-    ///     Gets or sets the timeout duration for the pagination in seconds.
-    /// </summary>
-    public int Timeout { get; set; } = 180;
-
-    /// <summary>
     ///     Gets or sets a value indicating whether the pagination response should be ephemeral.
     /// </summary>
     private bool IsEphemeral { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the list of embeds used in the pagination.
+    /// </summary>
+    public List<Embed> Embeds { get; init; } = [];
+
+    /// <summary>
+    ///     Gets or sets the timeout duration for the pagination in seconds.
+    /// </summary>
+    public int Timeout { get; set; } = 180;
 
     /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
@@ -95,11 +95,11 @@ internal sealed class ButtonPaginationBuilder
     }
 
     /// <summary>
-    ///     Builds a new instance of <see cref="ButtonPaginationManager"/>.
+    ///     Builds a new instance of <see cref="ButtonPaginationManager" />.
     /// </summary>
     /// <returns>The new instance.</returns>
-    /// <exception cref="ArgumentOutOfRangeException"><see cref="Timeout"/> is less than or equal to 0.</exception>
-    /// <exception cref="InvalidOperationException">Empty list of <see cref="Embeds"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="Timeout" /> is less than or equal to 0.</exception>
+    /// <exception cref="InvalidOperationException">Empty list of <see cref="Embeds" />.</exception>
     public ButtonPaginationManager Build()
     {
         if (Timeout <= 0)

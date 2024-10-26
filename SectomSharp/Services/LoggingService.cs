@@ -23,11 +23,11 @@ internal sealed class LoggingService
 
     private Task LogAsync(LogMessage message)
     {
-        string text = message.Exception is CommandException cmdException
+        var text = message.Exception is CommandException cmdException
             ? $"[Command/{message.Severity}] {cmdException.Command.Aliases[0]} failed to execute in {cmdException.Context.Channel}: {cmdException}"
             : $"[General/{message.Severity}] {message}";
 
-        if (message.Severity == LogSeverity.Error || message.Severity == LogSeverity.Critical)
+        if (message.Severity is LogSeverity.Error or LogSeverity.Critical)
         {
             if (!Directory.Exists(LogDirectory))
             {

@@ -66,7 +66,7 @@ public partial class ModerationModule
             return;
         }
 
-        var requestOptions = DiscordUtils.GetAuditReasonRequestOptions(
+        RequestOptions requestOptions = DiscordUtils.GetAuditReasonRequestOptions(
             Context,
             reason,
             [new("Operation", BotLogType.Softban)]

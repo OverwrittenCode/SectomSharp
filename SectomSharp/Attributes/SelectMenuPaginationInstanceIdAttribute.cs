@@ -5,9 +5,9 @@ using SectomSharp.Managers.Pagination.SelectMenu;
 namespace SectomSharp.Attributes;
 
 /// <summary>
-///     Mark a parameter as a <see cref="Managers.InstanceManager{T}.Id"/> for <see cref="SelectMenuPaginationManager"/>.
+///     Mark a parameter as a <see cref="Managers.InstanceManager{T}.Id" /> for <see cref="SelectMenuPaginationManager" />.
 /// </summary>
-[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Parameter)]
 internal sealed class SelectMenuPaginationInstanceIdAttribute : ParameterPreconditionAttribute
 {
     public override string ErrorMessage => SelectMenuPaginationManager.PaginationExpiredMessage;
@@ -24,7 +24,12 @@ internal sealed class SelectMenuPaginationInstanceIdAttribute : ParameterPrecond
             return PreconditionResult.FromError("Expected a string value for the instance id.");
         }
 
-        if (!SelectMenuPaginationManager.AllInstances.TryGetValue(instanceId, out var instance))
+        if (
+            !SelectMenuPaginationManager.AllInstances.TryGetValue(
+                instanceId,
+                out SelectMenuPaginationManager? instance
+            )
+        )
         {
             return PreconditionResult.FromError(ErrorMessage);
         }

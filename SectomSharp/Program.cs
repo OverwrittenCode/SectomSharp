@@ -8,13 +8,14 @@ using SectomSharp.Events;
 using SectomSharp.Services;
 
 RunAsync().GetAwaiter().GetResult();
+return;
 
 async Task RunAsync()
 {
     var services = new ServiceCollection();
     RegisterServices(services);
 
-    var provider = services.BuildServiceProvider();
+    ServiceProvider provider = services.BuildServiceProvider();
     provider.GetRequiredService<LoggingService>();
 
     await provider.GetRequiredService<StartupService>().StartAsync();
@@ -25,20 +26,20 @@ async Task RunAsync()
 IConfiguration BuildConfiguration() =>
     new ConfigurationBuilder()
         .SetBasePath(Directory.GetCurrentDirectory())
-        .AddUserSecrets<Program>(optional: false, reloadOnChange: true)
+        .AddUserSecrets<Program>(false, true)
         .AddEnvironmentVariables()
         .Build();
 
 void RegisterServices(IServiceCollection services)
 {
-    var configuration = BuildConfiguration();
+    IConfiguration configuration = BuildConfiguration();
 
     services
         .AddDbContext<ApplicationDbContext>()
         .AddSingleton(configuration)
         .AddSingleton(
             new DiscordSocketClient(
-                new DiscordSocketConfig
+                new()
                 {
                     LogLevel = LogSeverity.Info,
                     MessageCacheSize = 100,

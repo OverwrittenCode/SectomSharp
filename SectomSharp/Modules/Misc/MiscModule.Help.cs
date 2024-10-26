@@ -20,9 +20,9 @@ public partial class MiscModule
 
         var categoryConfig = new CategoryConfig<CategoryAttribute>
         {
+            CustomIdPrefix = nameof(HelpSelectMenu),
             GetName = c => c.Name,
             GetValue = c => c.Name.ToLowerInvariant(),
-            CustomIdPrefix = nameof(HelpSelectMenu),
             GetCustomIdWildcards = c => [c.Name],
             GetDescription = c => $"The {c.Name} category",
             GetEmote = c => c.Emoji,
@@ -64,7 +64,7 @@ public partial class MiscModule
         await RespondOrFollowUpAsync(
             embeds:
             [
-                new EmbedBuilder()
+                new EmbedBuilder
                 {
                     Color = Constants.LightGold,
                     Description = $"""

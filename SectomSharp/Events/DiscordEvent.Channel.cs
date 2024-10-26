@@ -36,39 +36,39 @@ public partial class DiscordEvent
         channel switch
         {
             IVoiceChannel voice => new(
-                Name: channel.Name,
-                Position: channel.Position,
-                Type: ChannelType.Voice,
-                CategoryId: voice.CategoryId,
+                channel.Name,
+                channel.Position,
+                ChannelType.Voice,
+                voice.CategoryId,
                 Bitrate: voice.Bitrate,
                 UserLimit: voice.UserLimit,
                 Overwrites: channel.PermissionOverwrites
             ),
 
             IForumChannel forum => new(
-                Name: channel.Name,
-                Position: channel.Position,
-                Type: ChannelType.Forum,
-                CategoryId: forum.CategoryId,
+                channel.Name,
+                channel.Position,
+                ChannelType.Forum,
+                forum.CategoryId,
                 IsNsfw: forum.IsNsfw,
                 Overwrites: channel.PermissionOverwrites
             ),
 
             ITextChannel text => new(
-                Name: channel.Name,
-                Position: channel.Position,
-                Type: channel.GetChannelType() ?? ChannelType.Text,
-                CategoryId: text.CategoryId,
-                Topic: text.Topic,
-                IsNsfw: text.IsNsfw,
-                SlowMode: text.SlowModeInterval,
+                channel.Name,
+                channel.Position,
+                channel.GetChannelType() ?? ChannelType.Text,
+                text.CategoryId,
+                text.Topic,
+                text.IsNsfw,
+                text.SlowModeInterval,
                 Overwrites: channel.PermissionOverwrites
             ),
 
             _ => new(
-                Name: channel.Name,
-                Position: channel.Position,
-                Type: channel.GetChannelType() ?? ChannelType.Text,
+                channel.Name,
+                channel.Position,
+                channel.GetChannelType() ?? ChannelType.Text,
                 Overwrites: channel.PermissionOverwrites
             ),
         };
@@ -103,91 +103,6 @@ public partial class DiscordEvent
         return String.Join("\n", parts);
     }
 
-#pragma warning disable CA1822 // Mark members as static
-    private async Task HandleChannelAlteredAsync(
-#pragma warning restore CA1822 // Mark members as static
-        SocketChannel socketChannel,
-        OperationType operationType
-    )
-    {
-        if (!TryGetGuildChannel(socketChannel, out var guildChannel))
-        {
-            return;
-        }
-
-        var details = GetChannelDetails(guildChannel);
-
-        List<AuditLogEntry> entries =
-        [
-            new("Name", details.Name),
-            new("Type", details.Type),
-            new("Position", details.Position),
-        ];
-
-        if (details.CategoryId is { } categoryId)
-        {
-            entries.Add(new("Category", categoryId));
-        }
-
-        if (!String.IsNullOrEmpty(details.Topic))
-        {
-            entries.Add(new("Topic", details.Topic));
-        }
-
-        if (details.IsNsfw)
-        {
-            entries.Add(new("NSFW", true));
-        }
-
-        if (details.SlowMode is { } slowmode and > 0)
-        {
-            entries.Add(new("Slowmode", TimeSpan.FromSeconds(slowmode)));
-        }
-
-        if (details.Bitrate is { } bitrate)
-        {
-            entries.Add(new("Bitrate", bitrate));
-        }
-
-        if (details.UserLimit is { } userLimit)
-        {
-            entries.Add(new("User Limit", userLimit));
-        }
-
-        if (details.Overwrites is not null)
-        {
-            foreach (Overwrite overwrite in details.Overwrites)
-            {
-                var value = FormatPermissionLists(
-                    overwrite.Permissions.ToAllowList(),
-                    overwrite.Permissions.ToDenyList()
-                );
-
-                if (!String.IsNullOrEmpty(value))
-                {
-                    entries.Add(
-                        new(
-                            overwrite.TargetId.ToString(),
-                            $"""
-                            {GetOverwriteTargetDisplay(overwrite)}
-                            {value}
-                            """
-                        )
-                    );
-                }
-            }
-        }
-
-        await LogAsync(
-            guildChannel.Guild,
-            AuditLogType.Channel,
-            operationType,
-            entries,
-            footerPrefix: guildChannel.Id.ToString(),
-            authorName: guildChannel.Name
-        );
-    }
-
     public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) =>
         await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
 
@@ -203,8 +118,8 @@ public partial class DiscordEvent
     {
         if (
             !(
-                TryGetGuildChannel(beforeSocket, out var beforeChannel)
-                && TryGetGuildChannel(afterSocket, out var afterChannel)
+                TryGetGuildChannel(beforeSocket, out IGuildChannel? beforeChannel)
+                && TryGetGuildChannel(afterSocket, out IGuildChannel? afterChannel)
             )
             || beforeChannel.Position != afterChannel.Position
         )
@@ -249,14 +164,14 @@ public partial class DiscordEvent
         {
             List<AuditLogEntry> overwriteChanges = [];
 
-            var mergedOverwrites = after.Overwrites.UnionBy(
+            IEnumerable<Overwrite> mergedOverwrites = after.Overwrites.UnionBy(
                 before.Overwrites,
                 overwrite => overwrite.TargetId
             );
 
-            foreach (var overwrite in mergedOverwrites)
+            foreach (Overwrite overwrite in mergedOverwrites)
             {
-                string key = overwrite.TargetId.ToString();
+                var key = overwrite.TargetId.ToString();
 
                 Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o =>
                     o.TargetId == overwrite.TargetId
@@ -273,14 +188,18 @@ public partial class DiscordEvent
                     _ => "",
                 };
 
-                string value = "";
+                var value = "";
                 switch (beforeOverwrite, afterOverwrite)
                 {
                     case ({ } prev, { } curr):
-                        var beforeAllowed = prev.Permissions.ToAllowList();
-                        var afterAllowed = curr.Permissions.ToAllowList();
-                        var newlyAllowed = afterAllowed.Except(beforeAllowed).ToList();
-                        var newlyDenied = beforeAllowed.Except(afterAllowed).ToList();
+                        List<ChannelPermission> beforeAllowed = prev.Permissions.ToAllowList();
+                        List<ChannelPermission> afterAllowed = curr.Permissions.ToAllowList();
+                        List<ChannelPermission> newlyAllowed = afterAllowed
+                            .Except(beforeAllowed)
+                            .ToList();
+                        List<ChannelPermission> newlyDenied = beforeAllowed
+                            .Except(afterAllowed)
+                            .ToList();
 
                         value = FormatPermissionLists(newlyAllowed, newlyDenied);
 
@@ -330,8 +249,88 @@ public partial class DiscordEvent
             AuditLogType.Channel,
             OperationType.Update,
             entries,
-            footerPrefix: afterChannel.Id.ToString(),
-            authorName: afterChannel.Name
+            afterChannel.Id.ToString(),
+            afterChannel.Name
+        );
+    }
+
+#pragma warning disable CA1822 // Mark members as static
+    private async Task HandleChannelAlteredAsync(
+#pragma warning restore CA1822 // Mark members as static
+        SocketChannel socketChannel,
+        OperationType operationType
+    )
+    {
+        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel))
+        {
+            return;
+        }
+
+        ChannelDetails details = GetChannelDetails(guildChannel);
+
+        List<AuditLogEntry> entries =
+        [
+            new("Name", details.Name),
+            new("Type", details.Type),
+            new("Position", details.Position),
+        ];
+
+        if (details.CategoryId is { } categoryId)
+        {
+            entries.Add(new("Category", categoryId));
+        }
+
+        if (!String.IsNullOrEmpty(details.Topic))
+        {
+            entries.Add(new("Topic", details.Topic));
+        }
+
+        if (details.IsNsfw)
+        {
+            entries.Add(new("NSFW", true));
+        }
+
+        if (details.SlowMode is { } slowmode and > 0)
+        {
+            entries.Add(new("Slowmode", TimeSpan.FromSeconds(slowmode)));
+        }
+
+        if (details.Bitrate is { } bitrate)
+        {
+            entries.Add(new("Bitrate", bitrate));
+        }
+
+        if (details.UserLimit is { } userLimit)
+        {
+            entries.Add(new("User Limit", userLimit));
+        }
+
+        if (details.Overwrites is not null)
+        {
+            entries.AddRange(
+                from overwrite in details.Overwrites
+                let value = FormatPermissionLists(
+                    overwrite.Permissions.ToAllowList(),
+                    overwrite.Permissions.ToDenyList()
+                )
+                where !String.IsNullOrEmpty(value)
+                select new AuditLogEntry(
+                    overwrite.TargetId.ToString(),
+                    $"""
+                    {GetOverwriteTargetDisplay(overwrite)}
+                    {value}
+                    """
+                )
+            );
+        }
+
+        await LogAsync(
+            guildChannel.Guild,
+            AuditLogType.Channel,
+            operationType,
+            entries,
+            guildChannel.Id.ToString(),
+            guildChannel.Name
         );
     }
 

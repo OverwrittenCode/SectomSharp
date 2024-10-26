@@ -12,7 +12,7 @@ internal static class BuilderExtensions
     /// <param name="values">The arguments of the wildcards.</param>
     /// <returns>The current builder.</returns>
     /// <remarks>
-    ///     See <seealso cref="StringUtils.GenerateComponentIdRegex(String, global::System.String[])"/>
+    ///     See <seealso cref="StringUtils.GenerateComponentIdRegex(String, global::System.String[])" />
     ///     for generating the corresponding regex.
     /// </remarks>
     public static SelectMenuBuilder WithComponentId(
@@ -21,21 +21,21 @@ internal static class BuilderExtensions
         params object[] values
     ) => builder.WithCustomId(StringUtils.GenerateComponentId(prefix, values));
 
-    /// <inheritdoc cref="StringUtils.GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam"/>
-    /// <inheritdoc cref="WithComponentId(SelectMenuBuilder, String, global::System.Object[])"/>
+    /// <inheritdoc cref="StringUtils.GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam" />
+    /// <inheritdoc cref="WithComponentId(SelectMenuBuilder, String, global::System.Object[])" />
     public static SelectMenuBuilder WithComponentId<T>(
         this SelectMenuBuilder builder,
         params object[] values
     ) => builder.WithCustomId(StringUtils.GenerateComponentId<T>(values));
 
-    /// <inheritdoc cref="WithComponentId(SelectMenuBuilder, String, global::System.Object[])"/>
+    /// <inheritdoc cref="WithComponentId(SelectMenuBuilder, String, global::System.Object[])" />
     public static ButtonBuilder WithComponentId(
         this ButtonBuilder builder,
         string prefix,
         params object[] values
     ) => builder.WithCustomId(StringUtils.GenerateComponentId(prefix, values));
 
-    /// <inheritdoc cref="WithComponentId{T}(SelectMenuBuilder, global::System.Object[])"/>
+    /// <inheritdoc cref="WithComponentId{T}(SelectMenuBuilder, global::System.Object[])" />
     public static ButtonBuilder WithComponentId<T>(
         this ButtonBuilder builder,
         params object[] values

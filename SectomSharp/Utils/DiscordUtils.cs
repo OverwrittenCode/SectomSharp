@@ -8,7 +8,7 @@ namespace SectomSharp.Utils;
 ///     Extra utility methods for formatting.
 /// </summary>
 /// <remarks>
-///     See <see cref="Format"/> for more details.
+///     See <see cref="Format" /> for more details.
 /// </remarks>
 internal static class DiscordUtils
 {
@@ -31,19 +31,17 @@ internal static class DiscordUtils
     /// <returns>
     ///     The URL for the message.
     /// </returns>
-    public static string GetMessageUrl(ulong guildId, ulong channelId, ulong messageId)
-    {
-        return $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
-    }
+    public static string GetMessageUrl(ulong guildId, ulong channelId, ulong messageId) =>
+        $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
 
     /// <summary>
-    ///     Creates a new instance of <see cref="RequestOptions"/>
+    ///     Creates a new instance of <see cref="RequestOptions" />
     ///     with a set audit log reason.
     /// </summary>
     /// <param name="context">The interaction context.</param>
     /// <param name="reason">The given reason.</param>
     /// <param name="extra">A list of key-value pairs to include.</param>
-    /// <returns>A new instance of <see cref="RequestOptions"/>.</returns>
+    /// <returns>A new instance of <see cref="RequestOptions" />.</returns>
     public static RequestOptions GetAuditReasonRequestOptions(
         SocketInteractionContext context,
         string? reason,

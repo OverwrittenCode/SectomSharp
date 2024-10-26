@@ -14,29 +14,34 @@ internal sealed class SelectMenuPaginationBuilder
     private readonly string _instanceId = StringUtils.GenerateUniqueId();
 
     /// <summary>
-    ///     Gets or sets the builder for the select menu component.
+    ///     Gets the builder for the select menu component.
     /// </summary>
-    public SelectMenuBuilder SelectMenuBuilder { get; set; }
+    private SelectMenuBuilder SelectMenuBuilder { get; }
 
     /// <summary>
-    ///     Gets or sets a list of key-value pairs representing options and corresponding pages.
+    ///     Gets a list of key-value pairs representing options and corresponding pages.
     /// </summary>
-    public List<KeyValuePair<string, SelectMenuPaginatorPage>> OptionKvp { get; set; } = [];
+    private List<KeyValuePair<string, SelectMenuPaginatorPage>> OptionKvp { get; } = [];
 
     /// <summary>
-    ///     Gets or sets the list of select menu options.
+    ///     Gets the list of select menu options.
     /// </summary>
-    public List<SelectMenuPageOption> Options { get; set; } = [];
+    private List<SelectMenuPageOption> Options { get; } = [];
 
     /// <summary>
     ///     Gets or sets the response type for the select menu pagination.
     /// </summary>
-    public SelectMenuResponse ResponseType { get; set; } = SelectMenuResponse.Update;
+    private SelectMenuResponse ResponseType { get; set; } = SelectMenuResponse.Update;
 
     /// <summary>
     ///     Gets or sets a value indicating whether the first row of the first option should be sticky across all pages.
     /// </summary>
-    public bool IsStickyFirstRow { get; set; }
+    private bool IsStickyFirstRow { get; set; }
+
+    /// <summary>
+    ///     Gets or sets a value indicating whether the pagination response should be ephemeral.
+    /// </summary>
+    private bool IsEphemeral { get; set; }
 
     /// <summary>
     ///     Gets or sets the timeout duration for the pagination in seconds.
@@ -44,9 +49,14 @@ internal sealed class SelectMenuPaginationBuilder
     public int Timeout { get; set; } = 180;
 
     /// <summary>
-    ///     Gets or sets a value indicating whether the pagination response should be ephemeral.
+    ///     Initialises a new instance of the <see cref="SelectMenuPaginationBuilder" /> class.
     /// </summary>
-    public bool IsEphemeral { get; set; }
+    /// <param name="placeholder">The placeholder text for the select menu.</param>
+    public SelectMenuPaginationBuilder(string placeholder = "Select an item") =>
+        SelectMenuBuilder = new SelectMenuBuilder()
+            .WithPlaceholder(placeholder)
+            .WithMinValues(1)
+            .WithMaxValues(1);
 
     /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
@@ -70,42 +80,17 @@ internal sealed class SelectMenuPaginationBuilder
     }
 
     /// <summary>
-    ///     Initialises a new instance of the <see cref="SelectMenuPaginationBuilder"/> class.
-    /// </summary>
-    /// <param name="placeholder">The placeholder text for the select menu.</param>
-    public SelectMenuPaginationBuilder(string placeholder = "Select an item")
-    {
-        SelectMenuBuilder = new SelectMenuBuilder()
-            .WithPlaceholder(placeholder)
-            .WithMinValues(1)
-            .WithMaxValues(1);
-    }
-
-    /// <summary>
     ///     Adds multiple options to the pagination.
     /// </summary>
     /// <param name="options">A collection of select menu options.</param>
     /// <returns>The current builder.</returns>
     public SelectMenuPaginationBuilder AddOptions(IEnumerable<SelectMenuPageOption> options)
     {
-        foreach (var option in options)
+        foreach (SelectMenuPageOption option in options)
         {
             AddOption(option);
         }
 
-        return this;
-    }
-
-    /// <summary>
-    ///     Adds a single option to the pagination.
-    /// </summary>
-    /// <param name="option">The select menu option to add.</param>
-    /// <returns>The current builder.</returns>
-    public SelectMenuPaginationBuilder AddOption(SelectMenuPageOption option)
-    {
-        Options.Add(option);
-        SelectMenuBuilder.AddOption(option.Label, option.Value, option.Description, option.Emote);
-        OptionKvp.Add(new(option.Value, new(option.Embeds, option.ActionRows)));
         return this;
     }
 
@@ -119,8 +104,8 @@ internal sealed class SelectMenuPaginationBuilder
     /// <param name="itemConfig">Configuration for item display.</param>
     /// <param name="menuConfig">Configuration for the overall menu structure.</param>
     /// <param name="prependIdWithInstanceId">
-    ///     If <see cref="InstanceManager{T}.Id"/> should be added to the start of
-    ///     the second menu's <see cref="SelectMenuBuilder.CustomId"/>
+    ///     If <see cref="InstanceManager{T}.Id" /> should be added to the start of
+    ///     the second menu's <see cref="SelectMenuBuilder.CustomId" />
     /// </param>
     /// <returns>The current builder.</returns>
     public SelectMenuPaginationBuilder AddNestedMenu<TCategory, TPage>(
@@ -134,7 +119,7 @@ internal sealed class SelectMenuPaginationBuilder
         WithStickyFirstRow();
 
         AddOption(
-            new SelectMenuPageOption
+            new()
             {
                 Label = "Home",
                 Value = "home",
@@ -142,52 +127,47 @@ internal sealed class SelectMenuPaginationBuilder
                 Description = "Return to main menu",
                 Embeds =
                 [
-                    new EmbedBuilder()
-                        .WithTitle(menuConfig.EmbedTitle)
-                        .WithColor(menuConfig.EmbedColour)
-                        .WithDescription(menuConfig.HomePageDescription)
-                        .Build(),
+                    new EmbedBuilder
+                    {
+                        Title = menuConfig.EmbedTitle,
+                        Color = menuConfig.EmbedColour,
+                        Description = "Select a category from the menu below to view its contents",
+                    }.Build(),
                 ],
             }
         );
 
-        foreach (var group in groupedItems)
+        foreach (IGrouping<TCategory, TPage> group in groupedItems)
         {
-            var category = group.Key;
+            TCategory category = group.Key;
             var categoryName = categoryConfig.GetName(category);
+            var categoryValue = categoryConfig.GetValue(category);
 
-            var selectMenu = new SelectMenuBuilder().WithOptions(
+            SelectMenuBuilder? selectMenu = new SelectMenuBuilder().WithOptions(
                 group
                     .Select(item => new SelectMenuOptionBuilder
                     {
                         Label = itemConfig.GetLabel(item),
                         Value = itemConfig.GetValue(item),
                         Description = itemConfig.GetDescription?.Invoke(item),
-                        Emote = itemConfig.GetEmote?.Invoke(item),
                     })
                     .ToList()
             );
 
-            if (prependIdWithInstanceId)
-            {
-                selectMenu.WithComponentId(
-                    categoryConfig.CustomIdPrefix,
-                    categoryConfig.GetCustomIdWildcards(category).Prepend(_instanceId).ToArray()
-                );
-            }
-            else
-            {
-                selectMenu.WithComponentId(
-                    categoryConfig.CustomIdPrefix,
-                    categoryConfig.GetCustomIdWildcards(category)
-                );
-            }
+            selectMenu.WithComponentId(
+                categoryConfig.CustomIdPrefix,
+                (
+                    prependIdWithInstanceId
+                        ? categoryConfig.GetCustomIdWildcards(category).Prepend(_instanceId)
+                        : categoryConfig.GetCustomIdWildcards(category)
+                ).ToArray<object>()
+            );
 
             AddOption(
-                new SelectMenuPageOption
+                new()
                 {
                     Label = categoryName,
-                    Value = categoryName,
+                    Value = categoryValue,
                     Emote = categoryConfig.GetEmote?.Invoke(category),
                     Description = categoryConfig.GetDescription?.Invoke(category),
                     Embeds =
@@ -195,7 +175,7 @@ internal sealed class SelectMenuPaginationBuilder
                         new EmbedBuilder()
                             .WithTitle($"{menuConfig.EmbedTitle} | {categoryName}")
                             .WithColor(menuConfig.EmbedColour)
-                            .WithDescription(menuConfig.CategoryDescription)
+                            .WithDescription("Select an option below to view details")
                             .Build(),
                     ],
                     ActionRows = [new ActionRowBuilder().AddComponent(selectMenu.Build())],
@@ -226,18 +206,6 @@ internal sealed class SelectMenuPaginationBuilder
         return this;
     }
 
-    /// <summary>
-    ///     Sets whether the the first row of the first option
-    ///     should be added to the start of all pages in the pagination.
-    /// </summary>
-    /// <returns>The current builder.</returns>
-    public SelectMenuPaginationBuilder WithStickyFirstRow(bool isStickyFirstRow = true)
-    {
-        IsStickyFirstRow = isStickyFirstRow;
-        return this;
-    }
-
-    /// <inheritdoc/>
     /// <exception cref="InvalidOperationException">Empty list of options.</exception>
     public SelectMenuPaginationManager Build()
     {
@@ -263,4 +231,23 @@ internal sealed class SelectMenuPaginationBuilder
             _instanceId
         );
     }
+
+    /// <summary>
+    ///     Adds a single option to the pagination.
+    /// </summary>
+    /// <param name="option">The select menu option to add.</param>
+    private void AddOption(SelectMenuPageOption option)
+    {
+        Options.Add(option);
+        SelectMenuBuilder.AddOption(option.Label, option.Value, option.Description, option.Emote);
+        OptionKvp.Add(new(option.Value, new(option.Embeds, option.ActionRows)));
+    }
+
+    /// <summary>
+    ///     Sets whether the first row of the first option
+    ///     should be added to the start of all pages in the pagination.
+    /// </summary>
+    /// <returns>The current builder.</returns>
+    private void WithStickyFirstRow(bool isStickyFirstRow = true) =>
+        IsStickyFirstRow = isStickyFirstRow;
 }

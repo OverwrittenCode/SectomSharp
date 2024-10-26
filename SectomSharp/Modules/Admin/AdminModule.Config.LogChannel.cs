@@ -24,20 +24,24 @@ public partial class AdminModule
             [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(out var logChannel, out var action, out var reason);
+                options.Deconstruct(
+                    out ITextChannel logChannel,
+                    out BotLogType action,
+                    out var reason
+                );
 
                 await DeferAsync();
 
                 await using (var db = new ApplicationDbContext())
                 {
-                    var guild = await db
+                    Guild? guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
                         .Include(guild => guild.BotLogChannels)
                         .SingleOrDefaultAsync();
 
                     guild ??= (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
 
-                    var botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
+                    BotLogChannel? botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
                         channel.Id == logChannel.Id
                     );
 
@@ -74,7 +78,11 @@ public partial class AdminModule
                 [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
             {
-                options.Deconstruct(out var logChannel, out var action, out var reason);
+                options.Deconstruct(
+                    out ITextChannel? logChannel,
+                    out AuditLogType action,
+                    out var reason
+                );
 
                 if (!Context.Guild.CurrentUser.GetPermissions(logChannel).ManageWebhooks)
                 {
@@ -88,15 +96,15 @@ public partial class AdminModule
 
                 await using (var db = new ApplicationDbContext())
                 {
-                    var guild = await db
+                    Guild? guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
                         .Include(guild => guild.AuditLogChannels)
                         .SingleOrDefaultAsync();
 
                     guild ??= (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
 
-                    var auditLogChannel = guild.AuditLogChannels.SingleOrDefault(channel =>
-                        channel.Id == logChannel.Id
+                    AuditLogChannel? auditLogChannel = guild.AuditLogChannels.SingleOrDefault(
+                        channel => channel.Id == logChannel.Id
                     );
 
                     if (auditLogChannel is null)
@@ -147,13 +155,17 @@ public partial class AdminModule
             [SlashCommand("remove-bot-log", "Remove a bot log channel configuration")]
             public async Task RemoveBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(out var logChannel, out var action, out var reason);
+                options.Deconstruct(
+                    out ITextChannel? logChannel,
+                    out BotLogType action,
+                    out var reason
+                );
 
                 await DeferAsync();
 
                 await using (var db = new ApplicationDbContext())
                 {
-                    var guild = await db
+                    Guild? guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
                         .Include(guild => guild.BotLogChannels)
                         .SingleOrDefaultAsync();
@@ -166,7 +178,7 @@ public partial class AdminModule
                         return;
                     }
 
-                    var botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
+                    BotLogChannel? botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
                         channel.Id == logChannel.Id
                     );
 
@@ -201,13 +213,17 @@ public partial class AdminModule
                 [ComplexParameter] LogChannelOptions<AuditLogType> options
             )
             {
-                options.Deconstruct(out var logChannel, out var action, out var reason);
+                options.Deconstruct(
+                    out ITextChannel? logChannel,
+                    out AuditLogType action,
+                    out var reason
+                );
 
                 await DeferAsync();
 
                 await using (var db = new ApplicationDbContext())
                 {
-                    var guild = await db
+                    Guild? guild = await db
                         .Guilds.Where(guild => guild.Id == Context.Guild.Id)
                         .Include(guild => guild.AuditLogChannels)
                         .SingleOrDefaultAsync();
@@ -220,8 +236,8 @@ public partial class AdminModule
                         return;
                     }
 
-                    var auditLogChannel = guild.AuditLogChannels.FirstOrDefault(channel =>
-                        channel.Id == logChannel.Id
+                    AuditLogChannel? auditLogChannel = guild.AuditLogChannels.FirstOrDefault(
+                        channel => channel.Id == logChannel.Id
                     );
 
                     if (auditLogChannel is null)
@@ -250,6 +266,26 @@ public partial class AdminModule
                 await LogAsync(Context, reason, logChannel.Id);
             }
 
+            [SlashCommand("view-bot-log", "View the bot log channel configuration")]
+            public async Task ViewBotLog() =>
+                await ViewAsync(
+                    "Bot Log Channels",
+                    BotLogTypes,
+                    guild => guild.BotLogChannels,
+                    query => query.Include(guild => guild.BotLogChannels),
+                    channel => channel.BotLogType
+                );
+
+            [SlashCommand("view-audit-log", "View the audit log channel configuration")]
+            public async Task ViewAuditLog() =>
+                await ViewAsync(
+                    "Audit Log Channels",
+                    AuditLogTypes,
+                    guild => guild.AuditLogChannels,
+                    query => query.Include(guild => guild.AuditLogChannels),
+                    channel => channel.AuditLogType
+                );
+
             private async Task ViewAsync<TChannel, TLogType>(
                 string titleSuffix,
                 TLogType[] logTypes,
@@ -268,7 +304,7 @@ public partial class AdminModule
 
                 query = withInclude(query);
 
-                var guild = await query.SingleOrDefaultAsync();
+                Guild? guild = await query.SingleOrDefaultAsync();
 
                 if (guild is null)
                 {
@@ -282,7 +318,7 @@ public partial class AdminModule
 
                 db.Entry(guild).State = EntityState.Detached;
 
-                var channels = channelSelector(guild);
+                ICollection<TChannel> channels = channelSelector(guild);
 
                 if (channels.Count == 0)
                 {
@@ -290,27 +326,23 @@ public partial class AdminModule
                     return;
                 }
 
-                var embedDescriptions = channels
+                List<string> embedDescriptions = channels
                     .SelectMany(channel =>
                     {
                         List<string> descriptions = [];
                         TLogType logType = logTypeSelector(channel);
 
-                        foreach (TLogType log in logTypes)
-                        {
-                            if (logType.HasFlag(log))
-                            {
-                                descriptions.Add(
-                                    $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{log}]")}"
-                                );
-                            }
-                        }
+                        descriptions.AddRange(
+                            from log in logTypes
+                            where logType.HasFlag(log)
+                            select $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{log}]")}"
+                        );
 
                         return descriptions;
                     })
                     .ToList();
 
-                var embeds = ButtonPaginationManager.GetEmbeds(
+                Embed[] embeds = ButtonPaginationManager.GetEmbeds(
                     embedDescriptions,
                     $"{Context.Guild.Name} {titleSuffix}"
                 );
@@ -320,32 +352,12 @@ public partial class AdminModule
                 await pagination.Build().Init(Context);
             }
 
-            [SlashCommand("view-bot-log", "View the bot log channel configuration")]
-            public async Task ViewBotLog() =>
-                await ViewAsync(
-                    $"Bot Log Channels",
-                    BotLogTypes,
-                    guild => guild.BotLogChannels,
-                    query => query.Include(guild => guild.BotLogChannels),
-                    channel => channel.BotLogType
-                );
-
-            [SlashCommand("view-audit-log", "View the audit log channel configuration")]
-            public async Task ViewAuditLog() =>
-                await ViewAsync(
-                    $"Audit Log Channels",
-                    AuditLogTypes,
-                    guild => guild.AuditLogChannels,
-                    query => query.Include(guild => guild.AuditLogChannels),
-                    channel => channel.AuditLogType
-                );
-
             public readonly record struct LogChannelOptions<T>(
                 ITextChannel LogChannel,
                 T Action,
                 [MaxLength(CaseService.MaxReasonLength)] string? Reason = null
             )
-                where T : struct, Enum { }
+                where T : struct, Enum;
         }
     }
 }

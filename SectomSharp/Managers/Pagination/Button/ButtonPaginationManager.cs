@@ -18,9 +18,9 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     ///     Handles pagination for the button components.
     /// </summary>
     /// <param name="context">The message component context.</param>
-    /// <param name="id">The <see cref="InstanceManager{T}.Id"/>.</param>
-    /// <param name="position">The <see cref="PageNavigationButton"/>.</param>
-    /// <inheritdoc cref="SocketMessageComponent.UpdateAsync(Action{MessageProperties}, RequestOptions)" path="/returns"/>
+    /// <param name="id">The <see cref="InstanceManager{T}.Id" />.</param>
+    /// <param name="position">The <see cref="PageNavigationButton" />.</param>
+    /// <inheritdoc cref="SocketMessageComponent.UpdateAsync(Action{MessageProperties}, RequestOptions)" path="/returns" />
     public static async Task OnHit(
         SocketMessageComponent context,
         string id,
@@ -64,8 +64,9 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
         }
     }
 
-    private readonly ActionRowBuilder[] _extraActionRows;
     private readonly Embed[] _embeds;
+
+    private readonly ActionRowBuilder[] _extraActionRows;
 
     private int _currentPageIndex;
 
@@ -79,26 +80,27 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// </summary>
     private List<IMessageComponent> ButtonComponents =>
         PageNavigationButtons
-            .Select(pageNavigatorButton =>
-                new ButtonBuilder()
-                    .WithLabel(pageNavigatorButton.ToString())
-                    .WithComponentId<ButtonPaginationManager>(Id, pageNavigatorButton)
-                    .WithStyle(
-                        pageNavigatorButton == PageNavigationButton.Exit
-                            ? ButtonStyle.Danger
-                            : ButtonStyle.Primary
-                    )
-                    .WithDisabled(
-                        pageNavigatorButton switch
-                        {
-                            PageNavigationButton.Start or PageNavigationButton.Previous =>
-                                _currentPageIndex == 0,
-                            PageNavigationButton.End or PageNavigationButton.Next =>
-                                _currentPageIndex == _embeds.Length - 1,
-                            _ => false,
-                        }
-                    )
-                    .Build() as IMessageComponent
+            .Select(
+                IMessageComponent (pageNavigatorButton) =>
+                    new ButtonBuilder()
+                        .WithLabel(pageNavigatorButton.ToString())
+                        .WithComponentId<ButtonPaginationManager>(Id, pageNavigatorButton)
+                        .WithStyle(
+                            pageNavigatorButton == PageNavigationButton.Exit
+                                ? ButtonStyle.Danger
+                                : ButtonStyle.Primary
+                        )
+                        .WithDisabled(
+                            pageNavigatorButton switch
+                            {
+                                PageNavigationButton.Start or PageNavigationButton.Previous =>
+                                    _currentPageIndex == 0,
+                                PageNavigationButton.End or PageNavigationButton.Next =>
+                                    _currentPageIndex == _embeds.Length - 1,
+                                _ => false,
+                            }
+                        )
+                        .Build()
             )
             .ToList();
 

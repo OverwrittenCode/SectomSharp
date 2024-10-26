@@ -45,7 +45,7 @@ public partial class DiscordEvent
 
         try
         {
-            var embed = new EmbedBuilder()
+            EmbedBuilder embed = new EmbedBuilder()
                 .WithAuthor(authorName, authorIconUrl)
                 .WithColor(
                     colour
@@ -73,7 +73,7 @@ public partial class DiscordEvent
                 .WithFooter($"{footerPrefix} | {auditLogType}{operationType}")
                 .WithCurrentTimestamp();
 
-            var bot = await guild.GetCurrentUserAsync();
+            IGuildUser bot = await guild.GetCurrentUserAsync();
 
             await webhookClient.SendMessageAsync(
                 username: bot.Username,
@@ -95,8 +95,8 @@ public partial class DiscordEvent
         IEnumerable<GuildPermission> Removed
     ) GetPermissionChanges(GuildPermissions before, GuildPermissions after)
     {
-        var beforePerms = before.ToList();
-        var afterPerms = after.ToList();
+        List<GuildPermission> beforePerms = before.ToList();
+        List<GuildPermission> afterPerms = after.ToList();
         return (afterPerms.Except(beforePerms), beforePerms.Except(afterPerms));
     }
 

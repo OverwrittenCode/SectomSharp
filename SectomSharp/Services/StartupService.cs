@@ -8,11 +8,11 @@ namespace SectomSharp.Services;
 
 internal sealed class StartupService
 {
-    private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
+    private readonly IConfiguration _configuration;
     private readonly EventService _eventService;
     private readonly InteractionService _interactionService;
-    private readonly IConfiguration _configuration;
+    private readonly IServiceProvider _services;
 
     public StartupService(
         IServiceProvider services,
@@ -33,7 +33,7 @@ internal sealed class StartupService
     {
         _eventService.RegisterEvents();
 
-        string token =
+        var token =
             _configuration["Discord:BotToken"]
             ?? throw new InvalidOperationException("Bot token not found in configuration.");
 

@@ -6,12 +6,12 @@ namespace SectomSharp.Managers.Pagination.SelectMenu;
 internal enum SelectMenuResponse
 {
     /// <summary>
-    ///     The select menu should use <see cref="Discord.WebSocket.SocketInteraction.RespondAsync"/>.
+    ///     The select menu should use <see cref="Discord.WebSocket.SocketInteraction.RespondAsync" />.
     /// </summary>
     Reply,
 
     /// <summary>
-    ///     The select menu should use <see cref="Discord.WebSocket.SocketMessageComponent.UpdateAsync"/>.
+    ///     The select menu should use <see cref="Discord.WebSocket.SocketMessageComponent.UpdateAsync" />.
     /// </summary>
     Update,
 }

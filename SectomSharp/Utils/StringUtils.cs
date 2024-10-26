@@ -11,7 +11,7 @@ internal static class StringUtils
     ///     Generates a unique identifier string consisting of uppercase letters and digits.
     /// </summary>
     /// <param name="length">The length of the unique identifier.</param>
-    /// <returns>A unique identifier string with the given <paramref name="length"/>.</returns>
+    /// <returns>A unique identifier string with the given <paramref name="length" />.</returns>
     public static string GenerateUniqueId(int length = 6)
     {
         const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -29,23 +29,23 @@ internal static class StringUtils
         return stringBuilder.ToString();
     }
 
-    /// <inheritdoc cref="GenerateComponentIdRegex(String, global::System.String[])"/>
+    /// <inheritdoc cref="GenerateComponentIdRegex(String, global::System.String[])" />
     /// <typeparam name="T">The class responsible for the component handling.</typeparam>
     public static string GenerateComponentIdRegex<T>(params string[] wildcardNames) =>
         GenerateComponentIdRegex(typeof(T).Name, wildcardNames);
 
     /// <summary>
     ///     Generates a lazy regex match for a component to match
-    ///     <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId"/>.
+    ///     <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId" />.
     /// </summary>
     /// <param name="prefix">The prefix of the component id.</param>
     /// <param name="wildcardNames">The names of the wildcard matches.</param>
     /// <returns>
-    ///     A <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId"/>
+    ///     A <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId" />
     ///     with lazy regex matching.
     /// </returns>
     /// <remarks>
-    ///     See <seealso cref="GenerateComponentIdRegex(String, global::System.String[])"/>
+    ///     See <seealso cref="GenerateComponentIdRegex(String, global::System.String[])" />
     ///     for generating the corresponding component id.
     /// </remarks>
     public static string GenerateComponentIdRegex(string prefix, params string[] wildcardNames)
@@ -78,8 +78,8 @@ internal static class StringUtils
         );
     }
 
-    /// <inheritdoc cref="GenerateComponentId(String, global::System.Object[])"/>
-    /// <inheritdoc cref="GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam"/>
+    /// <inheritdoc cref="GenerateComponentId(String, global::System.Object[])" />
+    /// <inheritdoc cref="GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam" />
     public static string GenerateComponentId<T>(params object[] values) =>
         GenerateComponentId(typeof(T).Name, values);
 }

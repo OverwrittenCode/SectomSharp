@@ -5,9 +5,9 @@ namespace SectomSharp.Events;
 
 public sealed partial class DiscordEvent
 {
-    private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactionService;
+    private readonly IServiceProvider _services;
 
     public DiscordEvent(
         IServiceProvider services,

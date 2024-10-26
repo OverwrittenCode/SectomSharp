@@ -4,13 +4,10 @@ using SectomSharp.Extensions;
 
 namespace SectomSharp.Modules;
 
-/// <inheritdoc/>
+/// <inheritdoc />
 public class BaseModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private protected const string TimespanDescription =
-        "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)";
-
-    /// <inheritdoc cref="DiscordExtensions.RespondOrFollowupAsync"/>
+    /// <inheritdoc cref="DiscordExtensions.RespondOrFollowupAsync" />
     protected async Task RespondOrFollowUpAsync(
         string? text = null,
         Embed[]? embeds = null,
@@ -29,4 +26,7 @@ public class BaseModule : InteractionModuleBase<SocketInteractionContext>
             options,
             poll
         );
+
+    private protected const string TimespanDescription =
+        "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)";
 }

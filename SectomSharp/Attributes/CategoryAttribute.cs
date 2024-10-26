@@ -5,7 +5,7 @@ namespace SectomSharp.Attributes;
 /// <summary>
 ///     Categorise commands under a module.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+[AttributeUsage(AttributeTargets.Class)]
 internal sealed class CategoryAttribute : Attribute
 {
     /// <summary>
@@ -26,6 +26,6 @@ internal sealed class CategoryAttribute : Attribute
     public CategoryAttribute(string name, string unicode)
     {
         Name = name;
-        Emoji = new Emoji(unicode);
+        Emoji = new(unicode);
     }
 }

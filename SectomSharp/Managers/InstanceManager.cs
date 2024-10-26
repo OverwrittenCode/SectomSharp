@@ -7,31 +7,31 @@ namespace SectomSharp.Managers;
 /// </summary>
 /// <typeparam name="T">
 ///     The type of instance being managed.
-///     Must inherit from <see cref="InstanceManager{T}"/>.
+///     Must inherit from <see cref="InstanceManager{T}" />.
 /// </typeparam>
 internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     where T : InstanceManager<T>
 {
     /// <summary>
-    ///     A dictionary storing all active instances of <typeparamref name="T"/>
-    ///     keyed by <see cref="Id"/>.
+    ///     A dictionary storing all active instances of <typeparamref name="T" />
+    ///     keyed by <see cref="Id" />.
     /// </summary>
     private static readonly Dictionary<string, T> Instances = [];
 
     /// <summary>
-    ///     Gets a read-only collection of all active instances of <typeparamref name="T"/>
-    ///     keyed by <see cref="Id"/>.
+    ///     Gets a read-only collection of all active instances of <typeparamref name="T" />
+    ///     keyed by <see cref="Id" />.
     /// </summary>
     public static IReadOnlyDictionary<string, T> AllInstances => Instances;
 
     private readonly object _timerLock = new();
+    private bool _disposedValue;
+    private Timer? _expirationTimer;
 
     private CancellationTokenSource? _timeoutCts;
-    private Timer? _expirationTimer;
-    private bool _disposedValue;
 
     /// <summary>
-    ///     Gets the unique identifier for <typeparamref name="T"/>.
+    ///     Gets the unique identifier for <typeparamref name="T" />.
     /// </summary>
     public string Id { get; }
 
@@ -47,25 +47,48 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    ///     Asynchronously performs cleanup operations and disposes of resources.
+    /// </summary>
+    /// <returns>A <see cref="ValueTask" /> representing the asynchronous dispose operation.</returns>
+    public async ValueTask DisposeAsync()
+    {
+        if (!_disposedValue)
+        {
+            try
+            {
+                await CleanupAsync();
+            }
+            finally
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Performs synchronous cleanup of resources and
+    ///     removes this instance from the instance collection.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
     ///     Performs asynchronous cleanup operations specific to the implementing class.
     /// </summary>
     /// <returns>A task representing the asynchronous cleanup operation.</returns>
     protected abstract Task CleanupAsync();
 
     /// <summary>
-    ///     Throws an <see cref="ObjectDisposedException"/> if this
-    ///     <typeparamref name="T"/> instance has been disposed.
-    /// </summary>
-    /// <exception cref="ObjectDisposedException">Thrown when the instance has been disposed.</exception>
-    private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposedValue, this);
-
-    /// <summary>
     ///     Starts a timer that disposes this instance unless cancelled.
     /// </summary>
     /// <param name="seconds">The number of seconds to wait before disposal.</param>
     /// <returns>A task representing the timer initialization.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="seconds"/> is less than 0.</exception>
-    /// <inheritdoc cref="ThrowIfDisposed" path="/exception"/>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="seconds" /> is less than 0.</exception>
+    /// <inheritdoc cref="ThrowIfDisposed" path="/exception" />
     protected Task StartExpirationTimer(int seconds)
     {
         ThrowIfDisposed();
@@ -79,12 +102,12 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
         {
             CancelCleanup();
 
-            _timeoutCts = new CancellationTokenSource();
+            _timeoutCts = new();
             CancellationToken token = _timeoutCts.Token;
 
             _expirationTimer?.Dispose();
-            _expirationTimer = new Timer(
-                callback: _ =>
+            _expirationTimer = new(
+                _ =>
                 {
                     Task.Run(
                         async () =>
@@ -106,9 +129,9 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
                         token
                     );
                 },
-                state: null,
-                dueTime: TimeSpan.FromSeconds(seconds),
-                period: Timeout.InfiniteTimeSpan
+                null,
+                TimeSpan.FromSeconds(seconds),
+                Timeout.InfiniteTimeSpan
             );
         }
 
@@ -116,9 +139,16 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    ///     Throws an <see cref="ObjectDisposedException" /> if this
+    ///     <typeparamref name="T" /> instance has been disposed.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException">Thrown when the instance has been disposed.</exception>
+    private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposedValue, this);
+
+    /// <summary>
     ///     Removes this instance from the static instance collection.
     /// </summary>
-    /// <inheritdoc cref="ThrowIfDisposed" path="/exception"/>
+    /// <inheritdoc cref="ThrowIfDisposed" path="/exception" />
     private void RemoveInstance()
     {
         ThrowIfDisposed();
@@ -128,7 +158,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Cancels any pending cleanup operation and disposes associated resources.
     /// </summary>
-    /// <inheritdoc cref="ThrowIfDisposed" path="/exception"/>
+    /// <inheritdoc cref="ThrowIfDisposed" path="/exception" />
     private void CancelCleanup()
     {
         ThrowIfDisposed();
@@ -156,10 +186,10 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     ///     instance and optionally releases managed resources.
     /// </summary>
     /// <param name="disposing">
-    ///     <see langword="true"/> to release both managed and unmanaged resources;
-    ///     <see langword="false"/> to release only unmanaged resources.
+    ///     <see langword="true" /> to release both managed and unmanaged resources;
+    ///     <see langword="false" /> to release only unmanaged resources.
     /// </param>
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (_disposedValue)
         {
@@ -173,35 +203,5 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
         }
 
         _disposedValue = true;
-    }
-
-    /// <summary>
-    ///     Performs synchronous cleanup of resources and
-    ///     removes this instance from the instance collection.
-    /// </summary>
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    ///     Asynchronously performs cleanup operations and disposes of resources.
-    /// </summary>
-    /// <returns>A <see cref="ValueTask"/> representing the asynchronous dispose operation.</returns>
-    public async ValueTask DisposeAsync()
-    {
-        if (!_disposedValue)
-        {
-            try
-            {
-                await CleanupAsync();
-            }
-            finally
-            {
-                Dispose(disposing: true);
-                GC.SuppressFinalize(this);
-            }
-        }
     }
 }

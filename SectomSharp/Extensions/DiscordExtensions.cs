@@ -6,13 +6,13 @@ internal static class DiscordExtensions
 {
     /// <summary>
     ///     Asynchronously responds or follows up a module
-    ///     based on <see cref="IDiscordInteraction.HasResponded"/>.
+    ///     based on <see cref="IDiscordInteraction.HasResponded" />.
     /// </summary>
     /// <returns>
     ///     A task representing the asynchronous operation of
     ///     responding or following up the interaction.
     /// </returns>
-    /// <inheritdoc cref="IDiscordInteraction.RespondAsync"/>
+    /// <inheritdoc cref="IDiscordInteraction.RespondAsync" />
     public static async Task RespondOrFollowupAsync(
         this IDiscordInteraction interaction,
         string? text = null,
@@ -29,11 +29,11 @@ internal static class DiscordExtensions
             await interaction.FollowupAsync(
                 text,
                 embeds,
-                isTTS: false,
+                false,
                 ephemeral,
                 allowedMentions,
                 components,
-                embed: null,
+                null,
                 options,
                 poll
             );
@@ -43,11 +43,11 @@ internal static class DiscordExtensions
             await interaction.RespondAsync(
                 text,
                 embeds,
-                isTTS: false,
+                false,
                 ephemeral,
                 allowedMentions,
                 components,
-                embed: null,
+                null,
                 options,
                 poll
             );
@@ -55,7 +55,7 @@ internal static class DiscordExtensions
     }
 
     /// <summary>
-    ///     Converts a Discord <see cref="Color"/> to a hyperlinked
+    ///     Converts a Discord <see cref="Color" /> to a hyperlinked
     ///     URL that displays its hex code.
     /// </summary>
     /// <returns>The URL.</returns>

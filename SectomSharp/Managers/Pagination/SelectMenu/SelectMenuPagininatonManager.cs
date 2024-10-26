@@ -15,18 +15,21 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
     /// <summary>
     ///     Handles pagination for the select menu components.
     /// </summary>
-    /// <inheritdoc cref="ButtonPaginationManager.OnHit(SocketMessageComponent, String, PageNavigationButton)"/>
+    /// <inheritdoc cref="ButtonPaginationManager.OnHit(SocketMessageComponent, String, PageNavigationButton)" />
     /// <param name="values">The selected values from the component.</param>
     public static async Task OnHit(SocketMessageComponent context, string id, string[] values)
     {
         try
         {
-            var instance = AllInstances[id];
+            SelectMenuPaginationManager instance = AllInstances[id];
             SelectMenuPaginatorPage page = instance
                 ._optionKvp.First(pair => pair.Key == values[0])
                 .Value;
 
-            var components = new ComponentBuilder() { ActionRows = [.. page.ActionRows] }.Build();
+            MessageComponent? components = new ComponentBuilder
+            {
+                ActionRows = [.. page.ActionRows],
+            }.Build();
 
             if (instance._responseType == SelectMenuResponse.Reply)
             {
@@ -53,23 +56,24 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         }
     }
 
-    private readonly List<KeyValuePair<string, SelectMenuPaginatorPage>> _optionKvp;
-    private readonly SelectMenuResponse _responseType;
     private readonly SelectMenuPaginatorPage _firstPage;
 
+    private readonly List<KeyValuePair<string, SelectMenuPaginatorPage>> _optionKvp;
+    private readonly SelectMenuResponse _responseType;
+
     /// <summary>
-    ///     Initialises a new instance of the <see cref="SelectMenuPaginationManager"/> class.
+    ///     Initialises a new instance of the <see cref="SelectMenuPaginationManager" /> class.
     /// </summary>
     /// <param name="selectMenuBuilder">The select menu builder.</param>
     /// <param name="optionKvp">The list of key value pair paginator pages.</param>
     /// <param name="replyType">The response type for the paginator.</param>
     /// <param name="isStickySelectMenu">
-    ///     The action row of <paramref name="selectMenuBuilder"/> should be added to
+    ///     The action row of <paramref name="selectMenuBuilder" /> should be added to
     ///     the start of
-    ///     <see langword="true"/>; all pages
-    ///     <see langword="false"/>; the first page
+    ///     <see langword="true" />; all pages
+    ///     <see langword="false" />; the first page
     /// </param>
-    /// <inheritdoc cref="BasePagination{T}(Int32, Boolean, global::System.String?)"/>
+    /// <inheritdoc cref="BasePagination{T}(Int32, Boolean, global::System.String?)" />
     public SelectMenuPaginationManager(
         SelectMenuBuilder selectMenuBuilder,
         List<KeyValuePair<string, SelectMenuPaginatorPage>> optionKvp,
@@ -105,7 +109,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
     protected override async Task RespondOrFollowupAsync(SocketInteractionContext context) =>
         await context.Interaction.RespondOrFollowupAsync(
             embeds: _firstPage.Embeds,
-            components: new ComponentBuilder() { ActionRows = _firstPage.ActionRows }.Build(),
+            components: new ComponentBuilder { ActionRows = _firstPage.ActionRows }.Build(),
             ephemeral: IsEphemeral
         );
 }

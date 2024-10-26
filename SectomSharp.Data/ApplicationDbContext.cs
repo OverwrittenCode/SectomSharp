@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
@@ -8,6 +9,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data;
 
+[SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
 public sealed class ApplicationDbContext : DbContext
 {
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -22,6 +24,18 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<AuditLogChannel> AuditLogChannels { get; set; } = null!;
     public DbSet<BotLogChannel> BotLogChannels { get; set; } = null!;
     public DbSet<Case> Cases { get; set; } = null!;
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateEntities();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        UpdateEntities();
+        return base.SaveChanges();
+    }
 
     protected override void OnModelCreating(ModelBuilder builder) =>
         builder
@@ -60,17 +74,5 @@ public sealed class ApplicationDbContext : DbContext
                 baseEntity.UpdatedAt = DateTime.UtcNow;
             }
         }
-    }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        UpdateEntities();
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
-    public override int SaveChanges()
-    {
-        UpdateEntities();
-        return base.SaveChanges();
     }
 }

@@ -8,4 +8,4 @@ namespace SectomSharp.Modules.Admin;
 [RateLimit]
 [CommandContextType(InteractionContextType.Guild)]
 [DefaultMemberPermissions(GuildPermission.Administrator)]
-public sealed partial class AdminModule : BaseModule { }
+public sealed partial class AdminModule : BaseModule;

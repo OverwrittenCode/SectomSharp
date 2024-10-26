@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
+using SectomSharp.Data.Models;
 using SectomSharp.Managers.Pagination.Builders;
 using SectomSharp.Managers.Pagination.Button;
 using SectomSharp.Services;
@@ -24,7 +25,7 @@ public partial class ModerationModule
 
             await using var dbContext = new ApplicationDbContext();
 
-            var @case = await dbContext.Cases.FindAsync(id, Context.Guild.Id);
+            Case? @case = await dbContext.Cases.FindAsync(id, Context.Guild.Id);
 
             if (@case is null)
             {
@@ -53,7 +54,7 @@ public partial class ModerationModule
 
             await using var dbContext = new ApplicationDbContext();
 
-            var query = dbContext
+            IQueryable<Case> query = dbContext
                 .Cases.Where(@case => @case.GuildId == Context.Guild.Id)
                 .AsNoTracking();
 

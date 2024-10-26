@@ -11,8 +11,5 @@ public sealed partial class MiscModule : BaseModule
 {
     private readonly InteractionService _commands;
 
-    public MiscModule(InteractionService commands)
-    {
-        _commands = commands;
-    }
+    public MiscModule(InteractionService commands) => _commands = commands;
 }

@@ -1,5 +1,3 @@
-using Discord;
-
 namespace SectomSharp.Managers.Pagination.Models;
 
 /// <summary>
@@ -22,9 +20,4 @@ internal sealed class PageConfig<T>
     ///     Gets or initialises the function to retrieve the description of the page.
     /// </summary>
     public Func<T, string?>? GetDescription { get; init; }
-
-    /// <summary>
-    ///     Gets or initialises the function to retrieve the emote associated with the page.
-    /// </summary>
-    public Func<T, IEmote?>? GetEmote { get; init; }
 }

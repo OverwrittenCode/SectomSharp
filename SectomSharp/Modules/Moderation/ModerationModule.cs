@@ -7,4 +7,4 @@ namespace SectomSharp.Modules.Moderation;
 [Category("Moderation", "🛡️")]
 [RateLimit]
 [CommandContextType(InteractionContextType.Guild)]
-public sealed partial class ModerationModule : BaseModule { }
+public sealed partial class ModerationModule : BaseModule;

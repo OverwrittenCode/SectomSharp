@@ -45,24 +45,22 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         return [.. embeds];
     }
 
-    protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) =>
-        await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
-
     /// <summary>
     ///     Creates an embed builder with standard formatting.
     /// </summary>
     /// <param name="description">The content to display in the embed.</param>
     /// <param name="title">The title of the embed.</param>
     /// <returns>A configured EmbedBuilder instance.</returns>
-    private static EmbedBuilder GetEmbedBuilder(string description, string title)
-    {
-        return new()
+    private static EmbedBuilder GetEmbedBuilder(string description, string title) =>
+        new()
         {
             Description = description,
             Title = title,
             Color = Constants.LightGold,
         };
-    }
+
+    protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) =>
+        await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
 
     /// <summary>
     ///     Creates an array of embeds by splitting content into chunks if it exceeds Discord's maximum length.
@@ -88,14 +86,14 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     }
 
     /// <summary>
-    ///     Creates an array of embeds by splitting <paramref name="strings"/> into chunks of <see cref="ChunkSize"/>.
+    ///     Creates an array of embeds by splitting <paramref name="strings" /> into chunks of <see cref="ChunkSize" />.
     /// </summary>
     /// <param name="strings">The strings to split into chunks.</param>
     /// <param name="title">The title of each embed.</param>
-    /// <inheritdoc cref="GetEmbeds(String, String)" path="/param[@name='title']"/>
+    /// <inheritdoc cref="GetEmbeds(String, String)" path="/param[@name='title']" />
     /// <returns>An array of embed objects.</returns>
     /// <exception cref="InvalidOperationException">
-    ///     A chunk of <paramref name="strings"/> exceeds <see cref="EmbedBuilder.MaxDescriptionLength"/>
+    ///     A chunk of <paramref name="strings" /> exceeds <see cref="EmbedBuilder.MaxDescriptionLength" />
     /// </exception>
     public static Embed[] GetEmbeds(List<string> strings, string title)
     {
@@ -120,17 +118,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     }
 
     /// <summary>
-    ///     Gets the original message structure from
-    ///     <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)"/>.
-    /// </summary>
-    /// <value>
-    ///     <see langword="null"/> if <see cref="Init(SocketInteractionContext)"/>
-    ///     has not been called yet.
-    /// </value>
-    public RestInteractionMessage? Message { get; protected set; }
-
-    /// <summary>
-    ///     Gets the time in seconds to wait before invoking <see cref="CleanupAsync"/>.
+    ///     Gets the time in seconds to wait before invoking <see cref="CleanupAsync" />.
     /// </summary>
     protected int Timeout { get; }
 
@@ -140,20 +128,30 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     protected bool IsEphemeral { get; }
 
     /// <summary>
-    ///     Initialises a new instance of the <typeparamref name="T"/> class with specified visibility settings.
+    ///     Gets the original message structure from
+    ///     <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)" />.
+    /// </summary>
+    /// <value>
+    ///     <see langword="null" /> if <see cref="Init(SocketInteractionContext)" />
+    ///     has not been called yet.
+    /// </value>
+    public RestInteractionMessage? Message { get; protected set; }
+
+    /// <summary>
+    ///     Initialises a new instance of the <typeparamref name="T" /> class with specified visibility settings.
     /// </summary>
     /// <param name="isEphemeral">
-    ///     <see langword="true"/>;
-    ///         the pagination response will only be visible to the user
-    ///         who triggered the interaction.<br/>
-    ///     <see langword="false"/>;
-    ///         the response will be visible to
-    ///         all users in the channel.
+    ///     <see langword="true" />;
+    ///     the pagination response will only be visible to the user
+    ///     who triggered the interaction.<br />
+    ///     <see langword="false" />;
+    ///     the response will be visible to
+    ///     all users in the channel.
     /// </param>
     /// <param name="timeout">
-    ///     The time in seconds to wait before invoking <see cref="CleanupAsync"/>.
+    ///     The time in seconds to wait before invoking <see cref="CleanupAsync" />.
     /// </param>
-    /// <inheritdoc cref="InstanceManager{T}(string?)" path="/param"/>
+    /// <inheritdoc cref="InstanceManager{T}(global::System.String?)" path="/param" />
     /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
     protected BasePagination(int timeout, bool isEphemeral = false, string? id = null)
         : base(id)
@@ -166,6 +164,25 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         Timeout = timeout;
         IsEphemeral = isEphemeral;
     }
+
+    /// <summary>
+    ///     Starts the pagination.
+    /// </summary>
+    /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)" />
+    public async Task Init(SocketInteractionContext context)
+    {
+        await RespondOrFollowupAsync(context);
+
+        Message = await context.Interaction.GetOriginalResponseAsync();
+
+        await RestartTimer();
+    }
+
+    /// <summary>
+    ///     Restarts the expiration timer for this instance.
+    /// </summary>
+    /// <inheritdoc cref="InstanceManager{T}.ThrowIfDisposed" path="/exception" />
+    public async Task RestartTimer() => await StartExpirationTimer(Timeout);
 
     /// <summary>
     ///     Responds or follows up a Discord interaction with the initial pagination state.
@@ -181,30 +198,11 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     protected abstract Task RespondOrFollowupAsync(SocketInteractionContext context);
 
     /// <summary>
-    ///     Starts the pagination.
+    ///     Removes all the components in <see cref="Message" />.
     /// </summary>
-    /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)"/>
-    public async Task Init(SocketInteractionContext context)
-    {
-        await RespondOrFollowupAsync(context);
-
-        Message = await context.Interaction.GetOriginalResponseAsync();
-
-        await RestartTimer();
-    }
-
-    /// <summary>
-    ///     Restarts the expiration timer for this instance.
-    /// </summary>
-    /// <inheritdoc cref="InstanceManager{T}.ThrowIfDisposed" path="/exception"/>
-    public async Task RestartTimer() => await StartExpirationTimer(Timeout);
-
-    /// <summary>
-    ///     Removes all the components in <see cref="Message"/>.
-    /// </summary>
-    /// <inheritdoc/>
-    /// <inheritdoc cref="RestInteractionMessage.ModifyAsync(Action{MessageProperties}, RequestOptions)" path="/exception"/>
-    /// <exception cref="InvalidOperationException"><see cref="Message"/> is <see langword="null"/></exception>
+    /// <inheritdoc />
+    /// <inheritdoc cref="RestInteractionMessage.ModifyAsync(Action{MessageProperties}, RequestOptions)" path="/exception" />
+    /// <exception cref="InvalidOperationException"><see cref="Message" /> is <see langword="null" /></exception>
     protected sealed override async Task CleanupAsync()
     {
         if (Message is null)
@@ -216,13 +214,13 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
         try
         {
-            var componentBuilder = ComponentBuilder.FromMessage(Message);
+            ComponentBuilder componentBuilder = ComponentBuilder.FromMessage(Message);
 
-            foreach (var actionRow in componentBuilder.ActionRows)
+            foreach (ActionRowBuilder actionRow in componentBuilder.ActionRows)
             {
                 for (var i = 0; i < actionRow.Components.Count; i++)
                 {
-                    var component = actionRow.Components[i];
+                    IMessageComponent component = actionRow.Components[i];
 
                     switch (component.Type)
                     {

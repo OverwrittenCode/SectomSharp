@@ -7,7 +7,7 @@ namespace SectomSharp.Modules.Pagination;
 
 public sealed class PaginationModule : BaseModule
 {
-    /// <inheritdoc cref="ButtonPaginationManager.OnHit(SocketMessageComponent, String, PageNavigationButton)"/>
+    /// <inheritdoc cref="ButtonPaginationManager.OnHit(SocketMessageComponent, String, PageNavigationButton)" />
     [RegexComponentInteraction<ButtonPaginationManager>("id", "position")]
     public async Task Button(string id, PageNavigationButton position) =>
         await ButtonPaginationManager.OnHit(
@@ -16,7 +16,7 @@ public sealed class PaginationModule : BaseModule
             position
         );
 
-    /// <inheritdoc cref="SelectMenuPaginationManager.OnHit(SocketMessageComponent, String, String[])"/>
+    /// <inheritdoc cref="SelectMenuPaginationManager.OnHit(SocketMessageComponent, String, String[])" />
     [RegexComponentInteraction<SelectMenuPaginationManager>("id")]
     public async Task SelectMenu(string id, string[] values) =>
         await SelectMenuPaginationManager.OnHit(
