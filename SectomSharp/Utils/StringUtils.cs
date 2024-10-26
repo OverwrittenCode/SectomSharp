@@ -20,7 +20,7 @@ internal static class StringUtils
 
         lock (LockObj)
         {
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
                 stringBuilder.Append(Chars[Random.Next(Chars.Length)]);
             }
