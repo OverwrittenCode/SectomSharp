@@ -31,7 +31,7 @@ internal sealed class ButtonPaginationBuilder
     /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
     /// </summary>
-    /// <param name="timeout"></param>
+    /// <param name="timeout">The duration in seconds.</param>
     /// <returns>The current builder.</returns>
     public ButtonPaginationBuilder WithTimeout(int timeout)
     {

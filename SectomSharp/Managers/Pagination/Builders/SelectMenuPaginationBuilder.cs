@@ -51,7 +51,7 @@ internal sealed class SelectMenuPaginationBuilder
     /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
     /// </summary>
-    /// <param name="timeout"></param>
+    /// <param name="timeout">The duration in seconds.</param>
     /// <returns>The current builder.</returns>
     public SelectMenuPaginationBuilder WithTimeout(int timeout)
     {

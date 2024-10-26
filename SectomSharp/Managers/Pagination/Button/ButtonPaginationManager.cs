@@ -117,8 +117,8 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
 
     /// <param name="embeds">Array of embeds to paginate through.</param>
     /// <param name="extraActionRows">Optional additional action rows to include in the message.</param>
-    /// <param name="timeout"></param>
-    /// <param name="isEphemeral"></param>
+    /// <param name="timeout">The duration in seconds.</param>
+    /// <param name="isEphemeral">If the pagination is ephemeral.</param>
     public ButtonPaginationManager(
         Embed[] embeds,
         ActionRowBuilder[]? extraActionRows = null,
@@ -137,8 +137,8 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// <param name="embedTitle">The title for all generated embeds.</param>
     /// <param name="content">The content to split into multiple embeds.</param>
     /// <param name="extraActionRows">Optional additional action rows to include in the message.</param>
-    /// <param name="timeout"></param>
-    /// <param name="isEphemeral"></param>
+    /// <param name="timeout">The duration in seconds.</param>
+    /// <param name="isEphemeral">If the pagination should be ephemeral.</param>
     public ButtonPaginationManager(
         string embedTitle,
         string content,
