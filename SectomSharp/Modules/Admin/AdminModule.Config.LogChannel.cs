@@ -39,7 +39,10 @@ public partial class AdminModule
                         .Include(guild => guild.BotLogChannels)
                         .SingleOrDefaultAsync();
 
-                    guild ??= (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
+                    guild ??= (await db.Guilds.AddAsync(new()
+                    {
+                        Id = Context.Guild.Id
+                    })).Entity;
 
                     BotLogChannel? botLogChannel = guild.BotLogChannels.FirstOrDefault(channel =>
                         channel.Id == logChannel.Id
@@ -50,9 +53,7 @@ public partial class AdminModule
                         guild.BotLogChannels.Add(
                             new()
                             {
-                                Id = logChannel.Id,
-                                GuildId = Context.Guild.Id,
-                                BotLogType = action,
+                                Id = logChannel.Id, GuildId = Context.Guild.Id, BotLogType = action
                             }
                         );
                     }
@@ -101,7 +102,10 @@ public partial class AdminModule
                         .Include(guild => guild.AuditLogChannels)
                         .SingleOrDefaultAsync();
 
-                    guild ??= (await db.Guilds.AddAsync(new() { Id = Context.Guild.Id })).Entity;
+                    guild ??= (await db.Guilds.AddAsync(new()
+                    {
+                        Id = Context.Guild.Id
+                    })).Entity;
 
                     AuditLogChannel? auditLogChannel = guild.AuditLogChannels.SingleOrDefault(
                         channel => channel.Id == logChannel.Id
@@ -130,7 +134,7 @@ public partial class AdminModule
                                         GuildId = Context.Guild.Id,
                                         WebhookUrl =
                                             $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}",
-                                        AuditLogType = action,
+                                        AuditLogType = action
                                     }
                                 )
                             ).Entity
@@ -172,7 +176,10 @@ public partial class AdminModule
 
                     if (guild is null)
                     {
-                        await db.Guilds.AddAsync(new() { Id = Context.Guild.Id });
+                        await db.Guilds.AddAsync(new()
+                        {
+                            Id = Context.Guild.Id
+                        });
                         await db.SaveChangesAsync();
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;
@@ -230,7 +237,10 @@ public partial class AdminModule
 
                     if (guild is null)
                     {
-                        await db.Guilds.AddAsync(new() { Id = Context.Guild.Id });
+                        await db.Guilds.AddAsync(new()
+                        {
+                            Id = Context.Guild.Id
+                        });
                         await db.SaveChangesAsync();
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;
@@ -309,7 +319,10 @@ public partial class AdminModule
                 if (guild is null)
                 {
                     await db.Guilds.AddAsync(
-                        new() { Id = Context.Guild.Id, Configuration = new() }
+                        new()
+                        {
+                            Id = Context.Guild.Id, Configuration = new()
+                        }
                     );
                     await db.SaveChangesAsync();
                     await RespondOrFollowUpAsync(NothingToView);
@@ -347,7 +360,10 @@ public partial class AdminModule
                     $"{Context.Guild.Name} {titleSuffix}"
                 );
 
-                var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
+                var pagination = new ButtonPaginationBuilder
+                {
+                    Embeds = [.. embeds]
+                };
 
                 await pagination.Build().Init(Context);
             }

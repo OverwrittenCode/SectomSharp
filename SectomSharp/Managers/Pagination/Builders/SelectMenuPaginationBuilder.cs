@@ -129,11 +129,9 @@ internal sealed class SelectMenuPaginationBuilder
                 [
                     new EmbedBuilder
                     {
-                        Title = menuConfig.EmbedTitle,
-                        Color = menuConfig.EmbedColour,
-                        Description = "Select a category from the menu below to view its contents",
-                    }.Build(),
-                ],
+                        Title = menuConfig.EmbedTitle, Color = menuConfig.EmbedColour, Description = "Select a category from the menu below to view its contents"
+                    }.Build()
+                ]
             }
         );
 
@@ -147,9 +145,7 @@ internal sealed class SelectMenuPaginationBuilder
                 group
                     .Select(item => new SelectMenuOptionBuilder
                     {
-                        Label = itemConfig.GetLabel(item),
-                        Value = itemConfig.GetValue(item),
-                        Description = itemConfig.GetDescription?.Invoke(item),
+                        Label = itemConfig.GetLabel(item), Value = itemConfig.GetValue(item), Description = itemConfig.GetDescription?.Invoke(item)
                     })
                     .ToList()
             );
@@ -176,9 +172,9 @@ internal sealed class SelectMenuPaginationBuilder
                             .WithTitle($"{menuConfig.EmbedTitle} | {categoryName}")
                             .WithColor(menuConfig.EmbedColour)
                             .WithDescription("Select an option below to view details")
-                            .Build(),
+                            .Build()
                     ],
-                    ActionRows = [new ActionRowBuilder().AddComponent(selectMenu.Build())],
+                    ActionRows = [new ActionRowBuilder().AddComponent(selectMenu.Build())]
                 }
             );
         }

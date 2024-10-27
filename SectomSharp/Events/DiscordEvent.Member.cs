@@ -46,7 +46,7 @@ public partial class DiscordEvent
                 "Server Avatar",
                 GetChangeEntry(oldUser.GetGuildAvatarUrl(), newUser.GetGuildAvatarUrl()),
                 oldUser.GuildAvatarId != newUser.GuildAvatarId
-            ),
+            )
         ];
 
         await LogAsync(

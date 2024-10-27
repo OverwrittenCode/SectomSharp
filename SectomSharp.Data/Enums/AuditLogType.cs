@@ -10,5 +10,5 @@ public enum AuditLogType
     Sticker = 1 << 4,
     Channel = 1 << 5,
     Thread = 1 << 6,
-    Role = 1 << 7,
+    Role = 1 << 7
 }

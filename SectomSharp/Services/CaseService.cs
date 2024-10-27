@@ -99,9 +99,7 @@ internal sealed class CaseService
                 new ActionRowBuilder().AddComponent(
                     new ButtonBuilder
                     {
-                        Style = ButtonStyle.Link,
-                        Label = "View Log Message",
-                        Url = url,
+                        Style = ButtonStyle.Link, Label = "View Log Message", Url = url
                     }.Build()
                 )
             );
@@ -160,7 +158,7 @@ internal sealed class CaseService
             LogType = logType,
             OperationType = operationType,
             ExpiresAt = expiresAt,
-            Reason = reason,
+            Reason = reason
         };
 
         (EmbedBuilder dmLogEmbed, EmbedBuilder serverLogEmbed) = GenerateLogEmbeds(@case);
@@ -180,20 +178,26 @@ internal sealed class CaseService
                 is null
             )
             {
-                users.Add(new() { Id = perpetratorKey, GuildId = context.Guild.Id });
+                users.Add(new()
+                {
+                    Id = perpetratorKey, GuildId = context.Guild.Id
+                });
             }
 
             if (
                 targetId is { } targetKey1
                 && await db
-                    .Users.Where(target =>
-                        target.Id == targetKey1 && target.GuildId == context.Guild.Id
-                    )
-                    .SingleOrDefaultAsync()
+                        .Users.Where(target =>
+                            target.Id == targetKey1 && target.GuildId == context.Guild.Id
+                        )
+                        .SingleOrDefaultAsync()
                     is null
             )
             {
-                users.Add(new() { Id = targetKey1, GuildId = context.Guild.Id });
+                users.Add(new()
+                {
+                    Id = targetKey1, GuildId = context.Guild.Id
+                });
             }
 
             if (users.Count > 0)
@@ -214,7 +218,10 @@ internal sealed class CaseService
 
             if (guild is null)
             {
-                guild = new() { Id = @case.GuildId };
+                guild = new()
+                {
+                    Id = @case.GuildId
+                };
                 await db.Guilds.AddAsync(guild);
             }
             else if (

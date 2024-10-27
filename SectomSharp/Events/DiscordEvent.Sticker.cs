@@ -29,7 +29,7 @@ public sealed partial class DiscordEvent
                 "Description",
                 GetChangeEntry(oldSticker.Description, newSticker.Description),
                 oldSticker.Description != newSticker.Description
-            ),
+            )
         ];
 
         await LogAsync(
@@ -54,7 +54,7 @@ public sealed partial class DiscordEvent
             new("Id", sticker.Id),
             new("Name", sticker.Name),
             new("Description", sticker.Description),
-            new("Format", sticker.Format),
+            new("Format", sticker.Format)
         ];
 
         await LogAsync(

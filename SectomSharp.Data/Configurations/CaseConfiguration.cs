@@ -36,13 +36,13 @@ internal sealed class CaseConfiguration : BaseEntityConfiguration<Case>
         builder.HasIndex(@case => @case.Id).IsUnique();
         builder.HasIndex(@case => new
         {
-            @case.GuildId,
-            @case.TargetId,
-            @case.LogType,
-            @case.OperationType,
+            @case.GuildId, @case.TargetId, @case.LogType, @case.OperationType
         });
 
-        builder.HasKey(@case => new { @case.Id, @case.GuildId });
+        builder.HasKey(@case => new
+        {
+            @case.Id, @case.GuildId
+        });
 
         base.Configure(builder);
     }

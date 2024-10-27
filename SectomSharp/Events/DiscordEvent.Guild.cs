@@ -100,7 +100,7 @@ public sealed partial class DiscordEvent
                     MentionUtils.MentionChannel(newGuild.SafetyAlertsChannel.Id)
                 ),
                 oldGuild.SafetyAlertsChannel != newGuild.SafetyAlertsChannel
-            ),
+            )
         ];
 
         await LogAsync(

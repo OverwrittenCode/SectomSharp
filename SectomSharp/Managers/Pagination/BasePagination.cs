@@ -54,9 +54,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     private static EmbedBuilder GetEmbedBuilder(string description, string title) =>
         new()
         {
-            Description = description,
-            Title = title,
-            Color = Constants.LightGold,
+            Description = description, Title = title, Color = Constants.LightGold
         };
 
     protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) =>

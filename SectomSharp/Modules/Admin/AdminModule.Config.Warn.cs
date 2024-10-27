@@ -76,7 +76,10 @@ public partial class AdminModule
                 if (guild is null)
                 {
                     await db.Guilds.AddAsync(
-                        new() { Id = Context.Guild.Id, Configuration = new() }
+                        new()
+                        {
+                            Id = Context.Guild.Id, Configuration = new()
+                        }
                     );
                     await db.SaveChangesAsync();
                     await RespondOrFollowUpAsync(NothingToView);
@@ -110,7 +113,7 @@ public partial class AdminModule
                                 1 => "st",
                                 2 => "nd",
                                 3 => "rd",
-                                _ => "th",
+                                _ => "th"
                             };
 
                         var strikePosition = threshold.Value + ordinalSuffix;
@@ -122,7 +125,7 @@ public partial class AdminModule
                                 { Days: var d and > 0 } => $"{d} day",
                                 { Hours: var h and > 0 } => $"{h} hour",
                                 { Minutes: var m and > 0 } => $"{m} minute",
-                                _ => $"{timeSpan.Seconds} second",
+                                _ => $"{timeSpan.Seconds} second"
                             };
 
                         return $"- {strikePosition} Strike: {Format.Bold($"{durationText} {threshold.LogType}")}";
@@ -130,9 +133,7 @@ public partial class AdminModule
 
                 var embed = new EmbedBuilder
                 {
-                    Title = $"{Context.Guild.Name} Warning Thresholds",
-                    Color = Constants.LightGold,
-                    Description = String.Join("\n", descriptionArray),
+                    Title = $"{Context.Guild.Name} Warning Thresholds", Color = Constants.LightGold, Description = String.Join("\n", descriptionArray)
                 };
 
                 if (warningConfiguration.IsDisabled)
@@ -153,9 +154,7 @@ public partial class AdminModule
                 WarningThreshold warningThreshold =
                     new()
                     {
-                        LogType = punishment,
-                        Value = threshold,
-                        Span = duration,
+                        LogType = punishment, Value = threshold, Span = duration
                     };
 
                 await DeferAsync();
@@ -172,8 +171,11 @@ public partial class AdminModule
                                 Id = Context.Guild.Id,
                                 Configuration = new()
                                 {
-                                    Warning = new() { Thresholds = [warningThreshold] },
-                                },
+                                    Warning = new()
+                                    {
+                                        Thresholds = [warningThreshold]
+                                    }
+                                }
                             }
                         );
 
@@ -213,7 +215,10 @@ public partial class AdminModule
 
                     if (guild is null)
                     {
-                        await db.Guilds.AddAsync(new() { Id = Context.Guild.Id });
+                        await db.Guilds.AddAsync(new()
+                        {
+                            Id = Context.Guild.Id
+                        });
                         await db.SaveChangesAsync();
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;
@@ -240,7 +245,13 @@ public partial class AdminModule
             {
                 await DeferAsync();
 
-                Configuration disabledEntry = new() { Warning = new() { IsDisabled = isDisabled } };
+                Configuration disabledEntry = new()
+                {
+                    Warning = new()
+                    {
+                        IsDisabled = isDisabled
+                    }
+                };
 
                 await using var db = new ApplicationDbContext();
 
@@ -248,7 +259,10 @@ public partial class AdminModule
                 if (guild is null)
                 {
                     await db.Guilds.AddAsync(
-                        new() { Id = Context.Guild.Id, Configuration = disabledEntry }
+                        new()
+                        {
+                            Id = Context.Guild.Id, Configuration = disabledEntry
+                        }
                     );
 
                     await db.SaveChangesAsync();

@@ -13,5 +13,5 @@ internal enum SelectMenuResponse
     /// <summary>
     ///     The select menu should use <see cref="Discord.WebSocket.SocketMessageComponent.UpdateAsync" />.
     /// </summary>
-    Update,
+    Update
 }

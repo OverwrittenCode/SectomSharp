@@ -51,7 +51,7 @@ public partial class DiscordEvent
                     newRole.Color.ToHyperlinkedColourPicker()
                 ),
                 oldRole.Color != newRole.Color
-            ),
+            )
         ];
 
         if (oldRole.Permissions.RawValue != newRole.Permissions.RawValue)
@@ -94,7 +94,7 @@ public partial class DiscordEvent
             new("Hoisted", role.IsHoisted),
             new("Managed", role.IsManaged),
             new("Hex Code", role.Color.ToHyperlinkedColourPicker()),
-            new("Permissions", String.Join(", ", role.Permissions.ToList())),
+            new("Permissions", String.Join(", ", role.Permissions.ToList()))
         ];
 
         if (role.GetIconUrl() is { } iconUrl)

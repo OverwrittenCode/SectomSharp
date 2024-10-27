@@ -25,5 +25,5 @@ public enum BotLogType
         | Mute
         | Nick
         | Purge
-        | ModNote,
+        | ModNote
 }

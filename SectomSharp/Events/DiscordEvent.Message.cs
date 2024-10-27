@@ -33,7 +33,7 @@ public partial class DiscordEvent
                     TimestampTagStyles.Relative
                 )
             ),
-            new("Content", message.Content),
+            new("Content", message.Content)
         ];
 
         if (message.MentionedChannelIds.Count > 0)
@@ -96,7 +96,8 @@ public partial class DiscordEvent
         if (
             !oldPartialMessage.HasValue
             || oldPartialMessage.Value
-                is not {
+                is not
+                {
                     Author.IsBot: false,
                     Channel: IGuildChannel { Guild: { } guild }
                 } oldMessage
@@ -111,7 +112,7 @@ public partial class DiscordEvent
                 "Content",
                 GetChangeEntry(oldMessage.Content, newMessage.Content),
                 oldMessage.Content != newMessage.Content
-            ),
+            )
         ];
 
         await LogAsync(

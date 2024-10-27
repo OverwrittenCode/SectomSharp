@@ -14,7 +14,10 @@ public partial class DiscordEvent
 
         var interactions = new InteractionService(
             _client,
-            new() { LogLevel = LogSeverity.Info, DefaultRunMode = RunMode.Async }
+            new()
+            {
+                LogLevel = LogSeverity.Info, DefaultRunMode = RunMode.Async
+            }
         );
 
         await interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);

@@ -7,5 +7,5 @@ public enum SnowflakeType
     Role,
     Channel,
     BotLogChannel,
-    AuditLogChannel,
+    AuditLogChannel
 }

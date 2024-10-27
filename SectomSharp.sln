@@ -9,12 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
-		.pre-commit-config.yaml = .pre-commit-config.yaml
-		.config\dotnet-tools.json = .config\dotnet-tools.json
 		LICENSE.txt = LICENSE.txt
-		.husky\pre-commit = .husky\pre-commit
 		README.md = README.md
-		.husky\task-runner.json = .husky\task-runner.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SectomSharp.Data", "SectomSharp.Data\SectomSharp.Data.csproj", "{95CC3F26-C804-4BCC-9071-50AB43A9B18D}"

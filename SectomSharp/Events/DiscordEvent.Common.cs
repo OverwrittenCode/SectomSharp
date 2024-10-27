@@ -49,12 +49,12 @@ public partial class DiscordEvent
                 .WithAuthor(authorName, authorIconUrl)
                 .WithColor(
                     colour
-                        ?? operationType switch
-                        {
-                            OperationType.Create => Color.Green,
-                            OperationType.Update => Color.Orange,
-                            OperationType.Delete => Color.Red,
-                        }
+                    ?? operationType switch
+                    {
+                        OperationType.Create => Color.Green,
+                        OperationType.Update => Color.Orange,
+                        OperationType.Delete => Color.Red
+                    }
                 )
                 .WithFields(
                     entries
@@ -67,7 +67,7 @@ public partial class DiscordEvent
                             Name = entry.Key,
                             Value = entry
                                 .Value?.ToString()
-                                ?.Truncate(EmbedFieldBuilder.MaxFieldValueLength),
+                                ?.Truncate(EmbedFieldBuilder.MaxFieldValueLength)
                         })
                 )
                 .WithFooter($"{footerPrefix} | {auditLogType}{operationType}")
@@ -93,7 +93,7 @@ public partial class DiscordEvent
     private static (
         IEnumerable<GuildPermission> Added,
         IEnumerable<GuildPermission> Removed
-    ) GetPermissionChanges(GuildPermissions before, GuildPermissions after)
+        ) GetPermissionChanges(GuildPermissions before, GuildPermissions after)
     {
         List<GuildPermission> beforePerms = before.ToList();
         List<GuildPermission> afterPerms = after.ToList();

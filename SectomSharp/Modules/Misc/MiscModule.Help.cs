@@ -25,20 +25,17 @@ public partial class MiscModule
             GetValue = c => c.Name.ToLowerInvariant(),
             GetCustomIdWildcards = c => [c.Name],
             GetDescription = c => $"The {c.Name} category",
-            GetEmote = c => c.Emoji,
+            GetEmote = c => c.Emoji
         };
 
         var pageConfig = new PageConfig<SlashCommandInfo>
         {
-            GetLabel = cmd => cmd.Name,
-            GetValue = cmd => cmd.Name,
-            GetDescription = cmd => cmd.Description,
+            GetLabel = cmd => cmd.Name, GetValue = cmd => cmd.Name, GetDescription = cmd => cmd.Description
         };
 
         var menuConfig = new NestedMenuConfig
         {
-            EmbedTitle = "Help Menu",
-            EmbedColour = Constants.LightGold,
+            EmbedTitle = "Help Menu", EmbedColour = Constants.LightGold
         };
 
         await new SelectMenuPaginationBuilder("Select a category")
@@ -68,11 +65,11 @@ public partial class MiscModule
                 {
                     Color = Constants.LightGold,
                     Description = $"""
-                    {Format.Bold("Name")}: {command.Name}
-                    {Format.Bold("Description")}: {command.Description}
-                    {Format.Bold("Category")}: {category}
-                    """,
-                }.Build(),
+                                   {Format.Bold("Name")}: {command.Name}
+                                   {Format.Bold("Description")}: {command.Description}
+                                   {Format.Bold("Category")}: {category}
+                                   """
+                }.Build()
             ],
             ephemeral: true
         );

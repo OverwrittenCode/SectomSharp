@@ -88,10 +88,7 @@ public partial class ModerationModule
             var cases = await query
                 .Select(@case => new
                 {
-                    @case.Id,
-                    @case.LogType,
-                    @case.OperationType,
-                    @case.CreatedAt,
+                    @case.Id, @case.LogType, @case.OperationType, @case.CreatedAt
                 })
                 .ToListAsync();
 
@@ -112,7 +109,10 @@ public partial class ModerationModule
                 $"{Context.Guild.Name} Cases ({cases.Count})"
             );
 
-            ButtonPaginationBuilder pagination = new() { Embeds = [.. embeds] };
+            ButtonPaginationBuilder pagination = new()
+            {
+                Embeds = [.. embeds]
+            };
 
             await pagination.Build().Init(Context);
         }

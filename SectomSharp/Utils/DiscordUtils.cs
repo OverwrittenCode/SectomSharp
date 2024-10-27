@@ -57,7 +57,7 @@ internal static class DiscordUtils
             [
                 new("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
                 new("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),
-                new("Reason", reason ?? "No reason provided."),
+                new("Reason", reason ?? "No reason provided.")
             ]
         );
 
@@ -65,6 +65,9 @@ internal static class DiscordUtils
             .Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}"))
             .Truncate(MaxAuditReasonLength);
 
-        return new() { AuditLogReason = auditReason };
+        return new()
+        {
+            AuditLogReason = auditReason
+        };
     }
 }

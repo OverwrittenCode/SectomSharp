@@ -19,10 +19,10 @@ public partial class DiscordEvent
             socketChannel is not IGuildChannel value
             || channelType
                 is null
-                    or ChannelType.GuildDirectory
-                    or ChannelType.Store
-                    or ChannelType.PrivateThread
-                    or ChannelType.PublicThread
+                or ChannelType.GuildDirectory
+                or ChannelType.Store
+                or ChannelType.PrivateThread
+                or ChannelType.PublicThread
         )
         {
             return false;
@@ -70,7 +70,7 @@ public partial class DiscordEvent
                 channel.Position,
                 channel.GetChannelType() ?? ChannelType.Text,
                 Overwrites: channel.PermissionOverwrites
-            ),
+            )
         };
 
     private static string GetOverwriteTargetDisplay(Overwrite overwrite)
@@ -157,7 +157,7 @@ public partial class DiscordEvent
                 "User Limit",
                 GetChangeEntry(before.UserLimit, after.UserLimit),
                 before.UserLimit != after.UserLimit
-            ),
+            )
         ];
 
         if ((before.Overwrites, after.Overwrites) is (not null, not null))
@@ -185,7 +185,7 @@ public partial class DiscordEvent
                 {
                     (null, not null) => " (Added)",
                     (not null, null) => " (Removed)",
-                    _ => "",
+                    _ => ""
                 };
 
                 var value = "";
@@ -224,9 +224,9 @@ public partial class DiscordEvent
                     new(
                         key,
                         $"""
-                        {GetOverwriteTargetDisplay(overwrite)}
-                        {value}
-                        """,
+                         {GetOverwriteTargetDisplay(overwrite)}
+                         {value}
+                         """,
                         !String.IsNullOrEmpty(value)
                     );
 
@@ -272,7 +272,7 @@ public partial class DiscordEvent
         [
             new("Name", details.Name),
             new("Type", details.Type),
-            new("Position", details.Position),
+            new("Position", details.Position)
         ];
 
         if (details.CategoryId is { } categoryId)
@@ -317,9 +317,9 @@ public partial class DiscordEvent
                 select new AuditLogEntry(
                     overwrite.TargetId.ToString(),
                     $"""
-                    {GetOverwriteTargetDisplay(overwrite)}
-                    {value}
-                    """
+                     {GetOverwriteTargetDisplay(overwrite)}
+                     {value}
+                     """
                 )
             );
         }

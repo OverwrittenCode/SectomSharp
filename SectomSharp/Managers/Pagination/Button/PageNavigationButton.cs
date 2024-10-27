@@ -6,5 +6,5 @@ public enum PageNavigationButton
     Previous,
     Next,
     End,
-    Exit,
+    Exit
 }

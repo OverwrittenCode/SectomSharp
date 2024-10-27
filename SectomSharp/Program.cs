@@ -52,7 +52,7 @@ void RegisterServices(IServiceCollection services)
                         | GatewayIntents.GuildPresences
                         | GatewayIntents.GuildMessages
                         | GatewayIntents.GuildMessageReactions
-                        | GatewayIntents.MessageContent,
+                        | GatewayIntents.MessageContent
                 }
             )
         )

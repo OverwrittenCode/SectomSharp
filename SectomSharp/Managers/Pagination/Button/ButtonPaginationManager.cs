@@ -97,7 +97,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
                                     _currentPageIndex == 0,
                                 PageNavigationButton.End or PageNavigationButton.Next =>
                                     _currentPageIndex == _embeds.Length - 1,
-                                _ => false,
+                                _ => false
                             }
                         )
                         .Build()
@@ -113,8 +113,8 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
             ActionRows =
             [
                 new ActionRowBuilder().WithComponents(ButtonComponents),
-                .. _extraActionRows,
-            ],
+                .. _extraActionRows
+            ]
         }.Build();
 
     /// <param name="embeds">Array of embeds to paginate through.</param>

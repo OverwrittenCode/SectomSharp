@@ -46,7 +46,7 @@ public partial class DiscordEvent
                 "Topic",
                 GetChangeEntry(oldThread.Topic, newThread.Topic),
                 oldThread.Topic != newThread.Topic
-            ),
+            )
         ];
 
         await LogAsync(
@@ -72,7 +72,7 @@ public partial class DiscordEvent
             new("Name", thread.Name),
             new("Type", thread.Type),
             new("Parent", MentionUtils.MentionChannel(thread.ParentChannel.Id)),
-            new("Topic", thread.Topic),
+            new("Topic", thread.Topic)
         ];
 
         await LogAsync(
