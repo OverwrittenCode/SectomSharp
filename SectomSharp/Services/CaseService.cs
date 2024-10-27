@@ -168,7 +168,6 @@ internal sealed class CaseService
         await using (var db = new ApplicationDbContext())
         {
             List<User> users = [];
-
             if (
                 await db
                     .Users.Where(perpetrator =>
@@ -197,6 +196,14 @@ internal sealed class CaseService
                 users.Add(new()
                 {
                     Id = targetKey1, GuildId = context.Guild.Id
+                });
+            }
+
+            if (channelId is { } channelId1 && await db.Channels.Where(channel => channel.Id == channelId1).FirstOrDefaultAsync() is null)
+            {
+                await db.Channels.AddAsync(new()
+                {
+                    Id = channelId1, GuildId = context.Guild.Id
                 });
             }
 
