@@ -112,23 +112,23 @@ public partial class DiscordEvent
 #pragma warning disable CA1822 // Mark members as static
     public async Task HandleChannelUpdatedAsync(
 #pragma warning restore CA1822 // Mark members as static
-        SocketChannel beforeSocket,
-        SocketChannel afterSocket
+        SocketChannel oldSocketChannel,
+        SocketChannel newSocketChannel
     )
     {
         if (
             !(
-                TryGetGuildChannel(beforeSocket, out IGuildChannel? beforeChannel)
-                && TryGetGuildChannel(afterSocket, out IGuildChannel? afterChannel)
+                TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel)
+                && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel)
             )
-            || beforeChannel.Position != afterChannel.Position
+            || oldChannel.Position != newChannel.Position
         )
         {
             return;
         }
 
-        ChannelDetails before = GetChannelDetails(beforeChannel);
-        ChannelDetails after = GetChannelDetails(afterChannel);
+        ChannelDetails before = GetChannelDetails(oldChannel);
+        ChannelDetails after = GetChannelDetails(newChannel);
 
         List<AuditLogEntry> entries =
         [
@@ -245,12 +245,12 @@ public partial class DiscordEvent
         }
 
         await LogAsync(
-            afterChannel.Guild,
+            newChannel.Guild,
             AuditLogType.Channel,
             OperationType.Update,
             entries,
-            afterChannel.Id.ToString(),
-            afterChannel.Name
+            newChannel.Id.ToString(),
+            newChannel.Name
         );
     }
 

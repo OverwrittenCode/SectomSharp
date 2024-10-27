@@ -7,7 +7,7 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
-    public async Task OnReady()
+    public async Task HandleClientReady()
     {
         await _client.SetGameAsync("Dev Mode", type: ActivityType.Watching);
         await _client.SetStatusAsync(UserStatus.Online);

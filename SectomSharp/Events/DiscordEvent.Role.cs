@@ -17,47 +17,47 @@ public partial class DiscordEvent
         await HandleRoleAlteredAsync(role, OperationType.Delete);
 
 #pragma warning disable CA1822 // Mark members as static
-    public async Task HandleRoleUpdateAsync(SocketRole before, SocketRole after)
+    public async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
 #pragma warning restore CA1822 // Mark members as static
     {
-        if (before.Position != after.Position)
+        if (oldRole.Position != newRole.Position)
         {
             return;
         }
 
         List<AuditLogEntry> entries =
         [
-            new("Name", GetChangeEntry(before.Name, after.Name), before.Name != after.Name),
+            new("Name", GetChangeEntry(oldRole.Name, newRole.Name), oldRole.Name != newRole.Name),
             new(
                 "Emoji",
-                GetChangeEntry(before.Emoji?.ToString(), after.Emoji?.ToString()),
-                before.Emoji?.ToString() != after.Emoji?.ToString()
+                GetChangeEntry(oldRole.Emoji?.ToString(), newRole.Emoji?.ToString()),
+                oldRole.Emoji?.ToString() != newRole.Emoji?.ToString()
             ),
             new(
                 "Icon",
-                GetChangeEntry(before.GetIconUrl(), after.GetIconUrl()),
-                before.Icon != after.Icon
+                GetChangeEntry(oldRole.GetIconUrl(), newRole.GetIconUrl()),
+                oldRole.Icon != newRole.Icon
             ),
-            new("Hoisted", $"Set to {after.IsHoisted}", before.IsHoisted != after.IsHoisted),
+            new("Hoisted", $"Set to {newRole.IsHoisted}", oldRole.IsHoisted != newRole.IsHoisted),
             new(
                 "Mentionable",
-                $"Set to {after.IsMentionable}",
-                before.IsMentionable != after.IsMentionable
+                $"Set to {newRole.IsMentionable}",
+                oldRole.IsMentionable != newRole.IsMentionable
             ),
             new(
                 "Hex Code",
                 GetChangeEntry(
-                    before.Color.ToHyperlinkedColourPicker(),
-                    after.Color.ToHyperlinkedColourPicker()
+                    oldRole.Color.ToHyperlinkedColourPicker(),
+                    newRole.Color.ToHyperlinkedColourPicker()
                 ),
-                before.Color != after.Color
+                oldRole.Color != newRole.Color
             ),
         ];
 
-        if (before.Permissions.RawValue != after.Permissions.RawValue)
+        if (oldRole.Permissions.RawValue != newRole.Permissions.RawValue)
         {
             (IEnumerable<GuildPermission> added, IEnumerable<GuildPermission> removed) =
-                GetPermissionChanges(before.Permissions, after.Permissions);
+                GetPermissionChanges(oldRole.Permissions, newRole.Permissions);
 
             List<GuildPermission> guildPermissions = added.ToList();
             if (guildPermissions.Count != 0)
@@ -73,14 +73,14 @@ public partial class DiscordEvent
         }
 
         await LogAsync(
-            after.Guild,
+            newRole.Guild,
             AuditLogType.Role,
             OperationType.Update,
             entries,
-            after.Id.ToString(),
-            GetRoleDisplayName(after),
-            after.GetIconUrl(),
-            after.Color
+            newRole.Id.ToString(),
+            GetRoleDisplayName(newRole),
+            newRole.GetIconUrl(),
+            newRole.Color
         );
     }
 
