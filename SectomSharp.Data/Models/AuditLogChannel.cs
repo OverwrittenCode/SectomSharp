@@ -6,5 +6,5 @@ public sealed class AuditLogChannel : Snowflake
 {
     public required string WebhookUrl { get; init; }
 
-    public required AuditLogType AuditLogType { get; set; }
+    public required AuditLogType Type { get; set; }
 }

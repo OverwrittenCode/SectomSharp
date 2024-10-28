@@ -13,7 +13,7 @@ internal sealed class BotLogChannelConfiguration : BaseEntityConfiguration<BotLo
             .HasForeignKey(channel => channel.GuildId)
             .IsRequired();
 
-        builder.Property(channel => channel.BotLogType).IsRequired();
+        builder.Property(channel => channel.Type).IsRequired();
 
         base.Configure(builder);
     }

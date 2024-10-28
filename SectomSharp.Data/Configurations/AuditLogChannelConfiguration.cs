@@ -13,7 +13,7 @@ internal sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<Aud
             .HasForeignKey(channel => channel.GuildId)
             .IsRequired();
 
-        builder.Property(channel => channel.AuditLogType).IsRequired();
+        builder.Property(channel => channel.Type).IsRequired();
 
         base.Configure(builder);
     }

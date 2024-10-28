@@ -42,7 +42,6 @@ public sealed class ApplicationDbContext : DbContext
             .HasPostgresEnum<SnowflakeType>()
             .HasPostgresEnum<OperationType>()
             .ApplyConfiguration(new GuildConfiguration())
-            .ApplyConfiguration(new SnowflakeConfiguration())
             .ApplyConfiguration(new UserConfiguration())
             .ApplyConfiguration(new RoleConfiguration())
             .ApplyConfiguration(new ChannelConfiguration())

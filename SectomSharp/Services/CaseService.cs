@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.Net;
 using Discord.Rest;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -21,7 +22,7 @@ internal sealed class CaseService
     /// </summary>
     /// <param name="case">The case.</param>
     /// <returns>A tuple with the necessary embed information.</returns>
-    public static (EmbedBuilder DMLog, EmbedBuilder ServerLog) GenerateLogEmbeds(Case @case)
+    public static (EmbedBuilder DMLog, EmbedBuilder ServerLog, EmbedBuilder CommandLog) GenerateLogEmbeds(Case @case)
     {
         Dictionary<string, object> kvp = [];
 
@@ -38,17 +39,12 @@ internal sealed class CaseService
             kvp["Expiry"] = TimestampTag.FormatFromDateTime(expiresAt, TimestampTagStyles.Relative);
         }
 
-        if (@case.ChannelId is { } channelId)
-        {
-            kvp["Channel"] = MentionUtils.MentionChannel(channelId);
-        }
-
         Color colour =
             @case.PerpetratorId is null ? Color.Purple
             : @case.OperationType == OperationType.Update ? Color.Orange
             : Color.Red;
 
-        EmbedBuilder dmLog = GetEmbed();
+        EmbedBuilder dmLog = GetEmbed(true);
 
         if (@case.PerpetratorId is { } perpetratorId)
         {
@@ -61,17 +57,20 @@ internal sealed class CaseService
         }
 
         EmbedBuilder serverLog = GetEmbed();
+        EmbedBuilder commandLog = @case.CommandInputEmbedBuilder.WithColor(colour).WithFooter(serverLog.Footer).WithTimestamp(@case.CreatedAt);
 
-        return (dmLog, serverLog);
+        return (dmLog, serverLog, commandLog);
 
-        EmbedBuilder GetEmbed() =>
+        EmbedBuilder GetEmbed(bool includeReason = false) =>
             new EmbedBuilder()
                 .WithColor(colour)
                 .WithDescription(
                     String.Join(
                         "\n",
-                        kvp.Concat([new("Reason", @case.Reason ?? "No reason provided")])
-                            .Select(pair => $"{Format.Bold($"{pair.Key}:")} {pair.Value}")
+                        (includeReason
+                            ? kvp.Concat([new("Reason", @case.Reason ?? "No reason provided")])
+                            : kvp)
+                        .Select(pair => $"{Format.Bold($"{pair.Key}:")} {pair.Value}")
                     )
                 )
                 .WithFooter($"{@case.Id} | {@case.LogType}{@case.OperationType}")
@@ -148,6 +147,49 @@ internal sealed class CaseService
 
         var perpetratorKey = perpetratorId ?? context.User.Id;
 
+        var command = (SocketSlashCommand)context.Interaction;
+        List<string> commandMentionArguments = [command.CommandName];
+        List<EmbedFieldBuilder> commandFields = [];
+
+        IReadOnlyCollection<SocketSlashCommandDataOption> options = command.Data.Options;
+
+        while (options.Any(x => x.Type is ApplicationCommandOptionType.SubCommand or ApplicationCommandOptionType.SubCommandGroup))
+        {
+            if (options.ElementAtOrDefault(0) is not { } option)
+            {
+                break;
+            }
+
+            commandMentionArguments.Add(option.Name);
+
+            if (option.Options is not { } optionData)
+            {
+                break;
+            }
+
+            options = optionData;
+        }
+
+        foreach (SocketSlashCommandDataOption option in options)
+        {
+            var value = option.Value switch
+            {
+                IMentionable mentionable => $"{mentionable.Mention} ({mentionable})",
+                SocketEntity<ulong> entity => $"{entity.Id} ({entity})",
+                _ => option.Value.ToString() ?? "Unknown"
+            };
+
+            commandFields.Add(new()
+            {
+                Name = option.Name, Value = value
+            });
+        }
+
+        EmbedBuilder commandInputEmbed =
+            new EmbedBuilder()
+                .WithDescription($"</{String.Join(" ", commandMentionArguments)}:{command.CommandId}>")
+                .WithFields(commandFields);
+
         var @case = new Case
         {
             Id = StringUtils.GenerateUniqueId(),
@@ -158,10 +200,11 @@ internal sealed class CaseService
             LogType = logType,
             OperationType = operationType,
             ExpiresAt = expiresAt,
-            Reason = reason
+            Reason = reason,
+            CommandInputEmbedBuilder = commandInputEmbed
         };
 
-        (EmbedBuilder dmLogEmbed, EmbedBuilder serverLogEmbed) = GenerateLogEmbeds(@case);
+        (EmbedBuilder dmLog, EmbedBuilder serverLog, EmbedBuilder commandLog) = GenerateLogEmbeds(@case);
 
         Guild guildEntity;
 
@@ -169,12 +212,10 @@ internal sealed class CaseService
         {
             List<User> users = [];
             if (
-                await db
-                    .Users.Where(perpetrator =>
+                !await db
+                    .Users.AnyAsync(perpetrator =>
                         perpetrator.Id == perpetratorKey && perpetrator.GuildId == context.Guild.Id
                     )
-                    .SingleOrDefaultAsync()
-                is null
             )
             {
                 users.Add(new()
@@ -185,12 +226,10 @@ internal sealed class CaseService
 
             if (
                 targetId is { } targetKey1
-                && await db
-                        .Users.Where(target =>
-                            target.Id == targetKey1 && target.GuildId == context.Guild.Id
-                        )
-                        .SingleOrDefaultAsync()
-                    is null
+                && !await db
+                    .Users.AnyAsync(target =>
+                        target.Id == targetKey1 && target.GuildId == context.Guild.Id
+                    )
             )
             {
                 users.Add(new()
@@ -199,7 +238,7 @@ internal sealed class CaseService
                 });
             }
 
-            if (channelId is { } channelId1 && await db.Channels.Where(channel => channel.Id == channelId1).FirstOrDefaultAsync() is null)
+            if (channelId is { } channelId1 && !await db.Channels.AnyAsync(channel => channel.Id == channelId1))
             {
                 await db.Channels.AddAsync(new()
                 {
@@ -232,7 +271,7 @@ internal sealed class CaseService
                 await db.Guilds.AddAsync(guild);
             }
             else if (
-                guild.BotLogChannels.FirstOrDefault(channel => channel.BotLogType.HasFlag(logType))
+                guild.BotLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(logType))
                     is { } botLogChannel
                 && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id)
                     is ITextChannel logChannel
@@ -242,7 +281,7 @@ internal sealed class CaseService
             )
             {
                 IUserMessage message = await logChannel.SendMessageAsync(
-                    embeds: [serverLogEmbed.Build()]
+                    embeds: [serverLog.Build(), commandLog.Build()]
                 );
                 @case.LogMessageUrl = message.GetJumpUrl();
             }
@@ -275,7 +314,7 @@ internal sealed class CaseService
                 else
                 {
                     await restUser.SendMessageAsync(
-                        embeds: [dmLogEmbed.Build()],
+                        embeds: [dmLog.Build()],
                         components: component.Build()
                     );
                 }
@@ -289,11 +328,11 @@ internal sealed class CaseService
 
         if (successfulDm == false)
         {
-            serverLogEmbed.AddField("DM Status", "Unable to DM user.");
+            serverLog.AddField("DM Status", "Unable to DM user.");
         }
 
         await context.Interaction.FollowupAsync(
-            embeds: [serverLogEmbed.Build()],
+            embeds: [serverLog.Build(), commandLog.Build()],
             components: GenerateLogMessageButton(@case)
         );
 

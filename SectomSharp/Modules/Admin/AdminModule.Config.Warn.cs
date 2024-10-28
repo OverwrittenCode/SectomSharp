@@ -104,32 +104,7 @@ public partial class AdminModule
 
                 IEnumerable<string> descriptionArray = warningConfiguration
                     .Thresholds.OrderBy(threshold => threshold.Value)
-                    .Select(threshold =>
-                    {
-                        var ordinalSuffix = threshold.Value % 100 is >= 11 and <= 13
-                            ? "th"
-                            : (threshold.Value % 10) switch
-                            {
-                                1 => "st",
-                                2 => "nd",
-                                3 => "rd",
-                                _ => "th"
-                            };
-
-                        var strikePosition = threshold.Value + ordinalSuffix;
-
-                        var durationText = threshold.Span is not { } timeSpan
-                            ? ""
-                            : timeSpan switch
-                            {
-                                { Days: var d and > 0 } => $"{d} day",
-                                { Hours: var h and > 0 } => $"{h} hour",
-                                { Minutes: var m and > 0 } => $"{m} minute",
-                                _ => $"{timeSpan.Seconds} second"
-                            };
-
-                        return $"- {strikePosition} Strike: {Format.Bold($"{durationText} {threshold.LogType}")}";
-                    });
+                    .Select(threshold => threshold.Display());
 
                 var embed = new EmbedBuilder
                 {
@@ -209,34 +184,32 @@ public partial class AdminModule
             {
                 await DeferAsync();
 
-                await using (var db = new ApplicationDbContext())
+                await using var db = new ApplicationDbContext();
+                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
+
+                if (guild is null)
                 {
-                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                    if (guild is null)
+                    await db.Guilds.AddAsync(new()
                     {
-                        await db.Guilds.AddAsync(new()
-                        {
-                            Id = Context.Guild.Id
-                        });
-                        await db.SaveChangesAsync();
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
-                        return;
-                    }
-
-                    WarningThreshold? match = (
-                        guild.Configuration ??= new()
-                    ).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
-
-                    if (match is null)
-                    {
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
-                        return;
-                    }
-
-                    guild.Configuration.Warning.Thresholds.Remove(match);
+                        Id = Context.Guild.Id
+                    });
                     await db.SaveChangesAsync();
+                    await RespondOrFollowUpAsync(NotConfiguredMessage);
+                    return;
                 }
+
+                WarningThreshold? match = (
+                    guild.Configuration ??= new()
+                ).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
+
+                if (match is null)
+                {
+                    await RespondOrFollowUpAsync(NotConfiguredMessage);
+                    return;
+                }
+
+                guild.Configuration.Warning.Thresholds.Remove(match);
+                await db.SaveChangesAsync();
 
                 await LogAsync(Context, reason);
             }

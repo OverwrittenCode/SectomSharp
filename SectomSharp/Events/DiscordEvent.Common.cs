@@ -33,7 +33,7 @@ public partial class DiscordEvent
                 .FirstOrDefaultAsync();
 
             if (
-                logChannels?.FirstOrDefault(channel => channel.AuditLogType.HasFlag(auditLogType))
+                logChannels?.FirstOrDefault(channel => channel.Type.HasFlag(auditLogType))
                 is not { } auditLogChannel
             )
             {

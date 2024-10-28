@@ -1,3 +1,4 @@
+using Discord;
 using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Data.Models;
@@ -17,6 +18,8 @@ public sealed class Case : BaseOneToManyGuildRelation
 
     public required BotLogType LogType { get; init; }
     public required OperationType OperationType { get; init; }
+
+    public required EmbedBuilder CommandInputEmbedBuilder { get; init; }
 
     public DateTime? ExpiresAt { get; init; }
     public string? Reason { get; init; }

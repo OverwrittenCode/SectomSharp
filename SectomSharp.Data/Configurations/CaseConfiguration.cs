@@ -1,5 +1,7 @@
+using Discord.Rest;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Newtonsoft.Json;
 using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
@@ -32,6 +34,10 @@ internal sealed class CaseConfiguration : BaseEntityConfiguration<Case>
         builder.Property(@case => @case.ExpiresAt).HasColumnType(Constants.PostgreSql.Timestamptz);
         builder.Property(@case => @case.LogType).IsRequired();
         builder.Property(@case => @case.OperationType).IsRequired();
+        builder.Property(@case => @case.CommandInputEmbedBuilder).HasConversion(
+            embedBuilder => embedBuilder.ToJsonString(Formatting.Indented),
+            json => EmbedBuilderUtils.Parse(json)
+        ).HasColumnType(Constants.PostgreSql.JsonB).IsRequired();
 
         builder.HasIndex(@case => @case.Id).IsUnique();
         builder.HasIndex(@case => new

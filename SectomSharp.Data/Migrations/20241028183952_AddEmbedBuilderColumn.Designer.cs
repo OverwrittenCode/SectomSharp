@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SectomSharp.Data;
@@ -12,9 +13,11 @@ using SectomSharp.Data.Enums;
 namespace SectomSharp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241028183952_AddEmbedBuilderColumn")]
+    partial class AddEmbedBuilderColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,60 +27,6 @@ namespace SectomSharp.Data.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "operation_type", new[] { "create", "update", "delete" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "snowflake_type", new[] { "none", "user", "role", "channel", "bot_log_channel", "audit_log_channel" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("SectomSharp.Data.Models.AuditLogChannel", b =>
-                {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.Property<decimal>("GuildId")
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.Property<string>("WebhookUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GuildId");
-
-                    b.ToTable("AuditLogChannels");
-                });
-
-            modelBuilder.Entity("SectomSharp.Data.Models.BotLogChannel", b =>
-                {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.Property<decimal>("GuildId")
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GuildId");
-
-                    b.ToTable("BotLogChannels");
-                });
 
             modelBuilder.Entity("SectomSharp.Data.Models.Case", b =>
                 {
@@ -137,28 +86,6 @@ namespace SectomSharp.Data.Migrations
                     b.ToTable("Cases");
                 });
 
-            modelBuilder.Entity("SectomSharp.Data.Models.Channel", b =>
-                {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.Property<decimal>("GuildId")
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GuildId");
-
-                    b.ToTable("Channels");
-                });
-
             modelBuilder.Entity("SectomSharp.Data.Models.Guild", b =>
                 {
                     b.Property<decimal>("Id")
@@ -179,7 +106,7 @@ namespace SectomSharp.Data.Migrations
                     b.ToTable("Guilds");
                 });
 
-            modelBuilder.Entity("SectomSharp.Data.Models.Role", b =>
+            modelBuilder.Entity("SectomSharp.Data.Models.Snowflake", b =>
                 {
                     b.Property<decimal>("Id")
                         .ValueGeneratedOnAdd()
@@ -191,58 +118,74 @@ namespace SectomSharp.Data.Migrations
                     b.Property<decimal>("GuildId")
                         .HasColumnType("numeric(20,0)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GuildId");
-
-                    b.ToTable("Roles");
-                });
-
-            modelBuilder.Entity("SectomSharp.Data.Models.User", b =>
-                {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamptz");
-
-                    b.Property<decimal>("GuildId")
-                        .HasColumnType("numeric(20,0)");
+                    b.Property<SnowflakeType>("Type")
+                        .HasColumnType("snowflake_type");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamptz");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GuildId");
+                    b.ToTable("Snowflake");
 
-                    b.ToTable("Users");
+                    b.HasDiscriminator<SnowflakeType>("Type").HasValue(SnowflakeType.None);
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.AuditLogChannel", b =>
                 {
-                    b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
-                        .WithMany("AuditLogChannels")
-                        .HasForeignKey("GuildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasBaseType("SectomSharp.Data.Models.Snowflake");
 
-                    b.Navigation("Guild");
+                    b.Property<int>("AuditLogType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasDiscriminator().HasValue(SnowflakeType.AuditLogChannel);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.BotLogChannel", b =>
                 {
-                    b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
-                        .WithMany("BotLogChannels")
-                        .HasForeignKey("GuildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasBaseType("SectomSharp.Data.Models.Snowflake");
 
-                    b.Navigation("Guild");
+                    b.Property<int>("BotLogType")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasDiscriminator().HasValue(SnowflakeType.BotLogChannel);
+                });
+
+            modelBuilder.Entity("SectomSharp.Data.Models.Channel", b =>
+                {
+                    b.HasBaseType("SectomSharp.Data.Models.Snowflake");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasDiscriminator().HasValue(SnowflakeType.Channel);
+                });
+
+            modelBuilder.Entity("SectomSharp.Data.Models.Role", b =>
+                {
+                    b.HasBaseType("SectomSharp.Data.Models.Snowflake");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasDiscriminator().HasValue(SnowflakeType.Role);
+                });
+
+            modelBuilder.Entity("SectomSharp.Data.Models.User", b =>
+                {
+                    b.HasBaseType("SectomSharp.Data.Models.Snowflake");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasDiscriminator().HasValue(SnowflakeType.User);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.Case", b =>
@@ -272,17 +215,6 @@ namespace SectomSharp.Data.Migrations
                     b.Navigation("Perpetrator");
 
                     b.Navigation("Target");
-                });
-
-            modelBuilder.Entity("SectomSharp.Data.Models.Channel", b =>
-                {
-                    b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
-                        .WithMany("Channels")
-                        .HasForeignKey("GuildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Guild");
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.Guild", b =>
@@ -355,6 +287,39 @@ namespace SectomSharp.Data.Migrations
                     b.Navigation("Configuration");
                 });
 
+            modelBuilder.Entity("SectomSharp.Data.Models.AuditLogChannel", b =>
+                {
+                    b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
+                        .WithMany("AuditLogChannels")
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
+            modelBuilder.Entity("SectomSharp.Data.Models.BotLogChannel", b =>
+                {
+                    b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
+                        .WithMany("BotLogChannels")
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
+            modelBuilder.Entity("SectomSharp.Data.Models.Channel", b =>
+                {
+                    b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
+                        .WithMany("Channels")
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("SectomSharp.Data.Models.Role", b =>
                 {
                     b.HasOne("SectomSharp.Data.Models.Guild", "Guild")
@@ -377,11 +342,6 @@ namespace SectomSharp.Data.Migrations
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("SectomSharp.Data.Models.Channel", b =>
-                {
-                    b.Navigation("Cases");
-                });
-
             modelBuilder.Entity("SectomSharp.Data.Models.Guild", b =>
                 {
                     b.Navigation("AuditLogChannels");
@@ -395,6 +355,11 @@ namespace SectomSharp.Data.Migrations
                     b.Navigation("Roles");
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("SectomSharp.Data.Models.Channel", b =>
+                {
+                    b.Navigation("Cases");
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Models.User", b =>

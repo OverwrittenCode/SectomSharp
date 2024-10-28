@@ -6,5 +6,6 @@ internal static class Constants
     {
         public const string Timestamptz = "timestamptz";
         public const string CurrentDate = "now()";
+        public const string JsonB = "jsonb";
     }
 }

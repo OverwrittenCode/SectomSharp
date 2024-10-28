@@ -26,8 +26,7 @@ public partial class AdminModule
                 context,
                 BotLogType.Configuration,
                 OperationType.Update,
-                reason: reason,
-                channelId: channelId
-            );
+                channelId: channelId,
+                reason: reason);
     }
 }

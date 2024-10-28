@@ -1,4 +1,4 @@
-namespace SectomSharp.Data.Enums;
+﻿namespace SectomSharp.Data.Enums;
 
 public enum SnowflakeType
 {
