@@ -39,7 +39,6 @@ public partial class MiscModule
         };
 
         await new SelectMenuPaginationBuilder("Select a category")
-            .WithTimeout(15)
             .WithEphemeral()
             .WithResponseType(SelectMenuResponse.Update)
             .AddNestedMenu(groupedItems, categoryConfig, pageConfig, menuConfig)
