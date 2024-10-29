@@ -18,66 +18,6 @@ internal sealed class CaseService
     public const int MaxReasonLength = 250;
 
     /// <summary>
-    ///     Generates two log embeds from a given <see cref="Case" />.
-    /// </summary>
-    /// <param name="case">The case.</param>
-    /// <returns>A tuple with the necessary embed information.</returns>
-    public static (EmbedBuilder DMLog, EmbedBuilder ServerLog, EmbedBuilder CommandLog) GenerateLogEmbeds(Case @case)
-    {
-        Dictionary<string, object> kvp = [];
-
-        if (@case.UpdatedAt is { } updatedAt)
-        {
-            kvp["Modified"] = TimestampTag.FormatFromDateTime(
-                updatedAt,
-                TimestampTagStyles.Relative
-            );
-        }
-
-        if (@case.ExpiresAt is { } expiresAt)
-        {
-            kvp["Expiry"] = TimestampTag.FormatFromDateTime(expiresAt, TimestampTagStyles.Relative);
-        }
-
-        Color colour =
-            @case.PerpetratorId is null ? Color.Purple
-            : @case.OperationType == OperationType.Update ? Color.Orange
-            : Color.Red;
-
-        EmbedBuilder dmLog = GetEmbed(true);
-
-        if (@case.PerpetratorId is { } perpetratorId)
-        {
-            kvp["Perpetrator"] = MentionUtils.MentionUser(perpetratorId);
-        }
-
-        if (@case.TargetId is { } targetId)
-        {
-            kvp["Target"] = MentionUtils.MentionUser(targetId);
-        }
-
-        EmbedBuilder serverLog = GetEmbed();
-        EmbedBuilder commandLog = @case.CommandInputEmbedBuilder.WithColor(colour).WithFooter(serverLog.Footer).WithTimestamp(@case.CreatedAt);
-
-        return (dmLog, serverLog, commandLog);
-
-        EmbedBuilder GetEmbed(bool includeReason = false) =>
-            new EmbedBuilder()
-                .WithColor(colour)
-                .WithDescription(
-                    String.Join(
-                        "\n",
-                        (includeReason
-                            ? kvp.Concat([new("Reason", @case.Reason ?? "No reason provided")])
-                            : kvp)
-                        .Select(pair => $"{Format.Bold($"{pair.Key}:")} {pair.Value}")
-                    )
-                )
-                .WithFooter($"{@case.Id} | {@case.LogType}{@case.OperationType}")
-                .WithTimestamp(@case.CreatedAt);
-    }
-
-    /// <summary>
     ///     Generates a <see cref="MessageComponent" />.
     /// </summary>
     /// <inheritdoc cref="GenerateLogEmbeds" path="/param" />
@@ -132,7 +72,6 @@ internal sealed class CaseService
         SocketInteractionContext context,
         BotLogType logType,
         OperationType operationType,
-        ulong? perpetratorId = null,
         ulong? targetId = null,
         ulong? channelId = null,
         DateTime? expiresAt = null,
@@ -145,7 +84,7 @@ internal sealed class CaseService
             await context.Interaction.DeferAsync();
         }
 
-        var perpetratorKey = perpetratorId ?? context.User.Id;
+        ulong? perpetratorId = context.User.Id == context.Client.CurrentUser.Id ? null : context.User.Id;
 
         var command = (SocketSlashCommand)context.Interaction;
         List<string> commandMentionArguments = [command.CommandName];
@@ -185,15 +124,33 @@ internal sealed class CaseService
             });
         }
 
-        EmbedBuilder commandInputEmbed =
+        var caseId = StringUtils.GenerateUniqueId();
+        var footer = $"{caseId} | {logType}{operationType}";
+
+        EmbedBuilder commandInputEmbedBuilder =
             new EmbedBuilder()
                 .WithDescription($"</{String.Join(" ", commandMentionArguments)}:{command.CommandId}>")
-                .WithFields(commandFields);
+                .WithAuthor($"{logType}{operationType} | {caseId}")
+                .WithColor(perpetratorId is null ? Color.Purple : operationType == OperationType.Update ? Color.Orange : Color.Red)
+                .WithFields(commandFields)
+                .WithTimestamp(DateTime.UtcNow);
+
+        if (perpetratorId.HasValue)
+        {
+            commandInputEmbedBuilder
+                .WithColor(operationType == OperationType.Update ? Color.Orange : Color.Red)
+                .WithThumbnailUrl(context.User.GetDisplayAvatarUrl())
+                .WithFooter($"Perpetrator: {perpetratorId}");
+        }
+        else
+        {
+            commandInputEmbedBuilder.WithColor(Color.Purple);
+        }
 
         var @case = new Case
         {
-            Id = StringUtils.GenerateUniqueId(),
-            PerpetratorId = perpetratorKey,
+            Id = caseId,
+            PerpetratorId = perpetratorId,
             TargetId = targetId,
             ChannelId = channelId,
             GuildId = context.Guild.Id,
@@ -201,48 +158,48 @@ internal sealed class CaseService
             OperationType = operationType,
             ExpiresAt = expiresAt,
             Reason = reason,
-            CommandInputEmbedBuilder = commandInputEmbed
+            CommandInputEmbedBuilder = commandInputEmbedBuilder
         };
 
-        (EmbedBuilder dmLog, EmbedBuilder serverLog, EmbedBuilder commandLog) = GenerateLogEmbeds(@case);
-
+        Embed commandLogEmbed = commandInputEmbedBuilder.Build();
         Guild guildEntity;
 
         await using (var db = new ApplicationDbContext())
         {
             List<User> users = [];
             if (
-                !await db
+                perpetratorId.HasValue
+                && !await db
                     .Users.AnyAsync(perpetrator =>
-                        perpetrator.Id == perpetratorKey && perpetrator.GuildId == context.Guild.Id
+                        perpetrator.Id == perpetratorId.Value && perpetrator.GuildId == context.Guild.Id
                     )
             )
             {
                 users.Add(new()
                 {
-                    Id = perpetratorKey, GuildId = context.Guild.Id
+                    Id = perpetratorId.Value, GuildId = context.Guild.Id
                 });
             }
 
             if (
-                targetId is { } targetKey1
+                targetId.HasValue
                 && !await db
                     .Users.AnyAsync(target =>
-                        target.Id == targetKey1 && target.GuildId == context.Guild.Id
+                        target.Id == targetId.Value && target.GuildId == context.Guild.Id
                     )
             )
             {
                 users.Add(new()
                 {
-                    Id = targetKey1, GuildId = context.Guild.Id
+                    Id = targetId.Value, GuildId = context.Guild.Id
                 });
             }
 
-            if (channelId is { } channelId1 && !await db.Channels.AnyAsync(channel => channel.Id == channelId1))
+            if (channelId.HasValue && !await db.Channels.AnyAsync(channel => channel.Id == channelId.Value))
             {
                 await db.Channels.AddAsync(new()
                 {
-                    Id = channelId1, GuildId = context.Guild.Id
+                    Id = channelId.Value, GuildId = context.Guild.Id
                 });
             }
 
@@ -281,7 +238,7 @@ internal sealed class CaseService
             )
             {
                 IUserMessage message = await logChannel.SendMessageAsync(
-                    embeds: [serverLog.Build(), commandLog.Build()]
+                    embeds: [commandLogEmbed]
                 );
                 @case.LogMessageUrl = message.GetJumpUrl();
             }
@@ -294,18 +251,11 @@ internal sealed class CaseService
 
         bool? successfulDm = null;
 
-        if (targetId is { } targetKey2)
+        if (targetId.HasValue)
         {
-            ComponentBuilder component = new ComponentBuilder().WithButton(
-                $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
-                "notice",
-                ButtonStyle.Secondary,
-                disabled: true
-            );
-
             try
             {
-                RestUser? restUser = await context.Client.Rest.GetUserAsync(targetKey2);
+                RestUser? restUser = await context.Client.Rest.GetUserAsync(targetId.Value);
 
                 if (restUser is null)
                 {
@@ -314,8 +264,13 @@ internal sealed class CaseService
                 else
                 {
                     await restUser.SendMessageAsync(
-                        embeds: [dmLog.Build()],
-                        components: component.Build()
+                        embeds: [commandLogEmbed],
+                        components: new ComponentBuilder().WithButton(
+                            $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
+                            "notice",
+                            ButtonStyle.Secondary,
+                            disabled: true
+                        ).Build()
                     );
                 }
             }
@@ -326,13 +281,9 @@ internal sealed class CaseService
             }
         }
 
-        if (successfulDm == false)
-        {
-            serverLog.AddField("DM Status", "Unable to DM user.");
-        }
-
         await context.Interaction.FollowupAsync(
-            embeds: [serverLog.Build(), commandLog.Build()],
+            successfulDm == false ? "Unable to DM user." : null,
+            [commandLogEmbed],
             components: GenerateLogMessageButton(@case)
         );
 
