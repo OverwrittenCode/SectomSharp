@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SectomSharp.Data;
 using SectomSharp.Events;
 using SectomSharp.Services;
+using Serilog;
 
 RunAsync().GetAwaiter().GetResult();
 return;
@@ -57,6 +58,11 @@ void RegisterServices(IServiceCollection services)
             )
         )
         .AddSingleton(s => new InteractionService(s.GetRequiredService<DiscordSocketClient>()))
+        .AddSingleton<ILogger>(new LoggerConfiguration()
+            .MinimumLevel.Verbose()
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .CreateLogger())
         .AddSingleton<DiscordEvent>()
         .AddSingleton<LoggingService>()
         .AddSingleton<StartupService>()

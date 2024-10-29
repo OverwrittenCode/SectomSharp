@@ -1,47 +1,37 @@
 using Discord;
-using Discord.Commands;
 using Discord.Interactions;
-using Discord.Rest;
 using Discord.WebSocket;
+using Serilog;
+using Serilog.Events;
 
 namespace SectomSharp.Services;
 
 internal sealed class LoggingService
 {
-    private string LogDirectory { get; }
+    private readonly ILogger _logger;
 
-    private string LogFile => Path.Combine(LogDirectory, $"{DateTime.UtcNow:yyyy-MM-dd}.txt");
-
-    public LoggingService(DiscordSocketClient client, InteractionService command)
+    public LoggingService(DiscordSocketClient client, InteractionService command, ILogger logger)
     {
-        LogDirectory = "../logs";
-
         client.Log += LogAsync;
         command.Log += LogAsync;
-        new EmbedBuilder().Build().ToJsonString();
+        _logger = logger;
     }
 
     private Task LogAsync(LogMessage message)
     {
-        var text = message.Exception is CommandException cmdException
-            ? $"[Command/{message.Severity}] {cmdException.Command.Aliases[0]} failed to execute in {cmdException.Context.Channel}: {cmdException}"
-            : $"[General/{message.Severity}] {message}";
-
-        if (message.Severity is LogSeverity.Error or LogSeverity.Critical)
+        LogEventLevel severity = message.Severity switch
         {
-            if (!Directory.Exists(LogDirectory))
-            {
-                Directory.CreateDirectory(LogDirectory);
-            }
+            LogSeverity.Critical => LogEventLevel.Fatal,
+            LogSeverity.Error => LogEventLevel.Error,
+            LogSeverity.Warning => LogEventLevel.Warning,
+            LogSeverity.Info => LogEventLevel.Information,
+            LogSeverity.Verbose => LogEventLevel.Verbose,
+            LogSeverity.Debug => LogEventLevel.Debug,
+            _ => LogEventLevel.Information
+        };
 
-            if (!File.Exists(LogFile))
-            {
-                File.Create(LogFile).Dispose();
-            }
+        _logger.Write(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
 
-            File.AppendAllText(LogFile, $"{text}\n");
-        }
-
-        return Console.Out.WriteLineAsync(text);
+        return Task.CompletedTask;
     }
 }
