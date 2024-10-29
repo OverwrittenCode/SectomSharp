@@ -31,6 +31,12 @@ public sealed partial class ModerationModule
             )
             .ToList();
 
+        if (messages.Count == 0)
+        {
+            await RespondOrFollowUpAsync("No messages newer than 2 weeks were found.");
+            return;
+        }
+
         await channel.DeleteMessagesAsync(
             messages,
             DiscordUtils.GetAuditReasonRequestOptions(Context, reason)
@@ -42,6 +48,5 @@ public sealed partial class ModerationModule
             channelId: channel.Id,
             reason: reason
         );
-        await RespondOrFollowUpAsync($"Deleted {messages.Count}/{amount} messages.");
     }
 }
