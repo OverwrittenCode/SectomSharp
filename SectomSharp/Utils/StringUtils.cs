@@ -1,11 +1,15 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SectomSharp.Utils;
 
-internal static class StringUtils
+internal static partial class StringUtils
 {
     private static readonly Random Random = new();
     private static readonly object LockObj = new();
+
+    [GeneratedRegex(@"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")]
+    private static partial Regex HumanisePascalCase();
 
     /// <summary>
     ///     Generates a unique identifier string consisting of uppercase letters and digits.
@@ -28,6 +32,14 @@ internal static class StringUtils
 
         return stringBuilder.ToString();
     }
+
+    /// <summary>
+    ///     Transforms string with PascalCase by adding a whitespace gap between each word.
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <returns>The transformed string.</returns>
+    public static string PascalCaseToSentence(string input)
+        => HumanisePascalCase().Replace(input, " ");
 
     /// <inheritdoc cref="GenerateComponentIdRegex(String, global::System.String[])" />
     /// <typeparam name="T">The class responsible for the component handling.</typeparam>
@@ -73,9 +85,9 @@ internal static class StringUtils
         }
 
         return String.Join(
-            Constants.ComponentWildcardSeparator,
-            values.Prepend(prefix).Select(val => val.ToString())
-        );
+                           Constants.ComponentWildcardSeparator,
+                           values.Prepend(prefix).Select(val => val.ToString())
+                          );
     }
 
     /// <inheritdoc cref="GenerateComponentId(String, global::System.Object[])" />
