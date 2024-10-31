@@ -43,6 +43,7 @@ Generated\ Files/
 
 # JetBrains
 .idea/
+/SectomSharp.sln.DotSettings
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
