@@ -22,9 +22,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         try
         {
             SelectMenuPaginationManager instance = AllInstances[id];
-            SelectMenuPaginatorPage page = instance
-                ._optionKvp.First(pair => pair.Key == values[0])
-                .Value;
+            SelectMenuPaginatorPage page = instance._optionKvp.First(pair => pair.Key == values[0]).Value;
 
             MessageComponent? components = new ComponentBuilder
             {
@@ -33,19 +31,17 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
 
             if (instance._responseType == SelectMenuResponse.Reply)
             {
-                await context.RespondOrFollowupAsync(
-                    components: components,
-                    embeds: page.Embeds,
-                    ephemeral: instance.IsEphemeral
-                );
+                await context.RespondOrFollowupAsync(components: components, embeds: page.Embeds, ephemeral: instance.IsEphemeral);
             }
             else
             {
-                await context.UpdateAsync(message =>
-                {
-                    message.Components = components;
-                    message.Embeds = page.Embeds;
-                });
+                await context.UpdateAsync(
+                    message =>
+                    {
+                        message.Components = components;
+                        message.Embeds = page.Embeds;
+                    }
+                );
             }
 
             await instance.StartExpirationTimer(instance.Timeout);
@@ -82,11 +78,9 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         bool isEphemeral = false,
         bool isStickySelectMenu = false,
         string? id = null
-    )
-        : base(timeout, isEphemeral, id)
+    ) : base(timeout, isEphemeral, id)
     {
-        SelectMenuBuilder selectMenuBuilder1 =
-            selectMenuBuilder.WithComponentId<SelectMenuPaginationManager>(Id);
+        SelectMenuBuilder selectMenuBuilder1 = selectMenuBuilder.WithComponentId<SelectMenuPaginationManager>(Id);
         _optionKvp = optionKvp;
         _responseType = replyType;
         _firstPage = _optionKvp.First().Value;
@@ -109,8 +103,8 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         }
     }
 
-    protected override async Task RespondOrFollowupAsync(SocketInteractionContext context) =>
-        await context.Interaction.RespondOrFollowupAsync(
+    protected override async Task RespondOrFollowupAsync(SocketInteractionContext context)
+        => await context.Interaction.RespondOrFollowupAsync(
             embeds: _firstPage.Embeds,
             components: new ComponentBuilder
             {

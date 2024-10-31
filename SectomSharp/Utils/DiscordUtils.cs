@@ -19,8 +19,7 @@ internal static class DiscordUtils
     /// <returns>
     ///     The hyperlinked URL for the discord user's profile.
     /// </returns>
-    public static string GetHyperlinkedUserProfile(ulong userId) =>
-        Format.Url(userId.ToString(), $"https://discordapp.com/users/{userId}");
+    public static string GetHyperlinkedUserProfile(ulong userId) => Format.Url(userId.ToString(), $"https://discordapp.com/users/{userId}");
 
     /// <summary>
     ///     Gets a URL that jumps to a message.
@@ -31,8 +30,7 @@ internal static class DiscordUtils
     /// <returns>
     ///     The URL for the message.
     /// </returns>
-    public static string GetMessageUrl(ulong guildId, ulong channelId, ulong messageId) =>
-        $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
+    public static string GetMessageUrl(ulong guildId, ulong channelId, ulong messageId) => $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
 
     /// <summary>
     ///     Creates a new instance of <see cref="RequestOptions" />
@@ -42,11 +40,7 @@ internal static class DiscordUtils
     /// <param name="reason">The given reason.</param>
     /// <param name="extra">A list of key-value pairs to include.</param>
     /// <returns>A new instance of <see cref="RequestOptions" />.</returns>
-    public static RequestOptions GetAuditReasonRequestOptions(
-        SocketInteractionContext context,
-        string? reason,
-        List<KeyValuePair<string, object>>? extra = null
-    )
+    public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason, List<KeyValuePair<string, object>>? extra = null)
     {
         const int MaxAuditReasonLength = 512;
 
@@ -61,9 +55,7 @@ internal static class DiscordUtils
             ]
         );
 
-        var auditReason = String
-            .Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}"))
-            .Truncate(MaxAuditReasonLength);
+        var auditReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(MaxAuditReasonLength);
 
         return new()
         {

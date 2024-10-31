@@ -17,9 +17,7 @@ public partial class ModerationModule
     public sealed class CaseModule : BaseModule
     {
         [SlashCommand("view", "View a specific case on the server")]
-        public async Task View(
-            [MinLength(CaseService.IdLength)] [MaxLength(CaseService.IdLength)] string id
-        )
+        public async Task View([MinLength(CaseService.IdLength)] [MaxLength(CaseService.IdLength)] string id)
         {
             await DeferAsync();
 
@@ -35,28 +33,17 @@ public partial class ModerationModule
 
             dbContext.Entry(@case).State = EntityState.Detached;
 
-            await RespondOrFollowUpAsync(
-                embeds: [@case.CommandInputEmbedBuilder.Build()],
-                components: CaseService.GenerateLogMessageButton(@case)
-            );
+            await RespondOrFollowUpAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseService.GenerateLogMessageButton(@case));
         }
 
         [SlashCommand("list", "List and filter all cases on the server")]
-        public async Task List(
-            IUser? target = null,
-            IUser? perpetrator = null,
-            IChannel? channel = null,
-            BotLogType? logType = null,
-            OperationType? operationType = null
-        )
+        public async Task List(IUser? target = null, IUser? perpetrator = null, IChannel? channel = null, BotLogType? logType = null, OperationType? operationType = null)
         {
             await DeferAsync();
 
             await using var dbContext = new ApplicationDbContext();
 
-            IQueryable<Case> query = dbContext
-                .Cases.Where(@case => @case.GuildId == Context.Guild.Id)
-                .AsNoTracking();
+            IQueryable<Case> query = dbContext.Cases.Where(@case => @case.GuildId == Context.Guild.Id).AsNoTracking();
 
             if (target is not null)
             {
@@ -85,12 +72,16 @@ public partial class ModerationModule
 
             query = query.OrderByDescending(@case => @case.CreatedAt);
 
-            var cases = await query
-                .Select(@case => new
-                {
-                    @case.Id, @case.LogType, @case.OperationType, @case.CreatedAt
-                })
-                .ToListAsync();
+            var cases = await query.Select(
+                                        @case => new
+                                        {
+                                            @case.Id,
+                                            @case.LogType,
+                                            @case.OperationType,
+                                            @case.CreatedAt
+                                        }
+                                    )
+                                   .ToListAsync();
 
             if (cases.Count == 0)
             {
@@ -98,16 +89,13 @@ public partial class ModerationModule
                 return;
             }
 
-            List<string> embedDescriptions = cases
-                .Select(@case =>
-                    $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {TimestampTag.FormatFromDateTime(@case.CreatedAt, TimestampTagStyles.Relative)}"
-                )
-                .ToList();
+            List<string> embedDescriptions = cases.Select(
+                                                       @case
+                                                           => $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {TimestampTag.FormatFromDateTime(@case.CreatedAt, TimestampTagStyles.Relative)}"
+                                                   )
+                                                  .ToList();
 
-            Embed[] embeds = ButtonPaginationManager.GetEmbeds(
-                embedDescriptions,
-                $"{Context.Guild.Name} Cases ({cases.Count})"
-            );
+            Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Cases ({cases.Count})");
 
             ButtonPaginationBuilder pagination = new()
             {

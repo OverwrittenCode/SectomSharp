@@ -16,7 +16,8 @@ public partial class DiscordEvent
             _client,
             new()
             {
-                LogLevel = LogSeverity.Info, DefaultRunMode = RunMode.Async
+                LogLevel = LogSeverity.Info,
+                DefaultRunMode = RunMode.Async
             }
         );
 

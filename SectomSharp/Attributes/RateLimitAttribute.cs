@@ -27,20 +27,13 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
     /// </summary>
     /// <param name="interactionType">The type of interaction this rate limit applies to</param>
     /// <param name="seconds">The duration in seconds to wait between command execution.</param>
-    public RateLimitAttribute(
-        InteractionType interactionType = InteractionType.ApplicationCommand,
-        int seconds = DefaultSeconds
-    )
+    public RateLimitAttribute(InteractionType interactionType = InteractionType.ApplicationCommand, int seconds = DefaultSeconds)
     {
         _interactionType = interactionType;
         _rateLimit = TimeSpan.FromSeconds(seconds);
     }
 
-    public override Task<PreconditionResult> CheckRequirementsAsync(
-        IInteractionContext context,
-        ICommandInfo commandInfo,
-        IServiceProvider services
-    )
+    public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
     {
         if (context.Interaction.Type != _interactionType)
         {
@@ -70,10 +63,9 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
             {
                 var remainingSeconds = (_rateLimit - timeDifference).Seconds;
 
-                var message =
-                    remainingSeconds == 0
-                        ? "You are sending requests to fast!"
-                        : $"Cooldown: {remainingSeconds} {(remainingSeconds == 1 ? "second" : "seconds")} remaining";
+                var message = remainingSeconds == 0
+                    ? "You are sending requests to fast!"
+                    : $"Cooldown: {remainingSeconds} {(remainingSeconds == 1 ? "second" : "seconds")} remaining";
 
                 return Task.FromResult(PreconditionResult.FromError(message));
             }

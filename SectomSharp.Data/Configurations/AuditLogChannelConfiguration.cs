@@ -7,11 +7,7 @@ internal sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<Aud
 {
     public override void Configure(EntityTypeBuilder<AuditLogChannel> builder)
     {
-        builder
-            .HasOne(channel => channel.Guild)
-            .WithMany(guild => guild.AuditLogChannels)
-            .HasForeignKey(channel => channel.GuildId)
-            .IsRequired();
+        builder.HasOne(channel => channel.Guild).WithMany(guild => guild.AuditLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();
 
         builder.Property(channel => channel.Type).IsRequired();
 

@@ -11,8 +11,7 @@ namespace SectomSharp.Managers.Pagination.Button;
 /// </summary>
 internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationManager>
 {
-    private static readonly PageNavigationButton[] PageNavigationButtons =
-        Enum.GetValues<PageNavigationButton>();
+    private static readonly PageNavigationButton[] PageNavigationButtons = Enum.GetValues<PageNavigationButton>();
 
     /// <summary>
     ///     Handles pagination for the button components.
@@ -21,11 +20,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// <param name="id">The <see cref="InstanceManager{T}.Id" />.</param>
     /// <param name="position">The <see cref="PageNavigationButton" />.</param>
     /// <inheritdoc cref="SocketMessageComponent.UpdateAsync(Action{MessageProperties}, RequestOptions)" path="/returns" />
-    public static async Task OnHit(
-        SocketMessageComponent context,
-        string id,
-        PageNavigationButton position
-    )
+    public static async Task OnHit(SocketMessageComponent context, string id, PageNavigationButton position)
     {
         try
         {
@@ -50,11 +45,13 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
                     return;
             }
 
-            await context.UpdateAsync(message =>
-            {
-                message.Components = instance.MessageComponent;
-                message.Embeds = instance.CurrentEmbeds;
-            });
+            await context.UpdateAsync(
+                message =>
+                {
+                    message.Components = instance.MessageComponent;
+                    message.Embeds = instance.CurrentEmbeds;
+                }
+            );
 
             await instance.StartExpirationTimer(instance.Timeout);
         }
@@ -78,37 +75,34 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// <summary>
     ///     Gets a message component list containing of the button builders used to navigate pages.
     /// </summary>
-    private List<IMessageComponent> ButtonComponents =>
-        PageNavigationButtons
-            .Select(
-                IMessageComponent (pageNavigatorButton) =>
-                    new ButtonBuilder()
-                        .WithLabel(pageNavigatorButton.ToString())
-                        .WithComponentId<ButtonPaginationManager>(Id, pageNavigatorButton)
-                        .WithStyle(
-                            pageNavigatorButton == PageNavigationButton.Exit
-                                ? ButtonStyle.Danger
-                                : ButtonStyle.Primary
-                        )
-                        .WithDisabled(
-                            pageNavigatorButton switch
-                            {
-                                PageNavigationButton.Start or PageNavigationButton.Previous =>
-                                    _currentPageIndex == 0,
-                                PageNavigationButton.End or PageNavigationButton.Next =>
-                                    _currentPageIndex == _embeds.Length - 1,
-                                _ => false
-                            }
-                        )
-                        .Build()
-            )
-            .ToList();
+    private List<IMessageComponent> ButtonComponents
+        => PageNavigationButtons.Select(
+                                     IMessageComponent (pageNavigatorButton) => new ButtonBuilder().WithLabel(pageNavigatorButton.ToString())
+                                                                                                   .WithComponentId<ButtonPaginationManager>(Id, pageNavigatorButton)
+                                                                                                   .WithStyle(
+                                                                                                        pageNavigatorButton == PageNavigationButton.Exit
+                                                                                                            ? ButtonStyle.Danger
+                                                                                                            : ButtonStyle.Primary
+                                                                                                    )
+                                                                                                   .WithDisabled(
+                                                                                                        pageNavigatorButton switch
+                                                                                                        {
+                                                                                                            PageNavigationButton.Start or PageNavigationButton.Previous =>
+                                                                                                                _currentPageIndex == 0,
+                                                                                                            PageNavigationButton.End or PageNavigationButton.Next =>
+                                                                                                                _currentPageIndex == _embeds.Length - 1,
+                                                                                                            _ => false
+                                                                                                        }
+                                                                                                    )
+                                                                                                   .Build()
+                                 )
+                                .ToList();
 
     /// <summary>
     ///     Gets the message component containing navigation buttons and extra action rows.
     /// </summary>
-    private MessageComponent MessageComponent =>
-        new ComponentBuilder
+    private MessageComponent MessageComponent
+        => new ComponentBuilder
         {
             ActionRows =
             [
@@ -121,13 +115,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// <param name="extraActionRows">Optional additional action rows to include in the message.</param>
     /// <param name="timeout">The duration in seconds.</param>
     /// <param name="isEphemeral">If the pagination is ephemeral.</param>
-    public ButtonPaginationManager(
-        Embed[] embeds,
-        ActionRowBuilder[]? extraActionRows = null,
-        int timeout = 180,
-        bool isEphemeral = false
-    )
-        : base(timeout, isEphemeral)
+    public ButtonPaginationManager(Embed[] embeds, ActionRowBuilder[]? extraActionRows = null, int timeout = 180, bool isEphemeral = false) : base(timeout, isEphemeral)
     {
         _embeds = embeds;
         _extraActionRows = extraActionRows ?? [];
@@ -141,19 +129,13 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// <param name="extraActionRows">Optional additional action rows to include in the message.</param>
     /// <param name="timeout">The duration in seconds.</param>
     /// <param name="isEphemeral">If the pagination should be ephemeral.</param>
-    public ButtonPaginationManager(
-        string embedTitle,
-        string content,
-        ActionRowBuilder[]? extraActionRows = null,
-        int timeout = 180,
-        bool isEphemeral = false
-    )
-        : this(GetEmbeds(content, embedTitle), extraActionRows, timeout, isEphemeral) { }
+    public ButtonPaginationManager(string embedTitle, string content, ActionRowBuilder[]? extraActionRows = null, int timeout = 180, bool isEphemeral = false) : this(
+        GetEmbeds(content, embedTitle),
+        extraActionRows,
+        timeout,
+        isEphemeral
+    ) { }
 
-    protected override async Task RespondOrFollowupAsync(SocketInteractionContext context) =>
-        await context.Interaction.RespondOrFollowupAsync(
-            embeds: CurrentEmbeds,
-            components: _embeds.Length == 1 ? null : MessageComponent,
-            ephemeral: IsEphemeral
-        );
+    protected override async Task RespondOrFollowupAsync(SocketInteractionContext context)
+        => await context.Interaction.RespondOrFollowupAsync(embeds: CurrentEmbeds, components: _embeds.Length == 1 ? null : MessageComponent, ephemeral: IsEphemeral);
 }

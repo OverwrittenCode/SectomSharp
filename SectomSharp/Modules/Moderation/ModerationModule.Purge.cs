@@ -12,10 +12,7 @@ public sealed partial class ModerationModule
     [SlashCommand("purge", "Bulk delete messages in the current channel")]
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     [RequireBotPermission(ChannelPermission.ManageMessages)]
-    public async Task Purge(
-        [MinValue(1)] [MaxValue(DiscordConfig.MaxMessagesPerBatch)] int amount = 50,
-        [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-    )
+    public async Task Purge([MinValue(1)] [MaxValue(DiscordConfig.MaxMessagesPerBatch)] int amount = 50, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
     {
         await DeferAsync();
         IUserMessage originalMessage = await GetOriginalResponseAsync();
@@ -25,11 +22,8 @@ public sealed partial class ModerationModule
         var channel = (SocketTextChannel)Context.Channel;
 
         List<IMessage> messages = (await channel.GetMessagesAsync(amount + 1).FlattenAsync())
-            .Where(message =>
-                message.Id != originalMessage.Id
-                && message.CreatedAt >= earliestAllowedPurgeDateTime
-            )
-            .ToList();
+                                 .Where(message => message.Id != originalMessage.Id && message.CreatedAt >= earliestAllowedPurgeDateTime)
+                                 .ToList();
 
         if (messages.Count == 0)
         {
@@ -37,16 +31,7 @@ public sealed partial class ModerationModule
             return;
         }
 
-        await channel.DeleteMessagesAsync(
-            messages,
-            DiscordUtils.GetAuditReasonRequestOptions(Context, reason)
-        );
-        await CaseService.LogAsync(
-            Context,
-            BotLogType.Purge,
-            OperationType.Create,
-            channelId: channel.Id,
-            reason: reason
-        );
+        await channel.DeleteMessagesAsync(messages, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
+        await CaseService.LogAsync(Context, BotLogType.Purge, OperationType.Create, channelId: channel.Id, reason: reason);
     }
 }

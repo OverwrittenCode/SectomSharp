@@ -13,8 +13,7 @@ namespace SectomSharp.Data;
 public sealed class ApplicationDbContext : DbContext
 {
 #pragma warning disable CS0618 // Type or member is obsolete
-    static ApplicationDbContext() =>
-        NpgsqlConnection.GlobalTypeMapper.MapEnum<SnowflakeType>().MapEnum<OperationType>();
+    static ApplicationDbContext() => NpgsqlConnection.GlobalTypeMapper.MapEnum<SnowflakeType>().MapEnum<OperationType>();
 #pragma warning restore CS0618 // Type or member is obsolete
 
     public DbSet<Guild> Guilds { get; set; } = null!;
@@ -37,23 +36,20 @@ public sealed class ApplicationDbContext : DbContext
         return base.SaveChanges();
     }
 
-    protected override void OnModelCreating(ModelBuilder builder) =>
-        builder
-            .HasPostgresEnum<SnowflakeType>()
-            .HasPostgresEnum<OperationType>()
-            .ApplyConfiguration(new GuildConfiguration())
-            .ApplyConfiguration(new UserConfiguration())
-            .ApplyConfiguration(new RoleConfiguration())
-            .ApplyConfiguration(new ChannelConfiguration())
-            .ApplyConfiguration(new AuditLogChannelConfiguration())
-            .ApplyConfiguration(new BotLogChannelConfiguration())
-            .ApplyConfiguration(new CaseConfiguration());
+    protected override void OnModelCreating(ModelBuilder builder)
+        => builder.HasPostgresEnum<SnowflakeType>()
+                  .HasPostgresEnum<OperationType>()
+                  .ApplyConfiguration(new GuildConfiguration())
+                  .ApplyConfiguration(new UserConfiguration())
+                  .ApplyConfiguration(new RoleConfiguration())
+                  .ApplyConfiguration(new ChannelConfiguration())
+                  .ApplyConfiguration(new AuditLogChannelConfiguration())
+                  .ApplyConfiguration(new BotLogChannelConfiguration())
+                  .ApplyConfiguration(new CaseConfiguration());
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        IConfigurationRoot config = new ConfigurationBuilder()
-            .AddUserSecrets(typeof(ApplicationDbContext).Assembly)
-            .Build();
+        IConfigurationRoot config = new ConfigurationBuilder().AddUserSecrets(typeof(ApplicationDbContext).Assembly).Build();
 
         optionsBuilder.UseNpgsql(config["PostgreSQL:ConnectionString"]);
 
@@ -62,9 +58,7 @@ public sealed class ApplicationDbContext : DbContext
 
     private void UpdateEntities()
     {
-        IEnumerable<EntityEntry> entries = ChangeTracker
-            .Entries()
-            .Where(entry => entry is { Entity: BaseEntity, State: EntityState.Modified });
+        IEnumerable<EntityEntry> entries = ChangeTracker.Entries().Where(entry => entry is { Entity: BaseEntity, State: EntityState.Modified });
 
         foreach (EntityEntry entry in entries)
         {

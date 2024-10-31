@@ -6,7 +6,8 @@ namespace SectomSharp.Managers.Pagination.Models;
 ///     Configuration for how to handle categories in a nested menu.
 /// </summary>
 /// <typeparam name="T">The type of the category.</typeparam>
-internal readonly record struct CategoryConfig<T>(
+internal readonly record struct CategoryConfig<T>
+(
     string CustomIdPrefix,
     Func<T, string> GetName,
     Func<T, string> GetValue,

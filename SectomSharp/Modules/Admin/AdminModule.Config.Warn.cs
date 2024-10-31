@@ -20,49 +20,34 @@ public partial class AdminModule
             private const int MinThreshold = 1;
             private const int MaxThreshold = 20;
 
-            [SlashCommand(
-                "add-timeout-punishment",
-                "Add a timeout punishment on reaching a number of warnings"
-            )]
+            [SlashCommand("add-timeout-punishment", "Add a timeout punishment on reaching a number of warnings")]
             public async Task AddTimeoutPunishment(
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
                 [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
                 [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            ) => await AddPunishment(threshold, duration, reason, BotLogType.Timeout);
+            )
+                => await AddPunishment(threshold, duration, reason, BotLogType.Timeout);
 
-            [SlashCommand(
-                "add-ban-punishment",
-                "Add a ban punishment on reaching a number of warnings"
-            )]
-            public async Task AddBanPunishment(
-                [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            ) => await AddPunishment(threshold, null, reason, BotLogType.Ban);
+            [SlashCommand("add-ban-punishment", "Add a ban punishment on reaching a number of warnings")]
+            public async Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+                => await AddPunishment(threshold, null, reason, BotLogType.Ban);
 
-            [SlashCommand(
-                "remove-timeout-punishment",
-                "Remove a current timeout punishment configuration"
-            )]
+            [SlashCommand("remove-timeout-punishment", "Remove a current timeout punishment configuration")]
             public async Task RemoveTimeoutPunishment(
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
                 [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            ) => await RemovePunishmentAsync(threshold, reason, BotLogType.Timeout);
+            )
+                => await RemovePunishmentAsync(threshold, reason, BotLogType.Timeout);
 
             [SlashCommand("remove-ban-punishment", "Remove a current ban punishment configuration")]
-            public async Task RemoveBanPunishment(
-                [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            ) => await RemovePunishmentAsync(threshold, reason, BotLogType.Ban);
+            public async Task RemoveBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+                => await RemovePunishmentAsync(threshold, reason, BotLogType.Ban);
 
             [SlashCommand("disable", "Disable this configuration")]
-            public async Task Disable(
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            ) => await SetIsDisabledAsync(true, reason);
+            public async Task Disable([MaxLength(CaseService.MaxReasonLength)] string? reason = null) => await SetIsDisabledAsync(true, reason);
 
             [SlashCommand("enable", "Enable this configuration")]
-            public async Task Enable(
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            ) => await SetIsDisabledAsync(false, reason);
+            public async Task Enable([MaxLength(CaseService.MaxReasonLength)] string? reason = null) => await SetIsDisabledAsync(false, reason);
 
             [SlashCommand("view-thresholds", "View the configured warning thresholds")]
             public async Task ViewThresholds()
@@ -78,7 +63,8 @@ public partial class AdminModule
                     await db.Guilds.AddAsync(
                         new()
                         {
-                            Id = Context.Guild.Id, Configuration = new()
+                            Id = Context.Guild.Id,
+                            Configuration = new()
                         }
                     );
                     await db.SaveChangesAsync();
@@ -102,13 +88,13 @@ public partial class AdminModule
                     return;
                 }
 
-                IEnumerable<string> descriptionArray = warningConfiguration
-                    .Thresholds.OrderBy(threshold => threshold.Value)
-                    .Select(threshold => threshold.Display());
+                IEnumerable<string> descriptionArray = warningConfiguration.Thresholds.OrderBy(threshold => threshold.Value).Select(threshold => threshold.Display());
 
                 var embed = new EmbedBuilder
                 {
-                    Title = $"{Context.Guild.Name} Warning Thresholds", Color = Constants.LightGold, Description = String.Join("\n", descriptionArray)
+                    Title = $"{Context.Guild.Name} Warning Thresholds",
+                    Color = Constants.LightGold,
+                    Description = String.Join("\n", descriptionArray)
                 };
 
                 if (warningConfiguration.IsDisabled)
@@ -119,18 +105,14 @@ public partial class AdminModule
                 await RespondOrFollowUpAsync(embeds: [embed.Build()]);
             }
 
-            private async Task AddPunishment(
-                int threshold,
-                TimeSpan? duration,
-                string? reason,
-                BotLogType punishment
-            )
+            private async Task AddPunishment(int threshold, TimeSpan? duration, string? reason, BotLogType punishment)
             {
-                WarningThreshold warningThreshold =
-                    new()
-                    {
-                        LogType = punishment, Value = threshold, Span = duration
-                    };
+                WarningThreshold warningThreshold = new()
+                {
+                    LogType = punishment,
+                    Value = threshold,
+                    Span = duration
+                };
 
                 await DeferAsync();
 
@@ -159,11 +141,7 @@ public partial class AdminModule
                         return;
                     }
 
-                    if (
-                        (guild.Configuration ??= new()).Warning.Thresholds.Exists(x =>
-                            x.Value == threshold
-                        )
-                    )
+                    if ((guild.Configuration ??= new()).Warning.Thresholds.Exists(x => x.Value == threshold))
                     {
                         await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
                         return;
@@ -176,11 +154,7 @@ public partial class AdminModule
                 await LogAsync(Context, reason);
             }
 
-            private async Task RemovePunishmentAsync(
-                int threshold,
-                string? reason,
-                BotLogType punishment
-            )
+            private async Task RemovePunishmentAsync(int threshold, string? reason, BotLogType punishment)
             {
                 await DeferAsync();
 
@@ -189,18 +163,18 @@ public partial class AdminModule
 
                 if (guild is null)
                 {
-                    await db.Guilds.AddAsync(new()
-                    {
-                        Id = Context.Guild.Id
-                    });
+                    await db.Guilds.AddAsync(
+                        new()
+                        {
+                            Id = Context.Guild.Id
+                        }
+                    );
                     await db.SaveChangesAsync();
                     await RespondOrFollowUpAsync(NotConfiguredMessage);
                     return;
                 }
 
-                WarningThreshold? match = (
-                    guild.Configuration ??= new()
-                ).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
+                WarningThreshold? match = (guild.Configuration ??= new()).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
 
                 if (match is null)
                 {
@@ -234,7 +208,8 @@ public partial class AdminModule
                     await db.Guilds.AddAsync(
                         new()
                         {
-                            Id = Context.Guild.Id, Configuration = disabledEntry
+                            Id = Context.Guild.Id,
+                            Configuration = disabledEntry
                         }
                     );
 

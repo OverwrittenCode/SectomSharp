@@ -38,7 +38,9 @@ internal sealed class CaseService
                 new ActionRowBuilder().AddComponent(
                     new ButtonBuilder
                     {
-                        Style = ButtonStyle.Link, Label = "View Log Message", Url = url
+                        Style = ButtonStyle.Link,
+                        Label = "View Log Message",
+                        Url = url
                     }.Build()
                 )
             );
@@ -118,29 +120,35 @@ internal sealed class CaseService
                 _ => option.Value.ToString() ?? "Unknown"
             };
 
-            commandFields.Add(new()
-            {
-                Name = option.Name, Value = value
-            });
+            commandFields.Add(
+                new()
+                {
+                    Name = option.Name,
+                    Value = value
+                }
+            );
         }
 
         var caseId = StringUtils.GenerateUniqueId();
         var footer = $"{caseId} | {logType}{operationType}";
 
-        EmbedBuilder commandInputEmbedBuilder =
-            new EmbedBuilder()
-                .WithDescription($"</{String.Join(" ", commandMentionArguments)}:{command.CommandId}>")
-                .WithAuthor($"{logType}{operationType} | {caseId}")
-                .WithColor(perpetratorId is null ? Color.Purple : operationType == OperationType.Update ? Color.Orange : Color.Red)
-                .WithFields(commandFields)
-                .WithTimestamp(DateTime.UtcNow);
+        EmbedBuilder commandInputEmbedBuilder = new EmbedBuilder().WithDescription($"</{String.Join(" ", commandMentionArguments)}:{command.CommandId}>")
+                                                                  .WithAuthor($"{logType}{operationType} | {caseId}")
+                                                                  .WithColor(
+                                                                       perpetratorId is null
+                                                                           ? Color.Purple
+                                                                           : operationType == OperationType.Update
+                                                                               ? Color.Orange
+                                                                               : Color.Red
+                                                                   )
+                                                                  .WithFields(commandFields)
+                                                                  .WithTimestamp(DateTime.UtcNow);
 
         if (perpetratorId.HasValue)
         {
-            commandInputEmbedBuilder
-                .WithColor(operationType == OperationType.Update ? Color.Orange : Color.Red)
-                .WithThumbnailUrl(context.User.GetDisplayAvatarUrl())
-                .WithFooter($"Perpetrator: {perpetratorId}");
+            commandInputEmbedBuilder.WithColor(operationType == OperationType.Update ? Color.Orange : Color.Red)
+                                    .WithThumbnailUrl(context.User.GetDisplayAvatarUrl())
+                                    .WithFooter($"Perpetrator: {perpetratorId}");
         }
         else
         {
@@ -167,40 +175,37 @@ internal sealed class CaseService
         await using (var db = new ApplicationDbContext())
         {
             List<User> users = [];
-            if (
-                perpetratorId.HasValue
-                && !await db
-                    .Users.AnyAsync(perpetrator =>
-                        perpetrator.Id == perpetratorId.Value && perpetrator.GuildId == context.Guild.Id
-                    )
-            )
+            if (perpetratorId.HasValue && !await db.Users.AnyAsync(perpetrator => perpetrator.Id == perpetratorId.Value && perpetrator.GuildId == context.Guild.Id))
             {
-                users.Add(new()
-                {
-                    Id = perpetratorId.Value, GuildId = context.Guild.Id
-                });
+                users.Add(
+                    new()
+                    {
+                        Id = perpetratorId.Value,
+                        GuildId = context.Guild.Id
+                    }
+                );
             }
 
-            if (
-                targetId.HasValue
-                && !await db
-                    .Users.AnyAsync(target =>
-                        target.Id == targetId.Value && target.GuildId == context.Guild.Id
-                    )
-            )
+            if (targetId.HasValue && !await db.Users.AnyAsync(target => target.Id == targetId.Value && target.GuildId == context.Guild.Id))
             {
-                users.Add(new()
-                {
-                    Id = targetId.Value, GuildId = context.Guild.Id
-                });
+                users.Add(
+                    new()
+                    {
+                        Id = targetId.Value,
+                        GuildId = context.Guild.Id
+                    }
+                );
             }
 
             if (channelId.HasValue && !await db.Channels.AnyAsync(channel => channel.Id == channelId.Value))
             {
-                await db.Channels.AddAsync(new()
-                {
-                    Id = channelId.Value, GuildId = context.Guild.Id
-                });
+                await db.Channels.AddAsync(
+                    new()
+                    {
+                        Id = channelId.Value,
+                        GuildId = context.Guild.Id
+                    }
+                );
             }
 
             if (users.Count > 0)
@@ -208,9 +213,7 @@ internal sealed class CaseService
                 await db.Users.AddRangeAsync(users);
             }
 
-            IQueryable<Guild> guildQuery = db
-                .Guilds.Where(guild => guild.Id == context.Guild.Id)
-                .Include(guild => guild.BotLogChannels);
+            IQueryable<Guild> guildQuery = db.Guilds.Where(guild => guild.Id == context.Guild.Id).Include(guild => guild.BotLogChannels);
 
             if (includeGuildCases)
             {
@@ -227,19 +230,11 @@ internal sealed class CaseService
                 };
                 await db.Guilds.AddAsync(guild);
             }
-            else if (
-                guild.BotLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(logType))
-                    is { } botLogChannel
-                && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id)
-                    is ITextChannel logChannel
-                && context
-                    .Guild.CurrentUser.GetPermissions(logChannel)
-                    .Has(ChannelPermission.SendMessages)
-            )
+            else if (guild.BotLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(logType)) is { } botLogChannel
+                  && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id) is ITextChannel logChannel
+                  && context.Guild.CurrentUser.GetPermissions(logChannel).Has(ChannelPermission.SendMessages))
             {
-                IUserMessage message = await logChannel.SendMessageAsync(
-                    embeds: [commandLogEmbed]
-                );
+                IUserMessage message = await logChannel.SendMessageAsync(embeds: [commandLogEmbed]);
                 @case.LogMessageUrl = message.GetJumpUrl();
             }
 
@@ -266,26 +261,22 @@ internal sealed class CaseService
                     await restUser.SendMessageAsync(
                         embeds: [commandLogEmbed],
                         components: new ComponentBuilder().WithButton(
-                            $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
-                            "notice",
-                            ButtonStyle.Secondary,
-                            disabled: true
-                        ).Build()
+                                                               $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
+                                                               "notice",
+                                                               ButtonStyle.Secondary,
+                                                               disabled: true
+                                                           )
+                                                          .Build()
                     );
                 }
             }
-            catch (HttpException ex)
-                when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+            catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
             {
                 successfulDm = false;
             }
         }
 
-        await context.Interaction.FollowupAsync(
-            successfulDm == false ? "Unable to DM user." : null,
-            [commandLogEmbed],
-            components: GenerateLogMessageButton(@case)
-        );
+        await context.Interaction.FollowupAsync(successfulDm == false ? "Unable to DM user." : null, [commandLogEmbed], components: GenerateLogMessageButton(@case));
 
         return guildEntity;
     }

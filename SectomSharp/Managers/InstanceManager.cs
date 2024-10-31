@@ -9,8 +9,7 @@ namespace SectomSharp.Managers;
 ///     The type of instance being managed.
 ///     Must inherit from <see cref="InstanceManager{T}" />.
 /// </typeparam>
-internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
-    where T : InstanceManager<T>
+internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable where T : InstanceManager<T>
 {
     /// <summary>
     ///     A dictionary storing all active instances of <typeparamref name="T" />

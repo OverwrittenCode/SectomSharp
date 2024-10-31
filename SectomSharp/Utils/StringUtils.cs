@@ -38,13 +38,11 @@ internal static partial class StringUtils
     /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>The transformed string.</returns>
-    public static string PascalCaseToSentence(string input)
-        => HumanisePascalCase().Replace(input, " ");
+    public static string PascalCaseToSentence(string input) => HumanisePascalCase().Replace(input, " ");
 
     /// <inheritdoc cref="GenerateComponentIdRegex(String, global::System.String[])" />
     /// <typeparam name="T">The class responsible for the component handling.</typeparam>
-    public static string GenerateComponentIdRegex<T>(params string[] wildcardNames) =>
-        GenerateComponentIdRegex(typeof(T).Name, wildcardNames);
+    public static string GenerateComponentIdRegex<T>(params string[] wildcardNames) => GenerateComponentIdRegex(typeof(T).Name, wildcardNames);
 
     /// <summary>
     ///     Generates a lazy regex match for a component to match
@@ -84,14 +82,10 @@ internal static partial class StringUtils
             return prefix;
         }
 
-        return String.Join(
-                           Constants.ComponentWildcardSeparator,
-                           values.Prepend(prefix).Select(val => val.ToString())
-                          );
+        return String.Join(Constants.ComponentWildcardSeparator, values.Prepend(prefix).Select(val => val.ToString()));
     }
 
     /// <inheritdoc cref="GenerateComponentId(String, global::System.Object[])" />
     /// <inheritdoc cref="GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam" />
-    public static string GenerateComponentId<T>(params object[] values) =>
-        GenerateComponentId(typeof(T).Name, values);
+    public static string GenerateComponentId<T>(params object[] values) => GenerateComponentId(typeof(T).Name, values);
 }

@@ -7,14 +7,11 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
-    private static string GetRoleDisplayName(SocketRole role) =>
-        role.Emoji is null ? role.Name : $"{role.Emoji} {role.Name}";
+    private static string GetRoleDisplayName(SocketRole role) => role.Emoji is null ? role.Name : $"{role.Emoji} {role.Name}";
 
-    public async Task HandleRoleCreatedAsync(SocketRole role) =>
-        await HandleRoleAlteredAsync(role, OperationType.Create);
+    public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
 
-    public async Task HandleRoleDeletedAsync(SocketRole role) =>
-        await HandleRoleAlteredAsync(role, OperationType.Delete);
+    public async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
 
 #pragma warning disable CA1822 // Mark members as static
     public async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
@@ -28,36 +25,16 @@ public partial class DiscordEvent
         List<AuditLogEntry> entries =
         [
             new("Name", GetChangeEntry(oldRole.Name, newRole.Name), oldRole.Name != newRole.Name),
-            new(
-                "Emoji",
-                GetChangeEntry(oldRole.Emoji?.ToString(), newRole.Emoji?.ToString()),
-                oldRole.Emoji?.ToString() != newRole.Emoji?.ToString()
-            ),
-            new(
-                "Icon",
-                GetChangeEntry(oldRole.GetIconUrl(), newRole.GetIconUrl()),
-                oldRole.Icon != newRole.Icon
-            ),
+            new("Emoji", GetChangeEntry(oldRole.Emoji?.ToString(), newRole.Emoji?.ToString()), oldRole.Emoji?.ToString() != newRole.Emoji?.ToString()),
+            new("Icon", GetChangeEntry(oldRole.GetIconUrl(), newRole.GetIconUrl()), oldRole.Icon != newRole.Icon),
             new("Hoisted", $"Set to {newRole.IsHoisted}", oldRole.IsHoisted != newRole.IsHoisted),
-            new(
-                "Mentionable",
-                $"Set to {newRole.IsMentionable}",
-                oldRole.IsMentionable != newRole.IsMentionable
-            ),
-            new(
-                "Hex Code",
-                GetChangeEntry(
-                    oldRole.Color.ToHyperlinkedColourPicker(),
-                    newRole.Color.ToHyperlinkedColourPicker()
-                ),
-                oldRole.Color != newRole.Color
-            )
+            new("Mentionable", $"Set to {newRole.IsMentionable}", oldRole.IsMentionable != newRole.IsMentionable),
+            new("Hex Code", GetChangeEntry(oldRole.Color.ToHyperlinkedColourPicker(), newRole.Color.ToHyperlinkedColourPicker()), oldRole.Color != newRole.Color)
         ];
 
         if (oldRole.Permissions.RawValue != newRole.Permissions.RawValue)
         {
-            (IEnumerable<GuildPermission> added, IEnumerable<GuildPermission> removed) =
-                GetPermissionChanges(oldRole.Permissions, newRole.Permissions);
+            (IEnumerable<GuildPermission> added, IEnumerable<GuildPermission> removed) = GetPermissionChanges(oldRole.Permissions, newRole.Permissions);
 
             List<GuildPermission> guildPermissions = added.ToList();
             if (guildPermissions.Count != 0)
@@ -72,16 +49,7 @@ public partial class DiscordEvent
             }
         }
 
-        await LogAsync(
-            newRole.Guild,
-            AuditLogType.Role,
-            OperationType.Update,
-            entries,
-            newRole.Id.ToString(),
-            GetRoleDisplayName(newRole),
-            newRole.GetIconUrl(),
-            newRole.Color
-        );
+        await LogAsync(newRole.Guild, AuditLogType.Role, OperationType.Update, entries, newRole.Id.ToString(), GetRoleDisplayName(newRole), newRole.GetIconUrl(), newRole.Color);
     }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -102,15 +70,6 @@ public partial class DiscordEvent
             entries.Add(new("Icon", iconUrl));
         }
 
-        await LogAsync(
-            role.Guild,
-            AuditLogType.Role,
-            operationType,
-            entries,
-            role.Id.ToString(),
-            GetRoleDisplayName(role),
-            role.GetIconUrl(),
-            role.Color
-        );
+        await LogAsync(role.Guild, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 }

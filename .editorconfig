@@ -3,6 +3,10 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 
+# ReSharper properties
+resharper_csharp_max_line_length = 180
+resharper_keep_existing_embedded_block_arrangement = false
+
 # C# files
 [*.cs]
 
@@ -185,7 +189,7 @@ csharp_space_between_square_brackets = false
 
 # Wrapping preferences
 csharp_preserve_single_line_blocks = true
-csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_statements = false
 
 #### Naming styles ####
 

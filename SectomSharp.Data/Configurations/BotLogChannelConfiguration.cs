@@ -7,11 +7,7 @@ internal sealed class BotLogChannelConfiguration : BaseEntityConfiguration<BotLo
 {
     public override void Configure(EntityTypeBuilder<BotLogChannel> builder)
     {
-        builder
-            .HasOne(channel => channel.Guild)
-            .WithMany(guild => guild.BotLogChannels)
-            .HasForeignKey(channel => channel.GuildId)
-            .IsRequired();
+        builder.HasOne(channel => channel.Guild).WithMany(guild => guild.BotLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();
 
         builder.Property(channel => channel.Type).IsRequired();
 

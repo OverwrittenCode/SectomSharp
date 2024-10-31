@@ -13,10 +13,7 @@ internal sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
             configBuilder =>
             {
                 configBuilder.ToJson();
-                configBuilder.OwnsOne(
-                    configuration => configuration.Warning,
-                    warningBuilder => warningBuilder.OwnsMany(warning => warning.Thresholds)
-                );
+                configBuilder.OwnsOne(configuration => configuration.Warning, warningBuilder => warningBuilder.OwnsMany(warning => warning.Thresholds));
             }
         );
 

@@ -52,11 +52,8 @@ internal sealed class SelectMenuPaginationBuilder
     ///     Initialises a new instance of the <see cref="SelectMenuPaginationBuilder" /> class.
     /// </summary>
     /// <param name="placeholder">The placeholder text for the select menu.</param>
-    public SelectMenuPaginationBuilder(string placeholder = "Select an item") =>
-        SelectMenuBuilder = new SelectMenuBuilder()
-            .WithPlaceholder(placeholder)
-            .WithMinValues(1)
-            .WithMaxValues(1);
+    public SelectMenuPaginationBuilder(string placeholder = "Select an item")
+        => SelectMenuBuilder = new SelectMenuBuilder().WithPlaceholder(placeholder).WithMinValues(1).WithMaxValues(1);
 
     /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
@@ -129,7 +126,9 @@ internal sealed class SelectMenuPaginationBuilder
                 [
                     new EmbedBuilder
                     {
-                        Title = menuConfig.EmbedTitle, Color = menuConfig.EmbedColour, Description = "Select a category from the menu below to view its contents"
+                        Title = menuConfig.EmbedTitle,
+                        Color = menuConfig.EmbedColour,
+                        Description = "Select a category from the menu below to view its contents"
                     }.Build()
                 ]
             }
@@ -142,21 +141,20 @@ internal sealed class SelectMenuPaginationBuilder
             var categoryValue = categoryConfig.GetValue(category);
 
             SelectMenuBuilder? selectMenu = new SelectMenuBuilder().WithOptions(
-                group
-                    .Select(item => new SelectMenuOptionBuilder
-                    {
-                        Label = itemConfig.GetLabel(item), Value = itemConfig.GetValue(item), Description = itemConfig.GetDescription?.Invoke(item)
-                    })
-                    .ToList()
+                group.Select(
+                          item => new SelectMenuOptionBuilder
+                          {
+                              Label = itemConfig.GetLabel(item),
+                              Value = itemConfig.GetValue(item),
+                              Description = itemConfig.GetDescription?.Invoke(item)
+                          }
+                      )
+                     .ToList()
             );
 
             selectMenu.WithComponentId(
                 categoryConfig.CustomIdPrefix,
-                (
-                    prependIdWithInstanceId
-                        ? categoryConfig.GetCustomIdWildcards(category).Prepend(_instanceId)
-                        : categoryConfig.GetCustomIdWildcards(category)
-                ).ToArray<object>()
+                (prependIdWithInstanceId ? categoryConfig.GetCustomIdWildcards(category).Prepend(_instanceId) : categoryConfig.GetCustomIdWildcards(category)).ToArray<object>()
             );
 
             AddOption(
@@ -168,11 +166,10 @@ internal sealed class SelectMenuPaginationBuilder
                     Description = categoryConfig.GetDescription?.Invoke(category),
                     Embeds =
                     [
-                        new EmbedBuilder()
-                            .WithTitle($"{menuConfig.EmbedTitle} | {categoryName}")
-                            .WithColor(menuConfig.EmbedColour)
-                            .WithDescription("Select an option below to view details")
-                            .Build()
+                        new EmbedBuilder().WithTitle($"{menuConfig.EmbedTitle} | {categoryName}")
+                                          .WithColor(menuConfig.EmbedColour)
+                                          .WithDescription("Select an option below to view details")
+                                          .Build()
                     ],
                     ActionRows = [new ActionRowBuilder().AddComponent(selectMenu.Build())]
                 }
@@ -212,20 +209,10 @@ internal sealed class SelectMenuPaginationBuilder
 
         if (Options.Count == 0)
         {
-            throw new InvalidOperationException(
-                "At least one option must be added before building."
-            );
+            throw new InvalidOperationException("At least one option must be added before building.");
         }
 
-        return new(
-            SelectMenuBuilder,
-            OptionKvp,
-            ResponseType,
-            Timeout,
-            IsEphemeral,
-            IsStickyFirstRow,
-            _instanceId
-        );
+        return new(SelectMenuBuilder, OptionKvp, ResponseType, Timeout, IsEphemeral, IsStickyFirstRow, _instanceId);
     }
 
     /// <summary>
@@ -244,6 +231,5 @@ internal sealed class SelectMenuPaginationBuilder
     ///     should be added to the start of all pages in the pagination.
     /// </summary>
     /// <returns>The current builder.</returns>
-    private void WithStickyFirstRow(bool isStickyFirstRow = true) =>
-        IsStickyFirstRow = isStickyFirstRow;
+    private void WithStickyFirstRow(bool isStickyFirstRow = true) => IsStickyFirstRow = isStickyFirstRow;
 }

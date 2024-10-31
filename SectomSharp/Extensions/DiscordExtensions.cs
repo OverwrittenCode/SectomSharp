@@ -26,31 +26,11 @@ internal static class DiscordExtensions
     {
         if (interaction.HasResponded)
         {
-            await interaction.FollowupAsync(
-                text,
-                embeds,
-                false,
-                ephemeral,
-                allowedMentions,
-                components,
-                null,
-                options,
-                poll
-            );
+            await interaction.FollowupAsync(text, embeds, false, ephemeral, allowedMentions, components, null, options, poll);
         }
         else
         {
-            await interaction.RespondAsync(
-                text,
-                embeds,
-                false,
-                ephemeral,
-                allowedMentions,
-                components,
-                null,
-                options,
-                poll
-            );
+            await interaction.RespondAsync(text, embeds, false, ephemeral, allowedMentions, components, null, options, poll);
         }
     }
 
@@ -59,9 +39,5 @@ internal static class DiscordExtensions
     ///     URL that displays its hex code.
     /// </summary>
     /// <returns>The URL.</returns>
-    public static string ToHyperlinkedColourPicker(this Color colour) =>
-        Format.Url(
-            colour.ToString(),
-            $"https://imagecolorpicker.com/color-code/{colour.RawValue:X6}"
-        );
+    public static string ToHyperlinkedColourPicker(this Color colour) => Format.Url(colour.ToString(), $"https://imagecolorpicker.com/color-code/{colour.RawValue:X6}");
 }

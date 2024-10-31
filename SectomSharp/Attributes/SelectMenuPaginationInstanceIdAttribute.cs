@@ -12,24 +12,14 @@ internal sealed class SelectMenuPaginationInstanceIdAttribute : ParameterPrecond
 {
     public override string ErrorMessage => SelectMenuPaginationManager.PaginationExpiredMessage;
 
-    public override async Task<PreconditionResult> CheckRequirementsAsync(
-        IInteractionContext context,
-        IParameterInfo parameterInfo,
-        object value,
-        IServiceProvider services
-    )
+    public override async Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, IParameterInfo parameterInfo, object value, IServiceProvider services)
     {
         if (value is not string instanceId)
         {
             return PreconditionResult.FromError("Expected a string value for the instance id.");
         }
 
-        if (
-            !SelectMenuPaginationManager.AllInstances.TryGetValue(
-                instanceId,
-                out SelectMenuPaginationManager? instance
-            )
-        )
+        if (!SelectMenuPaginationManager.AllInstances.TryGetValue(instanceId, out SelectMenuPaginationManager? instance))
         {
             return PreconditionResult.FromError(ErrorMessage);
         }

@@ -7,23 +7,13 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
-    private static bool TryGetGuildChannel(
-        SocketChannel socketChannel,
-        [MaybeNullWhen(false)] out IGuildChannel guildChannel
-    )
+    private static bool TryGetGuildChannel(SocketChannel socketChannel, [MaybeNullWhen(false)] out IGuildChannel guildChannel)
     {
         guildChannel = null;
         ChannelType? channelType = socketChannel.GetChannelType();
 
-        if (
-            socketChannel is not IGuildChannel value
-            || channelType
-                is null
-                or ChannelType.GuildDirectory
-                or ChannelType.Store
-                or ChannelType.PrivateThread
-                or ChannelType.PublicThread
-        )
+        if (socketChannel is not IGuildChannel value
+         || channelType is null or ChannelType.GuildDirectory or ChannelType.Store or ChannelType.PrivateThread or ChannelType.PublicThread)
         {
             return false;
         }
@@ -32,8 +22,8 @@ public partial class DiscordEvent
         return true;
     }
 
-    private static ChannelDetails GetChannelDetails(IGuildChannel channel) =>
-        channel switch
+    private static ChannelDetails GetChannelDetails(IGuildChannel channel)
+        => channel switch
         {
             IVoiceChannel voice => new(
                 channel.Name,
@@ -45,14 +35,7 @@ public partial class DiscordEvent
                 Overwrites: channel.PermissionOverwrites
             ),
 
-            IForumChannel forum => new(
-                channel.Name,
-                channel.Position,
-                ChannelType.Forum,
-                forum.CategoryId,
-                IsNsfw: forum.IsNsfw,
-                Overwrites: channel.PermissionOverwrites
-            ),
+            IForumChannel forum => new(channel.Name, channel.Position, ChannelType.Forum, forum.CategoryId, IsNsfw: forum.IsNsfw, Overwrites: channel.PermissionOverwrites),
 
             ITextChannel text => new(
                 channel.Name,
@@ -65,28 +48,17 @@ public partial class DiscordEvent
                 Overwrites: channel.PermissionOverwrites
             ),
 
-            _ => new(
-                channel.Name,
-                channel.Position,
-                channel.GetChannelType() ?? ChannelType.Text,
-                Overwrites: channel.PermissionOverwrites
-            )
+            _ => new(channel.Name, channel.Position, channel.GetChannelType() ?? ChannelType.Text, Overwrites: channel.PermissionOverwrites)
         };
 
     private static string GetOverwriteTargetDisplay(Overwrite overwrite)
     {
-        var mention =
-            overwrite.TargetType == PermissionTarget.User
-                ? MentionUtils.MentionUser(overwrite.TargetId)
-                : MentionUtils.MentionRole(overwrite.TargetId);
+        var mention = overwrite.TargetType == PermissionTarget.User ? MentionUtils.MentionUser(overwrite.TargetId) : MentionUtils.MentionRole(overwrite.TargetId);
 
         return $"{Format.Bold("Mention:")} {mention}";
     }
 
-    private static string FormatPermissionLists(
-        List<ChannelPermission> allowed,
-        List<ChannelPermission> denied
-    )
+    private static string FormatPermissionLists(List<ChannelPermission> allowed, List<ChannelPermission> denied)
     {
         List<string> parts = [];
 
@@ -103,11 +75,9 @@ public partial class DiscordEvent
         return String.Join("\n", parts);
     }
 
-    public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) =>
-        await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
+    public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
 
-    public async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) =>
-        await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
+    public async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
 
 #pragma warning disable CA1822 // Mark members as static
     public async Task HandleChannelUpdatedAsync(
@@ -116,13 +86,8 @@ public partial class DiscordEvent
         SocketChannel newSocketChannel
     )
     {
-        if (
-            !(
-                TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel)
-                && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel)
-            )
-            || oldChannel.Position != newChannel.Position
-        )
+        if (!(TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel) && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel))
+         || oldChannel.Position != newChannel.Position)
         {
             return;
         }
@@ -133,11 +98,7 @@ public partial class DiscordEvent
         List<AuditLogEntry> entries =
         [
             new("Name", GetChangeEntry(before.Name, after.Name), before.Name != after.Name),
-            new(
-                "Category",
-                GetChangeEntry(before.CategoryId, after.CategoryId),
-                before.CategoryId != after.CategoryId
-            ),
+            new("Category", GetChangeEntry(before.CategoryId, after.CategoryId), before.CategoryId != after.CategoryId),
             new("Topic", GetChangeEntry(before.Topic, after.Topic), before.Topic != after.Topic),
             new("NSFW", after.IsNsfw, before.IsNsfw != after.IsNsfw),
             new(
@@ -148,38 +109,23 @@ public partial class DiscordEvent
                 ),
                 before.SlowMode != after.SlowMode
             ),
-            new(
-                "Bitrate",
-                GetChangeEntry(before.Bitrate, after.Bitrate),
-                before.Bitrate != after.Bitrate
-            ),
-            new(
-                "User Limit",
-                GetChangeEntry(before.UserLimit, after.UserLimit),
-                before.UserLimit != after.UserLimit
-            )
+            new("Bitrate", GetChangeEntry(before.Bitrate, after.Bitrate), before.Bitrate != after.Bitrate),
+            new("User Limit", GetChangeEntry(before.UserLimit, after.UserLimit), before.UserLimit != after.UserLimit)
         ];
 
         if ((before.Overwrites, after.Overwrites) is (not null, not null))
         {
             List<AuditLogEntry> overwriteChanges = [];
 
-            IEnumerable<Overwrite> mergedOverwrites = after.Overwrites.UnionBy(
-                before.Overwrites,
-                overwrite => overwrite.TargetId
-            );
+            IEnumerable<Overwrite> mergedOverwrites = after.Overwrites.UnionBy(before.Overwrites, overwrite => overwrite.TargetId);
 
             foreach (Overwrite overwrite in mergedOverwrites)
             {
                 var key = overwrite.TargetId.ToString();
 
-                Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o =>
-                    o.TargetId == overwrite.TargetId
-                );
+                Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
 
-                Overwrite? afterOverwrite = after.Overwrites.FirstOrDefault(o =>
-                    o.TargetId == overwrite.TargetId
-                );
+                Overwrite? afterOverwrite = after.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
 
                 key += (beforeOverwrite, afterOverwrite) switch
                 {
@@ -194,41 +140,30 @@ public partial class DiscordEvent
                     case ({ } prev, { } curr):
                         List<ChannelPermission> beforeAllowed = prev.Permissions.ToAllowList();
                         List<ChannelPermission> afterAllowed = curr.Permissions.ToAllowList();
-                        List<ChannelPermission> newlyAllowed = afterAllowed
-                            .Except(beforeAllowed)
-                            .ToList();
-                        List<ChannelPermission> newlyDenied = beforeAllowed
-                            .Except(afterAllowed)
-                            .ToList();
+                        List<ChannelPermission> newlyAllowed = afterAllowed.Except(beforeAllowed).ToList();
+                        List<ChannelPermission> newlyDenied = beforeAllowed.Except(afterAllowed).ToList();
 
                         value = FormatPermissionLists(newlyAllowed, newlyDenied);
 
                         break;
                     case (null, { } added):
-                        value = FormatPermissionLists(
-                            added.Permissions.ToAllowList(),
-                            added.Permissions.ToDenyList()
-                        );
+                        value = FormatPermissionLists(added.Permissions.ToAllowList(), added.Permissions.ToDenyList());
 
                         break;
                     case ({ } removed, null):
-                        value = FormatPermissionLists(
-                            removed.Permissions.ToAllowList(),
-                            removed.Permissions.ToDenyList()
-                        );
+                        value = FormatPermissionLists(removed.Permissions.ToAllowList(), removed.Permissions.ToDenyList());
 
                         break;
                 }
 
-                AuditLogEntry entry =
-                    new(
-                        key,
-                        $"""
-                         {GetOverwriteTargetDisplay(overwrite)}
-                         {value}
-                         """,
-                        !String.IsNullOrEmpty(value)
-                    );
+                AuditLogEntry entry = new(
+                    key,
+                    $"""
+                     {GetOverwriteTargetDisplay(overwrite)}
+                     {value}
+                     """,
+                    !String.IsNullOrEmpty(value)
+                );
 
                 if (entry.ShouldInclude)
                 {
@@ -244,14 +179,7 @@ public partial class DiscordEvent
             return;
         }
 
-        await LogAsync(
-            newChannel.Guild,
-            AuditLogType.Channel,
-            OperationType.Update,
-            entries,
-            newChannel.Id.ToString(),
-            newChannel.Name
-        );
+        await LogAsync(newChannel.Guild, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
     }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -309,10 +237,7 @@ public partial class DiscordEvent
         {
             entries.AddRange(
                 from overwrite in details.Overwrites
-                let value = FormatPermissionLists(
-                    overwrite.Permissions.ToAllowList(),
-                    overwrite.Permissions.ToDenyList()
-                )
+                let value = FormatPermissionLists(overwrite.Permissions.ToAllowList(), overwrite.Permissions.ToDenyList())
                 where !String.IsNullOrEmpty(value)
                 select new AuditLogEntry(
                     overwrite.TargetId.ToString(),
@@ -324,17 +249,11 @@ public partial class DiscordEvent
             );
         }
 
-        await LogAsync(
-            guildChannel.Guild,
-            AuditLogType.Channel,
-            operationType,
-            entries,
-            guildChannel.Id.ToString(),
-            guildChannel.Name
-        );
+        await LogAsync(guildChannel.Guild, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
-    private readonly record struct ChannelDetails(
+    private readonly record struct ChannelDetails
+    (
         string Name,
         int Position,
         ChannelType Type,

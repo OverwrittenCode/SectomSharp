@@ -14,13 +14,7 @@ internal sealed class StartupService
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _services;
 
-    public StartupService(
-        IServiceProvider services,
-        DiscordSocketClient client,
-        EventService eventService,
-        InteractionService interactionService,
-        IConfiguration configuration
-    )
+    public StartupService(IServiceProvider services, DiscordSocketClient client, EventService eventService, InteractionService interactionService, IConfiguration configuration)
     {
         _services = services;
         _client = client;
@@ -33,9 +27,7 @@ internal sealed class StartupService
     {
         _eventService.RegisterEvents();
 
-        var token =
-            _configuration["Discord:BotToken"]
-            ?? throw new InvalidOperationException("Bot token not found in configuration.");
+        var token = _configuration["Discord:BotToken"] ?? throw new InvalidOperationException("Bot token not found in configuration.");
 
         await _client.LoginAsync(TokenType.Bot, token);
         await _client.StartAsync();

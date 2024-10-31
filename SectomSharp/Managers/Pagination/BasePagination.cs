@@ -15,8 +15,7 @@ namespace SectomSharp.Managers.Pagination;
 ///     The type of the implementing pagination manager.
 ///     Must inherit from <see cref="InstanceManager{T}" />.
 /// </typeparam>
-internal abstract class BasePagination<T> : InstanceManager<T>
-    where T : InstanceManager<T>
+internal abstract class BasePagination<T> : InstanceManager<T> where T : InstanceManager<T>
 {
     /// <summary>
     ///     The maximum number of items to include in each chunk when splitting content.
@@ -33,14 +32,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
             return [GetEmbedBuilder(chunks[0], title).Build()];
         }
 
-        List<Embed> embeds = chunks
-            .Select(
-                (t, i) =>
-                    GetEmbedBuilder(t, title)
-                        .WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}"))
-                        .Build()
-            )
-            .ToList();
+        List<Embed> embeds = chunks.Select((t, i) => GetEmbedBuilder(t, title).WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}")).Build()).ToList();
 
         return [.. embeds];
     }
@@ -51,14 +43,15 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <param name="description">The content to display in the embed.</param>
     /// <param name="title">The title of the embed.</param>
     /// <returns>A configured EmbedBuilder instance.</returns>
-    private static EmbedBuilder GetEmbedBuilder(string description, string title) =>
-        new()
+    private static EmbedBuilder GetEmbedBuilder(string description, string title)
+        => new()
         {
-            Description = description, Title = title, Color = Constants.LightGold
+            Description = description,
+            Title = title,
+            Color = Constants.LightGold
         };
 
-    protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) =>
-        await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
+    protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) => await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
 
     /// <summary>
     ///     Creates an array of embeds by splitting content into chunks if it exceeds Discord's maximum length.
@@ -99,10 +92,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
         for (var i = 0; i < strings.Count; i += ChunkSize)
         {
-            var chunk = String.Join(
-                "\n",
-                strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i))
-            );
+            var chunk = String.Join("\n", strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i)));
 
             if (chunk.Length > EmbedBuilder.MaxDescriptionLength)
             {
@@ -151,8 +141,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// </param>
     /// <inheritdoc cref="InstanceManager{T}(global::System.String?)" path="/param" />
     /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
-    protected BasePagination(int timeout, bool isEphemeral = false, string? id = null)
-        : base(id)
+    protected BasePagination(int timeout, bool isEphemeral = false, string? id = null) : base(id)
     {
         if (timeout <= 0)
         {
@@ -205,9 +194,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     {
         if (Message is null)
         {
-            throw new InvalidOperationException(
-                $"{nameof(Message)} is null as it has not been called yet with {nameof(RespondOrFollowupAsync)}"
-            );
+            throw new InvalidOperationException($"{nameof(Message)} is null as it has not been called yet with {nameof(RespondOrFollowupAsync)}");
         }
 
         try
@@ -233,9 +220,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
                         case ComponentType.SelectMenu:
                             {
-                                SelectMenuBuilder builder = (
-                                    (SelectMenuComponent)component
-                                ).ToBuilder();
+                                SelectMenuBuilder builder = ((SelectMenuComponent)component).ToBuilder();
                                 builder.IsDisabled = true;
                                 actionRow.Components[i] = builder.Build();
                             }
@@ -243,21 +228,19 @@ internal abstract class BasePagination<T> : InstanceManager<T>
                             break;
 
                         default:
-                            throw new ArgumentOutOfRangeException(
-                                nameof(component.Type),
-                                component.Type,
-                                "Unexpected component type encountered."
-                            );
+                            throw new ArgumentOutOfRangeException(nameof(component.Type), component.Type, "Unexpected component type encountered.");
                     }
                 }
             }
 
             MessageComponent components = componentBuilder.Build();
 
-            await Message.ModifyAsync(props =>
-            {
-                props.Components = components;
-            });
+            await Message.ModifyAsync(
+                props =>
+                {
+                    props.Components = components;
+                }
+            );
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMessage) { }
     }

@@ -109,9 +109,7 @@ internal sealed class ButtonPaginationBuilder
 
         if (Embeds.Count == 0)
         {
-            throw new InvalidOperationException(
-                "At least one embed must be added before building."
-            );
+            throw new InvalidOperationException("At least one embed must be added before building.");
         }
 
         return new([.. Embeds], [.. ExtraActionRows], Timeout, IsEphemeral);

@@ -24,47 +24,37 @@ async Task RunAsync()
     await Task.Delay(-1);
 }
 
-IConfiguration BuildConfiguration() =>
-    new ConfigurationBuilder()
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddUserSecrets<Program>(false, true)
-        .AddEnvironmentVariables()
-        .Build();
+IConfiguration BuildConfiguration()
+    => new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddUserSecrets<Program>(false, true).AddEnvironmentVariables().Build();
 
 void RegisterServices(IServiceCollection services)
 {
     IConfiguration configuration = BuildConfiguration();
 
-    services
-        .AddDbContext<ApplicationDbContext>()
-        .AddSingleton(configuration)
-        .AddSingleton(
-            new DiscordSocketClient(
-                new()
-                {
-                    LogLevel = LogSeverity.Info,
-                    MessageCacheSize = 100,
-                    GatewayIntents =
-                        GatewayIntents.Guilds
-                        | GatewayIntents.GuildMembers
-                        | GatewayIntents.GuildBans
-                        | GatewayIntents.GuildEmojis
-                        | GatewayIntents.GuildVoiceStates
-                        | GatewayIntents.GuildPresences
-                        | GatewayIntents.GuildMessages
-                        | GatewayIntents.GuildMessageReactions
-                        | GatewayIntents.MessageContent
-                }
-            )
-        )
-        .AddSingleton(s => new InteractionService(s.GetRequiredService<DiscordSocketClient>()))
-        .AddSingleton<ILogger>(new LoggerConfiguration()
-            .MinimumLevel.Verbose()
-            .Enrich.FromLogContext()
-            .WriteTo.Console()
-            .CreateLogger())
-        .AddSingleton<DiscordEvent>()
-        .AddSingleton<LoggingService>()
-        .AddSingleton<StartupService>()
-        .AddSingleton<EventService>();
+    services.AddDbContext<ApplicationDbContext>()
+            .AddSingleton(configuration)
+            .AddSingleton(
+                 new DiscordSocketClient(
+                     new()
+                     {
+                         LogLevel = LogSeverity.Info,
+                         MessageCacheSize = 100,
+                         GatewayIntents = GatewayIntents.Guilds
+                                        | GatewayIntents.GuildMembers
+                                        | GatewayIntents.GuildBans
+                                        | GatewayIntents.GuildEmojis
+                                        | GatewayIntents.GuildVoiceStates
+                                        | GatewayIntents.GuildPresences
+                                        | GatewayIntents.GuildMessages
+                                        | GatewayIntents.GuildMessageReactions
+                                        | GatewayIntents.MessageContent
+                     }
+                 )
+             )
+            .AddSingleton(s => new InteractionService(s.GetRequiredService<DiscordSocketClient>()))
+            .AddSingleton<ILogger>(new LoggerConfiguration().MinimumLevel.Verbose().Enrich.FromLogContext().WriteTo.Console().CreateLogger())
+            .AddSingleton<DiscordEvent>()
+            .AddSingleton<LoggingService>()
+            .AddSingleton<StartupService>()
+            .AddSingleton<EventService>();
 }

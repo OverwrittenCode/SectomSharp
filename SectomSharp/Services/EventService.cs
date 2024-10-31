@@ -11,11 +11,7 @@ internal sealed class EventService
     private readonly DiscordEvent _discord;
     private readonly InteractionService _interactionService;
 
-    public EventService(
-        DiscordSocketClient client,
-        DiscordEvent discord,
-        InteractionService interactionService
-    )
+    public EventService(DiscordSocketClient client, DiscordEvent discord, InteractionService interactionService)
     {
         _client = client;
         _discord = discord;
@@ -55,10 +51,7 @@ internal sealed class EventService
         {
             if (!result.IsSuccess)
             {
-                var message =
-                    result.Error == InteractionCommandError.UnmetPrecondition
-                        ? result.ErrorReason
-                        : $"{result.Error}: {result.ErrorReason}";
+                var message = result.Error == InteractionCommandError.UnmetPrecondition ? result.ErrorReason : $"{result.Error}: {result.ErrorReason}";
 
                 await context.Interaction.RespondOrFollowupAsync(message, ephemeral: true);
             }

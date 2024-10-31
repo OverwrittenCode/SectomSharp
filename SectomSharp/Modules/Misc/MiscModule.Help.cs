@@ -14,9 +14,7 @@ public partial class MiscModule
     public async Task Help()
     {
         IEnumerable<IGrouping<CategoryAttribute, SlashCommandInfo>> groupedItems =
-            _commands.SlashCommands.GroupBy(cmd =>
-                (CategoryAttribute)cmd.Module.Attributes.First(attr => attr is CategoryAttribute)
-            );
+            _commands.SlashCommands.GroupBy(cmd => (CategoryAttribute)cmd.Module.Attributes.First(attr => attr is CategoryAttribute));
 
         var categoryConfig = new CategoryConfig<CategoryAttribute>
         {
@@ -30,32 +28,28 @@ public partial class MiscModule
 
         var pageConfig = new PageConfig<SlashCommandInfo>
         {
-            GetLabel = cmd => cmd.Name, GetValue = cmd => cmd.Name, GetDescription = cmd => cmd.Description
+            GetLabel = cmd => cmd.Name,
+            GetValue = cmd => cmd.Name,
+            GetDescription = cmd => cmd.Description
         };
 
         var menuConfig = new NestedMenuConfig
         {
-            EmbedTitle = "Help Menu", EmbedColour = Constants.LightGold
+            EmbedTitle = "Help Menu",
+            EmbedColour = Constants.LightGold
         };
 
-        await new SelectMenuPaginationBuilder("Select a category")
-            .WithEphemeral()
-            .WithResponseType(SelectMenuResponse.Update)
-            .AddNestedMenu(groupedItems, categoryConfig, pageConfig, menuConfig)
-            .Build()
-            .Init(Context);
+        await new SelectMenuPaginationBuilder("Select a category").WithEphemeral()
+                                                                  .WithResponseType(SelectMenuResponse.Update)
+                                                                  .AddNestedMenu(groupedItems, categoryConfig, pageConfig, menuConfig)
+                                                                  .Build()
+                                                                  .Init(Context);
     }
 
     [RegexComponentInteraction(nameof(HelpSelectMenu), "id", "category")]
-    public async Task HelpSelectMenu(
-        [SelectMenuPaginationInstanceId] string _,
-        string category,
-        string[] values
-    )
+    public async Task HelpSelectMenu([SelectMenuPaginationInstanceId] string _, string category, string[] values)
     {
-        SlashCommandInfo command = _commands.SlashCommands.First(command =>
-            command.Name == values[0]
-        );
+        SlashCommandInfo command = _commands.SlashCommands.First(command => command.Name == values[0]);
 
         await RespondOrFollowUpAsync(
             embeds:
