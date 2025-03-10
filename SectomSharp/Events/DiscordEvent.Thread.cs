@@ -6,6 +6,22 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
+#pragma warning disable CA1822
+    private async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
+#pragma warning restore CA1822
+    {
+        List<AuditLogEntry> entries =
+        [
+            new("Id", thread.Id),
+            new("Name", thread.Name),
+            new("Type", thread.Type),
+            new("Parent", MentionUtils.MentionChannel(thread.ParentChannel.Id)),
+            new("Topic", thread.Topic)
+        ];
+
+        await LogAsync(thread.Guild, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
+    }
+
     public async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
 
     public async Task HandleThreadDeleteAsync(Cacheable<SocketThreadChannel, ulong> partialThread)
@@ -30,21 +46,5 @@ public partial class DiscordEvent
         ];
 
         await LogAsync(newThread.Guild, AuditLogType.Thread, OperationType.Update, entries, newThread.Id.ToString(), newThread.Name);
-    }
-
-#pragma warning disable CA1822
-    private async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
-#pragma warning restore CA1822
-    {
-        List<AuditLogEntry> entries =
-        [
-            new("Id", thread.Id),
-            new("Name", thread.Name),
-            new("Type", thread.Type),
-            new("Parent", MentionUtils.MentionChannel(thread.ParentChannel.Id)),
-            new("Topic", thread.Topic)
-        ];
-
-        await LogAsync(thread.Guild, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
     }
 }

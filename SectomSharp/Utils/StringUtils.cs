@@ -76,14 +76,7 @@ internal static partial class StringUtils
     /// <param name="prefix">The prefix of the component id.</param>
     /// <param name="values">The arguments of the wildcards.</param>
     public static string GenerateComponentId(string prefix, params object[] values)
-    {
-        if (values.Length == 0)
-        {
-            return prefix;
-        }
-
-        return String.Join(Constants.ComponentWildcardSeparator, values.Prepend(prefix).Select(val => val.ToString()));
-    }
+        => values.Length == 0 ? prefix : String.Join(Constants.ComponentWildcardSeparator, values.Prepend(prefix).Select(val => val.ToString()));
 
     /// <inheritdoc cref="GenerateComponentId(String, global::System.Object[])" />
     /// <inheritdoc cref="GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam" />

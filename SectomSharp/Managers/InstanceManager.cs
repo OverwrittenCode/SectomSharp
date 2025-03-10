@@ -9,7 +9,8 @@ namespace SectomSharp.Managers;
 ///     The type of instance being managed.
 ///     Must inherit from <see cref="InstanceManager{T}" />.
 /// </typeparam>
-internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable where T : InstanceManager<T>
+internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
+    where T : InstanceManager<T>
 {
     /// <summary>
     ///     A dictionary storing all active instances of <typeparamref name="T" />
@@ -73,68 +74,6 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable where
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    ///     Performs asynchronous cleanup operations specific to the implementing class.
-    /// </summary>
-    /// <returns>A task representing the asynchronous cleanup operation.</returns>
-    protected abstract Task CleanupAsync();
-
-    /// <summary>
-    ///     Starts a timer that disposes this instance unless cancelled.
-    /// </summary>
-    /// <param name="seconds">The number of seconds to wait before disposal.</param>
-    /// <returns>A task representing the timer initialization.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="seconds" /> is less than 0.</exception>
-    /// <inheritdoc cref="ThrowIfDisposed" path="/exception" />
-    protected Task StartExpirationTimer(int seconds)
-    {
-        ThrowIfDisposed();
-
-        if (seconds < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(seconds), "Expected a positive value");
-        }
-
-        lock (_timerLock)
-        {
-            CancelCleanup();
-
-            _timeoutCts = new();
-            CancellationToken token = _timeoutCts.Token;
-
-            _expirationTimer?.Dispose();
-            _expirationTimer = new(
-                _ =>
-                {
-                    Task.Run(
-                        async () =>
-                        {
-                            if (token.IsCancellationRequested)
-                            {
-                                return;
-                            }
-
-                            try
-                            {
-                                await CleanupAsync();
-                            }
-                            finally
-                            {
-                                RemoveInstance();
-                            }
-                        },
-                        token
-                    );
-                },
-                null,
-                TimeSpan.FromSeconds(seconds),
-                Timeout.InfiniteTimeSpan
-            );
-        }
-
-        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -202,5 +141,67 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable where
         }
 
         _disposedValue = true;
+    }
+
+    /// <summary>
+    ///     Performs asynchronous cleanup operations specific to the implementing class.
+    /// </summary>
+    /// <returns>A task representing the asynchronous cleanup operation.</returns>
+    protected abstract Task CleanupAsync();
+
+    /// <summary>
+    ///     Starts a timer that disposes this instance unless cancelled.
+    /// </summary>
+    /// <param name="seconds">The number of seconds to wait before disposal.</param>
+    /// <returns>A task representing the timer initialization.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="seconds" /> is less than 0.</exception>
+    /// <inheritdoc cref="ThrowIfDisposed" path="/exception" />
+    protected Task StartExpirationTimer(int seconds)
+    {
+        ThrowIfDisposed();
+
+        if (seconds < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(seconds), "Expected a positive value");
+        }
+
+        lock (_timerLock)
+        {
+            CancelCleanup();
+
+            _timeoutCts = new CancellationTokenSource();
+            CancellationToken token = _timeoutCts.Token;
+
+            _expirationTimer?.Dispose();
+            _expirationTimer = new Timer(
+                _ =>
+                {
+                    Task.Run(
+                        async () =>
+                        {
+                            if (token.IsCancellationRequested)
+                            {
+                                return;
+                            }
+
+                            try
+                            {
+                                await CleanupAsync();
+                            }
+                            finally
+                            {
+                                RemoveInstance();
+                            }
+                        },
+                        token
+                    );
+                },
+                null,
+                TimeSpan.FromSeconds(seconds),
+                Timeout.InfiniteTimeSpan
+            );
+        }
+
+        return Task.CompletedTask;
     }
 }

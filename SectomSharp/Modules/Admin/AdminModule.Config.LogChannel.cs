@@ -21,6 +21,77 @@ public partial class AdminModule
             private static readonly BotLogType[] BotLogTypes = Enum.GetValues<BotLogType>();
             private static readonly AuditLogType[] AuditLogTypes = Enum.GetValues<AuditLogType>();
 
+            private async Task ViewAsync<TChannel, TLogType>(
+                string titleSuffix,
+                TLogType[] logTypes,
+                Func<Guild, ICollection<TChannel>> channelSelector,
+                Func<IQueryable<Guild>, IQueryable<Guild>> withInclude,
+                Func<TChannel, TLogType> logTypeSelector
+            )
+                where TLogType : struct, Enum
+                where TChannel : Snowflake
+            {
+                await DeferAsync();
+
+                await using var db = new ApplicationDbContext();
+
+                IQueryable<Guild> query = db.Guilds.Where(guild => guild.Id == Context.Guild.Id);
+
+                query = withInclude(query);
+
+                Guild? guild = await query.SingleOrDefaultAsync();
+
+                if (guild is null)
+                {
+                    await db.Guilds.AddAsync(
+                        new Guild
+                        {
+                            Id = Context.Guild.Id,
+                            Configuration = new Configuration()
+                        }
+                    );
+                    await db.SaveChangesAsync();
+                    await RespondOrFollowUpAsync(NothingToView);
+                    return;
+                }
+
+                db.Entry(guild).State = EntityState.Detached;
+
+                ICollection<TChannel> channels = channelSelector(guild);
+
+                if (channels.Count == 0)
+                {
+                    await RespondOrFollowUpAsync(NothingToView);
+                    return;
+                }
+
+                List<string> embedDescriptions = channels.SelectMany(
+                                                              channel =>
+                                                              {
+                                                                  List<string> descriptions = [];
+                                                                  TLogType logType = logTypeSelector(channel);
+
+                                                                  descriptions.AddRange(
+                                                                      from log in logTypes
+                                                                      where logType.HasFlag(log)
+                                                                      select $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{log}]")}"
+                                                                  );
+
+                                                                  return descriptions;
+                                                              }
+                                                          )
+                                                         .ToList();
+
+                Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} {titleSuffix}");
+
+                var pagination = new ButtonPaginationBuilder
+                {
+                    Embeds = [.. embeds]
+                };
+
+                await pagination.Build().Init(Context);
+            }
+
             [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
@@ -33,7 +104,7 @@ public partial class AdminModule
                     Guild? guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.BotLogChannels).SingleOrDefaultAsync();
 
                     guild ??= (await db.Guilds.AddAsync(
-                        new()
+                        new Guild
                         {
                             Id = Context.Guild.Id
                         }
@@ -44,7 +115,7 @@ public partial class AdminModule
                     if (botLogChannel is null)
                     {
                         guild.BotLogChannels.Add(
-                            new()
+                            new BotLogChannel
                             {
                                 Id = channel.Id,
                                 GuildId = Context.Guild.Id,
@@ -89,7 +160,7 @@ public partial class AdminModule
                     Guild? guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.AuditLogChannels).SingleOrDefaultAsync();
 
                     guild ??= (await db.Guilds.AddAsync(
-                        new()
+                        new Guild
                         {
                             Id = Context.Guild.Id
                         }
@@ -107,7 +178,7 @@ public partial class AdminModule
 
                         guild.AuditLogChannels.Add(
                             (await db.AuditLogChannels.AddAsync(
-                                new()
+                                new AuditLogChannel
                                 {
                                     Id = channel.Id,
                                     GuildId = Context.Guild.Id,
@@ -147,7 +218,7 @@ public partial class AdminModule
                     if (guild is null)
                     {
                         await db.Guilds.AddAsync(
-                            new()
+                            new Guild
                             {
                                 Id = Context.Guild.Id
                             }
@@ -199,7 +270,7 @@ public partial class AdminModule
                     if (guild is null)
                     {
                         await db.Guilds.AddAsync(
-                            new()
+                            new Guild
                             {
                                 Id = Context.Guild.Id
                             }
@@ -251,77 +322,8 @@ public partial class AdminModule
                     channel => channel.Type
                 );
 
-            private async Task ViewAsync<TChannel, TLogType>(
-                string titleSuffix,
-                TLogType[] logTypes,
-                Func<Guild, ICollection<TChannel>> channelSelector,
-                Func<IQueryable<Guild>, IQueryable<Guild>> withInclude,
-                Func<TChannel, TLogType> logTypeSelector
-            ) where TLogType : struct, Enum where TChannel : Snowflake
-            {
-                await DeferAsync();
-
-                await using var db = new ApplicationDbContext();
-
-                IQueryable<Guild> query = db.Guilds.Where(guild => guild.Id == Context.Guild.Id);
-
-                query = withInclude(query);
-
-                Guild? guild = await query.SingleOrDefaultAsync();
-
-                if (guild is null)
-                {
-                    await db.Guilds.AddAsync(
-                        new()
-                        {
-                            Id = Context.Guild.Id,
-                            Configuration = new()
-                        }
-                    );
-                    await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NothingToView);
-                    return;
-                }
-
-                db.Entry(guild).State = EntityState.Detached;
-
-                ICollection<TChannel> channels = channelSelector(guild);
-
-                if (channels.Count == 0)
-                {
-                    await RespondOrFollowUpAsync(NothingToView);
-                    return;
-                }
-
-                List<string> embedDescriptions = channels.SelectMany(
-                                                              channel =>
-                                                              {
-                                                                  List<string> descriptions = [];
-                                                                  TLogType logType = logTypeSelector(channel);
-
-                                                                  descriptions.AddRange(
-                                                                      from log in logTypes
-                                                                      where logType.HasFlag(log)
-                                                                      select $"{MentionUtils.MentionChannel(channel.Id)} {Format.Bold($"[{log}]")}"
-                                                                  );
-
-                                                                  return descriptions;
-                                                              }
-                                                          )
-                                                         .ToList();
-
-                Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} {titleSuffix}");
-
-                var pagination = new ButtonPaginationBuilder
-                {
-                    Embeds = [.. embeds]
-                };
-
-                await pagination.Build().Init(Context);
-            }
-
-            public readonly record struct LogChannelOptions<T>
-                (ITextChannel Channel, T Action, [MaxLength(CaseService.MaxReasonLength)] string? Reason = null) where T : struct, Enum;
+            public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [MaxLength(CaseService.MaxReasonLength)] string? Reason = null)
+                where T : struct, Enum;
         }
     }
 }

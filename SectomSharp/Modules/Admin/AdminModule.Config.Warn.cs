@@ -20,6 +20,139 @@ public partial class AdminModule
             private const int MinThreshold = 1;
             private const int MaxThreshold = 20;
 
+            private async Task AddPunishment(int threshold, TimeSpan? duration, string? reason, BotLogType punishment)
+            {
+                WarningThreshold warningThreshold = new()
+                {
+                    LogType = punishment,
+                    Value = threshold,
+                    Span = duration
+                };
+
+                await DeferAsync();
+
+                await using (var db = new ApplicationDbContext())
+                {
+                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
+
+                    if (guild is null)
+                    {
+                        await db.Guilds.AddAsync(
+                            new Guild
+                            {
+                                Id = Context.Guild.Id,
+                                Configuration = new Configuration
+                                {
+                                    Warning = new WarningConfiguration
+                                    {
+                                        Thresholds = [warningThreshold]
+                                    }
+                                }
+                            }
+                        );
+
+                        await db.SaveChangesAsync();
+                        await LogAsync(Context, reason);
+                        return;
+                    }
+
+                    if ((guild.Configuration ??= new Configuration()).Warning.Thresholds.Exists(x => x.Value == threshold))
+                    {
+                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        return;
+                    }
+
+                    guild.Configuration.Warning.Thresholds.Add(warningThreshold);
+                    await db.SaveChangesAsync();
+                }
+
+                await LogAsync(Context, reason);
+            }
+
+            private async Task RemovePunishmentAsync(int threshold, string? reason, BotLogType punishment)
+            {
+                await DeferAsync();
+
+                await using var db = new ApplicationDbContext();
+                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
+
+                if (guild is null)
+                {
+                    await db.Guilds.AddAsync(
+                        new Guild
+                        {
+                            Id = Context.Guild.Id
+                        }
+                    );
+                    await db.SaveChangesAsync();
+                    await RespondOrFollowUpAsync(NotConfiguredMessage);
+                    return;
+                }
+
+                WarningThreshold? match = (guild.Configuration ??= new Configuration()).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
+
+                if (match is null)
+                {
+                    await RespondOrFollowUpAsync(NotConfiguredMessage);
+                    return;
+                }
+
+                guild.Configuration.Warning.Thresholds.Remove(match);
+                await db.SaveChangesAsync();
+
+                await LogAsync(Context, reason);
+            }
+
+            private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
+            {
+                await DeferAsync();
+
+                Configuration disabledEntry = new()
+                {
+                    Warning = new WarningConfiguration
+                    {
+                        IsDisabled = isDisabled
+                    }
+                };
+
+                await using var db = new ApplicationDbContext();
+
+                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
+                if (guild is null)
+                {
+                    await db.Guilds.AddAsync(
+                        new Guild
+                        {
+                            Id = Context.Guild.Id,
+                            Configuration = disabledEntry
+                        }
+                    );
+
+                    await db.SaveChangesAsync();
+                    await LogAsync(Context, reason);
+                    return;
+                }
+
+                if (guild.Configuration is not { } configuration)
+                {
+                    guild.Configuration = disabledEntry;
+
+                    await db.SaveChangesAsync();
+                    await LogAsync(Context, reason);
+                    return;
+                }
+
+                if (configuration.Warning.IsDisabled == isDisabled)
+                {
+                    await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                    return;
+                }
+
+                configuration.Warning.IsDisabled = isDisabled;
+                await db.SaveChangesAsync();
+                await LogAsync(Context, reason);
+            }
+
             [SlashCommand("add-timeout-punishment", "Add a timeout punishment on reaching a number of warnings")]
             public async Task AddTimeoutPunishment(
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
@@ -61,10 +194,10 @@ public partial class AdminModule
                 if (guild is null)
                 {
                     await db.Guilds.AddAsync(
-                        new()
+                        new Guild
                         {
                             Id = Context.Guild.Id,
-                            Configuration = new()
+                            Configuration = new Configuration()
                         }
                     );
                     await db.SaveChangesAsync();
@@ -74,7 +207,7 @@ public partial class AdminModule
 
                 if (guild.Configuration is not { Warning: var warningConfiguration })
                 {
-                    guild.Configuration = new();
+                    guild.Configuration = new Configuration();
                     await db.SaveChangesAsync();
                     await RespondOrFollowUpAsync(NothingToView);
                     return;
@@ -103,139 +236,6 @@ public partial class AdminModule
                 }
 
                 await RespondOrFollowUpAsync(embeds: [embed.Build()]);
-            }
-
-            private async Task AddPunishment(int threshold, TimeSpan? duration, string? reason, BotLogType punishment)
-            {
-                WarningThreshold warningThreshold = new()
-                {
-                    LogType = punishment,
-                    Value = threshold,
-                    Span = duration
-                };
-
-                await DeferAsync();
-
-                await using (var db = new ApplicationDbContext())
-                {
-                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                    if (guild is null)
-                    {
-                        await db.Guilds.AddAsync(
-                            new()
-                            {
-                                Id = Context.Guild.Id,
-                                Configuration = new()
-                                {
-                                    Warning = new()
-                                    {
-                                        Thresholds = [warningThreshold]
-                                    }
-                                }
-                            }
-                        );
-
-                        await db.SaveChangesAsync();
-                        await LogAsync(Context, reason);
-                        return;
-                    }
-
-                    if ((guild.Configuration ??= new()).Warning.Thresholds.Exists(x => x.Value == threshold))
-                    {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
-                        return;
-                    }
-
-                    guild.Configuration.Warning.Thresholds.Add(warningThreshold);
-                    await db.SaveChangesAsync();
-                }
-
-                await LogAsync(Context, reason);
-            }
-
-            private async Task RemovePunishmentAsync(int threshold, string? reason, BotLogType punishment)
-            {
-                await DeferAsync();
-
-                await using var db = new ApplicationDbContext();
-                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                if (guild is null)
-                {
-                    await db.Guilds.AddAsync(
-                        new()
-                        {
-                            Id = Context.Guild.Id
-                        }
-                    );
-                    await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NotConfiguredMessage);
-                    return;
-                }
-
-                WarningThreshold? match = (guild.Configuration ??= new()).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
-
-                if (match is null)
-                {
-                    await RespondOrFollowUpAsync(NotConfiguredMessage);
-                    return;
-                }
-
-                guild.Configuration.Warning.Thresholds.Remove(match);
-                await db.SaveChangesAsync();
-
-                await LogAsync(Context, reason);
-            }
-
-            private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
-            {
-                await DeferAsync();
-
-                Configuration disabledEntry = new()
-                {
-                    Warning = new()
-                    {
-                        IsDisabled = isDisabled
-                    }
-                };
-
-                await using var db = new ApplicationDbContext();
-
-                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-                if (guild is null)
-                {
-                    await db.Guilds.AddAsync(
-                        new()
-                        {
-                            Id = Context.Guild.Id,
-                            Configuration = disabledEntry
-                        }
-                    );
-
-                    await db.SaveChangesAsync();
-                    await LogAsync(Context, reason);
-                    return;
-                }
-
-                if (guild.Configuration is not { } configuration)
-                {
-                    guild.Configuration = disabledEntry;
-
-                    await db.SaveChangesAsync();
-                    await LogAsync(Context, reason);
-                    return;
-                }
-
-                if (configuration.Warning.IsDisabled == isDisabled)
-                {
-                    await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                configuration.Warning.IsDisabled = isDisabled;
-                await db.SaveChangesAsync();
-                await LogAsync(Context, reason);
             }
         }
     }

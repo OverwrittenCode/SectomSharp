@@ -26,6 +26,6 @@ internal sealed class CategoryAttribute : Attribute
     public CategoryAttribute(string name, string unicode)
     {
         Name = name;
-        Emoji = new(unicode);
+        Emoji = new Emoji(unicode);
     }
 }

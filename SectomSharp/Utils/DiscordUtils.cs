@@ -49,15 +49,15 @@ internal static class DiscordUtils
         extra.InsertRange(
             0,
             [
-                new("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
-                new("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),
-                new("Reason", reason ?? "No reason provided.")
+                new KeyValuePair<string, object>("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
+                new KeyValuePair<string, object>("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),
+                new KeyValuePair<string, object>("Reason", reason ?? "No reason provided.")
             ]
         );
 
         var auditReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(MaxAuditReasonLength);
 
-        return new()
+        return new RequestOptions
         {
             AuditLogReason = auditReason
         };

@@ -24,16 +24,17 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<BotLogChannel> BotLogChannels { get; set; } = null!;
     public DbSet<Case> Cases { get; set; } = null!;
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    private void UpdateEntities()
     {
-        UpdateEntities();
-        return base.SaveChangesAsync(cancellationToken);
-    }
+        IEnumerable<EntityEntry> entries = ChangeTracker.Entries().Where(entry => entry is { Entity: BaseEntity, State: EntityState.Modified });
 
-    public override int SaveChanges()
-    {
-        UpdateEntities();
-        return base.SaveChanges();
+        foreach (EntityEntry entry in entries)
+        {
+            if (entry is { Entity: BaseEntity baseEntity, State: EntityState.Modified })
+            {
+                baseEntity.UpdatedAt = DateTime.UtcNow;
+            }
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -56,16 +57,15 @@ public sealed class ApplicationDbContext : DbContext
         base.OnConfiguring(optionsBuilder);
     }
 
-    private void UpdateEntities()
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        IEnumerable<EntityEntry> entries = ChangeTracker.Entries().Where(entry => entry is { Entity: BaseEntity, State: EntityState.Modified });
+        UpdateEntities();
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
-        foreach (EntityEntry entry in entries)
-        {
-            if (entry is { Entity: BaseEntity baseEntity, State: EntityState.Modified })
-            {
-                baseEntity.UpdatedAt = DateTime.UtcNow;
-            }
-        }
+    public override int SaveChanges()
+    {
+        UpdateEntities();
+        return base.SaveChanges();
     }
 }

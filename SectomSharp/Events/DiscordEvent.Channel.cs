@@ -25,7 +25,7 @@ public partial class DiscordEvent
     private static ChannelDetails GetChannelDetails(IGuildChannel channel)
         => channel switch
         {
-            IVoiceChannel voice => new(
+            IVoiceChannel voice => new ChannelDetails(
                 channel.Name,
                 channel.Position,
                 ChannelType.Voice,
@@ -35,9 +35,16 @@ public partial class DiscordEvent
                 Overwrites: channel.PermissionOverwrites
             ),
 
-            IForumChannel forum => new(channel.Name, channel.Position, ChannelType.Forum, forum.CategoryId, IsNsfw: forum.IsNsfw, Overwrites: channel.PermissionOverwrites),
+            IForumChannel forum => new ChannelDetails(
+                channel.Name,
+                channel.Position,
+                ChannelType.Forum,
+                forum.CategoryId,
+                IsNsfw: forum.IsNsfw,
+                Overwrites: channel.PermissionOverwrites
+            ),
 
-            ITextChannel text => new(
+            ITextChannel text => new ChannelDetails(
                 channel.Name,
                 channel.Position,
                 channel.GetChannelType() ?? ChannelType.Text,
@@ -48,7 +55,7 @@ public partial class DiscordEvent
                 Overwrites: channel.PermissionOverwrites
             ),
 
-            _ => new(channel.Name, channel.Position, channel.GetChannelType() ?? ChannelType.Text, Overwrites: channel.PermissionOverwrites)
+            _ => new ChannelDetails(channel.Name, channel.Position, channel.GetChannelType() ?? ChannelType.Text, Overwrites: channel.PermissionOverwrites)
         };
 
     private static string GetOverwriteTargetDisplay(Overwrite overwrite)
@@ -73,6 +80,76 @@ public partial class DiscordEvent
         }
 
         return String.Join("\n", parts);
+    }
+
+#pragma warning disable CA1822 // Mark members as static
+    private async Task HandleChannelAlteredAsync(
+#pragma warning restore CA1822 // Mark members as static
+        SocketChannel socketChannel,
+        OperationType operationType
+    )
+    {
+        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel))
+        {
+            return;
+        }
+
+        ChannelDetails details = GetChannelDetails(guildChannel);
+
+        List<AuditLogEntry> entries =
+        [
+            new("Name", details.Name),
+            new("Type", details.Type),
+            new("Position", details.Position)
+        ];
+
+        if (details.CategoryId is { } categoryId)
+        {
+            entries.Add(new AuditLogEntry("Category", categoryId));
+        }
+
+        if (!String.IsNullOrEmpty(details.Topic))
+        {
+            entries.Add(new AuditLogEntry("Topic", details.Topic));
+        }
+
+        if (details.IsNsfw)
+        {
+            entries.Add(new AuditLogEntry("NSFW", true));
+        }
+
+        if (details.SlowMode is { } slowmode and > 0)
+        {
+            entries.Add(new AuditLogEntry("Slowmode", TimeSpan.FromSeconds(slowmode)));
+        }
+
+        if (details.Bitrate is { } bitrate)
+        {
+            entries.Add(new AuditLogEntry("Bitrate", bitrate));
+        }
+
+        if (details.UserLimit is { } userLimit)
+        {
+            entries.Add(new AuditLogEntry("User Limit", userLimit));
+        }
+
+        if (details.Overwrites is not null)
+        {
+            entries.AddRange(
+                from overwrite in details.Overwrites
+                let value = FormatPermissionLists(overwrite.Permissions.ToAllowList(), overwrite.Permissions.ToDenyList())
+                where !String.IsNullOrEmpty(value)
+                select new AuditLogEntry(
+                    overwrite.TargetId.ToString(),
+                    $"""
+                     {GetOverwriteTargetDisplay(overwrite)}
+                     {value}
+                     """
+                )
+            );
+        }
+
+        await LogAsync(guildChannel.Guild, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
     public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
@@ -180,76 +257,6 @@ public partial class DiscordEvent
         }
 
         await LogAsync(newChannel.Guild, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
-    }
-
-#pragma warning disable CA1822 // Mark members as static
-    private async Task HandleChannelAlteredAsync(
-#pragma warning restore CA1822 // Mark members as static
-        SocketChannel socketChannel,
-        OperationType operationType
-    )
-    {
-        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel))
-        {
-            return;
-        }
-
-        ChannelDetails details = GetChannelDetails(guildChannel);
-
-        List<AuditLogEntry> entries =
-        [
-            new("Name", details.Name),
-            new("Type", details.Type),
-            new("Position", details.Position)
-        ];
-
-        if (details.CategoryId is { } categoryId)
-        {
-            entries.Add(new("Category", categoryId));
-        }
-
-        if (!String.IsNullOrEmpty(details.Topic))
-        {
-            entries.Add(new("Topic", details.Topic));
-        }
-
-        if (details.IsNsfw)
-        {
-            entries.Add(new("NSFW", true));
-        }
-
-        if (details.SlowMode is { } slowmode and > 0)
-        {
-            entries.Add(new("Slowmode", TimeSpan.FromSeconds(slowmode)));
-        }
-
-        if (details.Bitrate is { } bitrate)
-        {
-            entries.Add(new("Bitrate", bitrate));
-        }
-
-        if (details.UserLimit is { } userLimit)
-        {
-            entries.Add(new("User Limit", userLimit));
-        }
-
-        if (details.Overwrites is not null)
-        {
-            entries.AddRange(
-                from overwrite in details.Overwrites
-                let value = FormatPermissionLists(overwrite.Permissions.ToAllowList(), overwrite.Permissions.ToDenyList())
-                where !String.IsNullOrEmpty(value)
-                select new AuditLogEntry(
-                    overwrite.TargetId.ToString(),
-                    $"""
-                     {GetOverwriteTargetDisplay(overwrite)}
-                     {value}
-                     """
-                )
-            );
-        }
-
-        await LogAsync(guildChannel.Guild, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
     private readonly record struct ChannelDetails

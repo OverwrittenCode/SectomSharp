@@ -15,7 +15,8 @@ namespace SectomSharp.Managers.Pagination;
 ///     The type of the implementing pagination manager.
 ///     Must inherit from <see cref="InstanceManager{T}" />.
 /// </typeparam>
-internal abstract class BasePagination<T> : InstanceManager<T> where T : InstanceManager<T>
+internal abstract class BasePagination<T> : InstanceManager<T>
+    where T : InstanceManager<T>
 {
     /// <summary>
     ///     The maximum number of items to include in each chunk when splitting content.
@@ -153,25 +154,6 @@ internal abstract class BasePagination<T> : InstanceManager<T> where T : Instanc
     }
 
     /// <summary>
-    ///     Starts the pagination.
-    /// </summary>
-    /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)" />
-    public async Task Init(SocketInteractionContext context)
-    {
-        await RespondOrFollowupAsync(context);
-
-        Message = await context.Interaction.GetOriginalResponseAsync();
-
-        await RestartTimer();
-    }
-
-    /// <summary>
-    ///     Restarts the expiration timer for this instance.
-    /// </summary>
-    /// <inheritdoc cref="InstanceManager{T}.ThrowIfDisposed" path="/exception" />
-    public async Task RestartTimer() => await StartExpirationTimer(Timeout);
-
-    /// <summary>
     ///     Responds or follows up a Discord interaction with the initial pagination state.
     /// </summary>
     /// <param name="context">
@@ -244,4 +226,23 @@ internal abstract class BasePagination<T> : InstanceManager<T> where T : Instanc
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMessage) { }
     }
+
+    /// <summary>
+    ///     Starts the pagination.
+    /// </summary>
+    /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)" />
+    public async Task Init(SocketInteractionContext context)
+    {
+        await RespondOrFollowupAsync(context);
+
+        Message = await context.Interaction.GetOriginalResponseAsync();
+
+        await RestartTimer();
+    }
+
+    /// <summary>
+    ///     Restarts the expiration timer for this instance.
+    /// </summary>
+    /// <inheritdoc cref="InstanceManager{T}.ThrowIfDisposed" path="/exception" />
+    public async Task RestartTimer() => await StartExpirationTimer(Timeout);
 }

@@ -36,7 +36,7 @@ public partial class DiscordEvent
                 return;
             }
 
-            webhookClient = new(auditLogChannel.WebhookUrl);
+            webhookClient = new DiscordWebhookClient(auditLogChannel.WebhookUrl);
         }
 
         try

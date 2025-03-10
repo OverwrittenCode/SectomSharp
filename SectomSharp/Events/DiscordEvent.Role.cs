@@ -9,6 +9,27 @@ public partial class DiscordEvent
 {
     private static string GetRoleDisplayName(SocketRole role) => role.Emoji is null ? role.Name : $"{role.Emoji} {role.Name}";
 
+#pragma warning disable CA1822 // Mark members as static
+    private async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
+#pragma warning restore CA1822 // Mark members as static
+    {
+        List<AuditLogEntry> entries =
+        [
+            new("Position", role.Position),
+            new("Hoisted", role.IsHoisted),
+            new("Managed", role.IsManaged),
+            new("Hex Code", role.Color.ToHyperlinkedColourPicker()),
+            new("Permissions", String.Join(", ", role.Permissions.ToList()))
+        ];
+
+        if (role.GetIconUrl() is { } iconUrl)
+        {
+            entries.Add(new AuditLogEntry("Icon", iconUrl));
+        }
+
+        await LogAsync(role.Guild, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
+    }
+
     public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
 
     public async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
@@ -39,37 +60,16 @@ public partial class DiscordEvent
             List<GuildPermission> guildPermissions = added.ToList();
             if (guildPermissions.Count != 0)
             {
-                entries.Add(new("Added Permissions", String.Join(", ", guildPermissions)));
+                entries.Add(new AuditLogEntry("Added Permissions", String.Join(", ", guildPermissions)));
             }
 
             List<GuildPermission> permissions = removed.ToList();
             if (permissions.Count != 0)
             {
-                entries.Add(new("Removed Permissions", String.Join(", ", permissions)));
+                entries.Add(new AuditLogEntry("Removed Permissions", String.Join(", ", permissions)));
             }
         }
 
         await LogAsync(newRole.Guild, AuditLogType.Role, OperationType.Update, entries, newRole.Id.ToString(), GetRoleDisplayName(newRole), newRole.GetIconUrl(), newRole.Color);
-    }
-
-#pragma warning disable CA1822 // Mark members as static
-    private async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
-#pragma warning restore CA1822 // Mark members as static
-    {
-        List<AuditLogEntry> entries =
-        [
-            new("Position", role.Position),
-            new("Hoisted", role.IsHoisted),
-            new("Managed", role.IsManaged),
-            new("Hex Code", role.Color.ToHyperlinkedColourPicker()),
-            new("Permissions", String.Join(", ", role.Permissions.ToList()))
-        ];
-
-        if (role.GetIconUrl() is { } iconUrl)
-        {
-            entries.Add(new("Icon", iconUrl));
-        }
-
-        await LogAsync(role.Guild, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 }

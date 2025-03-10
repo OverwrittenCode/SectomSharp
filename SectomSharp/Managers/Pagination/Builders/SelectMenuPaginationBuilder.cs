@@ -56,6 +56,24 @@ internal sealed class SelectMenuPaginationBuilder
         => SelectMenuBuilder = new SelectMenuBuilder().WithPlaceholder(placeholder).WithMinValues(1).WithMaxValues(1);
 
     /// <summary>
+    ///     Adds a single option to the pagination.
+    /// </summary>
+    /// <param name="option">The select menu option to add.</param>
+    private void AddOption(SelectMenuPageOption option)
+    {
+        Options.Add(option);
+        SelectMenuBuilder.AddOption(option.Label, option.Value, option.Description, option.Emote);
+        OptionKvp.Add(new KeyValuePair<string, SelectMenuPaginatorPage>(option.Value, new SelectMenuPaginatorPage(option.Embeds, option.ActionRows)));
+    }
+
+    /// <summary>
+    ///     Sets whether the first row of the first option
+    ///     should be added to the start of all pages in the pagination.
+    /// </summary>
+    /// <returns>The current builder.</returns>
+    private void WithStickyFirstRow(bool isStickyFirstRow = true) => IsStickyFirstRow = isStickyFirstRow;
+
+    /// <summary>
     ///     Sets the timeout duration for the pagination in seconds.
     /// </summary>
     /// <param name="timeout">The duration in seconds.</param>
@@ -116,7 +134,7 @@ internal sealed class SelectMenuPaginationBuilder
         WithStickyFirstRow();
 
         AddOption(
-            new()
+            new SelectMenuPageOption
             {
                 Label = "Home",
                 Value = "home",
@@ -158,7 +176,7 @@ internal sealed class SelectMenuPaginationBuilder
             );
 
             AddOption(
-                new()
+                new SelectMenuPageOption
                 {
                     Label = categoryName,
                     Value = categoryValue,
@@ -212,24 +230,6 @@ internal sealed class SelectMenuPaginationBuilder
             throw new InvalidOperationException("At least one option must be added before building.");
         }
 
-        return new(SelectMenuBuilder, OptionKvp, ResponseType, Timeout, IsEphemeral, IsStickyFirstRow, _instanceId);
+        return new SelectMenuPaginationManager(SelectMenuBuilder, OptionKvp, ResponseType, Timeout, IsEphemeral, IsStickyFirstRow, _instanceId);
     }
-
-    /// <summary>
-    ///     Adds a single option to the pagination.
-    /// </summary>
-    /// <param name="option">The select menu option to add.</param>
-    private void AddOption(SelectMenuPageOption option)
-    {
-        Options.Add(option);
-        SelectMenuBuilder.AddOption(option.Label, option.Value, option.Description, option.Emote);
-        OptionKvp.Add(new(option.Value, new(option.Embeds, option.ActionRows)));
-    }
-
-    /// <summary>
-    ///     Sets whether the first row of the first option
-    ///     should be added to the start of all pages in the pagination.
-    /// </summary>
-    /// <returns>The current builder.</returns>
-    private void WithStickyFirstRow(bool isStickyFirstRow = true) => IsStickyFirstRow = isStickyFirstRow;
 }

@@ -35,7 +35,7 @@ void RegisterServices(IServiceCollection services)
             .AddSingleton(configuration)
             .AddSingleton(
                  new DiscordSocketClient(
-                     new()
+                     new DiscordSocketConfig
                      {
                          LogLevel = LogSeverity.Info,
                          MessageCacheSize = 100,

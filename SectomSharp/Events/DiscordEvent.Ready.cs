@@ -14,7 +14,7 @@ public partial class DiscordEvent
 
         var interactions = new InteractionService(
             _client,
-            new()
+            new InteractionServiceConfig
             {
                 LogLevel = LogSeverity.Info,
                 DefaultRunMode = RunMode.Async

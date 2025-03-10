@@ -25,22 +25,22 @@ public partial class DiscordEvent
 
         if (message.MentionedChannelIds.Count > 0)
         {
-            entries.Add(new("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(MentionUtils.MentionChannel))));
+            entries.Add(new AuditLogEntry("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(MentionUtils.MentionChannel))));
         }
 
         if (message.MentionedRoleIds.Count > 0)
         {
-            entries.Add(new("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(MentionUtils.MentionRole))));
+            entries.Add(new AuditLogEntry("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(MentionUtils.MentionRole))));
         }
 
         if (message.MentionedUserIds.Count > 0)
         {
-            entries.Add(new("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(MentionUtils.MentionUser))));
+            entries.Add(new AuditLogEntry("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(MentionUtils.MentionUser))));
         }
 
         if (message.MentionedEveryone)
         {
-            entries.Add(new("Mentioned Everyone", message.MentionedEveryone));
+            entries.Add(new AuditLogEntry("Mentioned Everyone", message.MentionedEveryone));
         }
 
         await LogAsync(guild, AuditLogType.Message, OperationType.Delete, entries, message.Id.ToString(), message.Author.Username, message.Author.GetDisplayAvatarUrl());

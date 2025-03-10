@@ -113,7 +113,7 @@ public sealed partial class MiscModule
             embedBuilder.AddField($"Badges [{badges.Count}]", String.Join(" ", badges));
         }
 
-        if (restUser.RoleIds.Skip(1).Select(MentionUtils.MentionRole).ToList() is { Count: > 1 and { } roleCount } roleMentions)
+        if (restUser.RoleIds.Skip(1).Select(MentionUtils.MentionRole).ToList() is { Count: > 1 and var roleCount } roleMentions)
         {
             embedBuilder.AddField($"Roles [{roleCount}]", String.Join(", ", roleMentions).Truncate(EmbedFieldBuilder.MaxFieldValueLength));
         }
@@ -121,7 +121,7 @@ public sealed partial class MiscModule
         if (restUser.GuildPermissions.ToList()
                     .Where(guildPermission => DangerousGuildPermissions.HasFlag(guildPermission))
                     .Select(permission => StringUtils.PascalCaseToSentence(permission.ToString()))
-                    .ToList() is { Count: > 0 and { } dangerousPermissionCount } and { } dangerousPermissions)
+                    .ToList() is { Count: > 0 and var dangerousPermissionCount } dangerousPermissions)
         {
             embedBuilder.AddField($"Dangerous Permissions [{dangerousPermissionCount}]", String.Join(", ", dangerousPermissions).Truncate(EmbedFieldBuilder.MaxFieldValueLength));
         }

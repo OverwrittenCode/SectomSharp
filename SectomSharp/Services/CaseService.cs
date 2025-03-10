@@ -121,7 +121,7 @@ internal sealed class CaseService
             };
 
             commandFields.Add(
-                new()
+                new EmbedFieldBuilder
                 {
                     Name = option.Name,
                     Value = value
@@ -130,7 +130,6 @@ internal sealed class CaseService
         }
 
         var caseId = StringUtils.GenerateUniqueId();
-        var footer = $"{caseId} | {logType}{operationType}";
 
         EmbedBuilder commandInputEmbedBuilder = new EmbedBuilder().WithDescription($"</{String.Join(" ", commandMentionArguments)}:{command.CommandId}>")
                                                                   .WithAuthor($"{logType}{operationType} | {caseId}")
@@ -178,7 +177,7 @@ internal sealed class CaseService
             if (perpetratorId.HasValue && !await db.Users.AnyAsync(perpetrator => perpetrator.Id == perpetratorId.Value && perpetrator.GuildId == context.Guild.Id))
             {
                 users.Add(
-                    new()
+                    new User
                     {
                         Id = perpetratorId.Value,
                         GuildId = context.Guild.Id
@@ -189,7 +188,7 @@ internal sealed class CaseService
             if (targetId.HasValue && !await db.Users.AnyAsync(target => target.Id == targetId.Value && target.GuildId == context.Guild.Id))
             {
                 users.Add(
-                    new()
+                    new User
                     {
                         Id = targetId.Value,
                         GuildId = context.Guild.Id
@@ -200,7 +199,7 @@ internal sealed class CaseService
             if (channelId.HasValue && !await db.Channels.AnyAsync(channel => channel.Id == channelId.Value))
             {
                 await db.Channels.AddAsync(
-                    new()
+                    new Channel
                     {
                         Id = channelId.Value,
                         GuildId = context.Guild.Id
@@ -224,7 +223,7 @@ internal sealed class CaseService
 
             if (guild is null)
             {
-                guild = new()
+                guild = new Guild
                 {
                     Id = @case.GuildId
                 };

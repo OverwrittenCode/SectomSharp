@@ -112,6 +112,6 @@ internal sealed class ButtonPaginationBuilder
             throw new InvalidOperationException("At least one embed must be added before building.");
         }
 
-        return new([.. Embeds], [.. ExtraActionRows], Timeout, IsEphemeral);
+        return new ButtonPaginationManager([.. Embeds], [.. ExtraActionRows], Timeout, IsEphemeral);
     }
 }

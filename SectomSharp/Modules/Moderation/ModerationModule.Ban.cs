@@ -39,7 +39,7 @@ public partial class ModerationModule
             return;
         }
 
-        RequestOptions requestOptions = DiscordUtils.GetAuditReasonRequestOptions(Context, reason, [new("Operation", BotLogType.Softban)]);
+        RequestOptions requestOptions = DiscordUtils.GetAuditReasonRequestOptions(Context, reason, [new KeyValuePair<string, object>("Operation", BotLogType.Softban)]);
 
         await DeferAsync();
         await Context.Guild.BanUserAsync(user, GetPruneSeconds(pruneDays), requestOptions);
