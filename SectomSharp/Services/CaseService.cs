@@ -14,9 +14,6 @@ namespace SectomSharp.Services;
 
 internal sealed class CaseService
 {
-    public const int IdLength = 6;
-    public const int MaxReasonLength = 250;
-
     /// <summary>
     ///     Generates a <see cref="MessageComponent" />.
     /// </summary>

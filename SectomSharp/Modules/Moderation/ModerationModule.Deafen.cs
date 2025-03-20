@@ -11,7 +11,7 @@ public partial class ModerationModule
     [SlashCommand("deafen", "Deafen a user in their current voice channel")]
     [DefaultMemberPermissions(GuildPermission.DeafenMembers)]
     [RequireBotPermission(GuildPermission.DeafenMembers)]
-    public async Task Deafen([DoHierarchyCheck] IGuildUser user, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Deafen([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         if (user.IsDeafened)
         {

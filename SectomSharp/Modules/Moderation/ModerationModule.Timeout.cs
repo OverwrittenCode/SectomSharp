@@ -15,7 +15,7 @@ public partial class ModerationModule
     public async Task Timeout(
         [DoHierarchyCheck] IGuildUser user,
         [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
-        [MaxLength(CaseService.MaxReasonLength)] string? reason = null
+        [ReasonMaxLength] string? reason = null
     )
     {
         if (user.IsBot)
@@ -35,7 +35,7 @@ public partial class ModerationModule
     [SlashCommand("untimeout", "Remove a timeout from a user on the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     [RequireBotPermission(GuildPermission.ModerateMembers)]
-    public async Task Untimeout([DoHierarchyCheck] IGuildUser user, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Untimeout([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         if (user.TimedOutUntil is null)
         {

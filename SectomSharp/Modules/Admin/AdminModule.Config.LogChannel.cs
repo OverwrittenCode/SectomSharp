@@ -323,7 +323,7 @@ public partial class AdminModule
                     channel => channel.Type
                 );
 
-            public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [MaxLength(CaseService.MaxReasonLength)] string? Reason = null)
+            public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)
                 where T : struct, Enum;
         }
     }

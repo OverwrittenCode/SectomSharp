@@ -11,7 +11,7 @@ public partial class ModerationModule
 {
     [SlashCommand("warn", "Hand out an infraction to a user on the server.")]
     [DefaultMemberPermissions(GuildPermission.KickMembers)]
-    public async Task Warn([DoHierarchyCheck] IGuildUser user, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Warn([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         await DeferAsync();
         Guild guild = await CaseService.LogAsync(Context, BotLogType.Warn, OperationType.Create, user.Id, reason: reason, includeGuildCases: true);

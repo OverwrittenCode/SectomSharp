@@ -12,7 +12,7 @@ public sealed partial class ModerationModule
     [SlashCommand("purge", "Bulk delete messages in the current channel")]
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     [RequireBotPermission(ChannelPermission.ManageMessages)]
-    public async Task Purge([MinValue(1)] [MaxValue(DiscordConfig.MaxMessagesPerBatch)] int amount = 50, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Purge([MinValue(1)] [MaxValue(DiscordConfig.MaxMessagesPerBatch)] int amount = 50, [ReasonMaxLength] string? reason = null)
     {
         await DeferAsync();
         IUserMessage originalMessage = await GetOriginalResponseAsync();

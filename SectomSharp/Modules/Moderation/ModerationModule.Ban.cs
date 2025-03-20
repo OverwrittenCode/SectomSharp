@@ -13,7 +13,7 @@ public partial class ModerationModule
     [SlashCommand("ban", "Ban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Ban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Ban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
@@ -29,7 +29,7 @@ public partial class ModerationModule
     [SlashCommand("softban", "Ban a user to prune their messages and then immediately unban them from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task SoftBan([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Softban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
@@ -48,7 +48,7 @@ public partial class ModerationModule
     [SlashCommand("unban", "Unban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Unban([DoHierarchyCheck] IUser user, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Unban([DoHierarchyCheck] IUser user, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is null)
         {

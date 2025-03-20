@@ -11,7 +11,7 @@ public partial class ModerationModule
     [SlashCommand("mute", "Mute a user in their current voice channel")]
     [DefaultMemberPermissions(GuildPermission.MuteMembers)]
     [RequireBotPermission(GuildPermission.MuteMembers)]
-    public async Task Mute([DoHierarchyCheck] IGuildUser user, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Mute([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         if (user.IsMuted)
         {
@@ -27,7 +27,7 @@ public partial class ModerationModule
     [SlashCommand("nick", "Set the nickname of a user in the server")]
     [DefaultMemberPermissions(GuildPermission.ManageNicknames)]
     [RequireBotPermission(GuildPermission.ManageNicknames)]
-    public async Task Nick([DoHierarchyCheck] IGuildUser user, string nickname, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+    public async Task Nick([DoHierarchyCheck] IGuildUser user, string nickname, [ReasonMaxLength] string? reason = null)
     {
         if (user.Nickname == nickname)
         {
