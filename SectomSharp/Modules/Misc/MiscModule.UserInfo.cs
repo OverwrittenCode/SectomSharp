@@ -104,7 +104,7 @@ public sealed partial class MiscModule
                                                      .Select(
                                                           property => Badges.TryGetValue(property, out string? emoji)
                                                               ? emoji
-                                                              : $"{Format.Code(StringUtils.PascalCaseToSentence(property.ToString()))}"
+                                                              : $"{Format.Code(StringUtils.PascalCaseToSentenceCase(property.ToString()))}"
                                                       )
                                                      .ToList();
 
@@ -118,7 +118,7 @@ public sealed partial class MiscModule
 
         if (restUser.GuildPermissions.ToList()
                     .Where(guildPermission => DangerousGuildPermissions.HasFlag(guildPermission))
-                    .Select(permission => StringUtils.PascalCaseToSentence(permission.ToString()))
+                    .Select(permission => StringUtils.PascalCaseToSentenceCase(permission.ToString()))
                     .ToList() is { Count: > 0 and var dangerousPermissionCount } dangerousPermissions)
         {
             embedBuilder.AddField($"Dangerous Permissions [{dangerousPermissionCount}]", String.Join(", ", dangerousPermissions).Truncate(EmbedFieldBuilder.MaxFieldValueLength));

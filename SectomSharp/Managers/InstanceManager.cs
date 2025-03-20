@@ -24,7 +24,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     /// </summary>
     public static IReadOnlyDictionary<string, T> AllInstances => Instances;
 
-    private readonly object _timerLock = new();
+    private readonly Lock _timerLock = new();
     private bool _disposedValue;
     private Timer? _expirationTimer;
 

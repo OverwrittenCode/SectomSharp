@@ -7,10 +7,10 @@ namespace SectomSharp.Utils;
 internal static partial class StringUtils
 {
     private static readonly Random Random = new();
-    private static readonly object LockObj = new();
+    private static readonly Lock Lock = new();
 
     [GeneratedRegex(@"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")]
-    private static partial Regex HumanisePascalCase();
+    private static partial Regex HumanisePascalCase { get; }
 
     /// <summary>
     ///     Generates a unique identifier string consisting of uppercase letters and digits.
@@ -23,7 +23,7 @@ internal static partial class StringUtils
 
         var stringBuilder = new StringBuilder(length);
 
-        lock (LockObj)
+        lock (Lock)
         {
             for (int i = 0; i < length; i++)
             {
@@ -39,7 +39,14 @@ internal static partial class StringUtils
     /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>The transformed string.</returns>
-    public static string PascalCaseToSentence(string input) => HumanisePascalCase().Replace(input, " ");
+    public static string PascalCaseToSentenceCase(string input) => HumanisePascalCase.Replace(input, " ");
+
+    /// <summary>
+    ///     Transforms string with PascalCase by adding a hyphen between each word.
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <returns>The transformed string.</returns>
+    public static string PascalCaseToKebabCase(string input) => HumanisePascalCase.Replace(input, "-").ToLower();
 
     /// <inheritdoc cref="GenerateComponentIdRegex(String, global::System.String[])" />
     /// <typeparam name="T">The class responsible for the component handling.</typeparam>
