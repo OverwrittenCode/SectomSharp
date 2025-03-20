@@ -42,24 +42,27 @@ internal static class DiscordUtils
     /// <returns>A new instance of <see cref="RequestOptions" />.</returns>
     public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason, List<KeyValuePair<string, object>>? extra = null)
     {
-        const int MaxAuditReasonLength = 512;
+        const int maxAuditReasonLength = 512;
 
-        extra ??= [];
+        List<KeyValuePair<string, object>> keyValuePairs =
+        [
+            new("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
+            new("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),
+            new("Reason", reason ?? "No reason provided.")
+        ];
 
-        extra.InsertRange(
-            0,
-            [
-                new KeyValuePair<string, object>("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
-                new KeyValuePair<string, object>("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),
-                new KeyValuePair<string, object>("Reason", reason ?? "No reason provided.")
-            ]
-        );
-
-        var auditReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(MaxAuditReasonLength);
+        if (extra is null)
+        {
+            extra = keyValuePairs;
+        }
+        else
+        {
+            extra.InsertRange(0, keyValuePairs);
+        }
 
         return new RequestOptions
         {
-            AuditLogReason = auditReason
+            AuditLogReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(maxAuditReasonLength)
         };
     }
 }

@@ -22,9 +22,7 @@ public partial class ModerationModule
         }
 
         await DeferAsync();
-
         await Context.Guild.BanUserAsync(user, GetPruneSeconds(pruneDays), DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-
         await CaseService.LogAsync(Context, BotLogType.Ban, OperationType.Create, user.Id, reason: reason);
     }
 
@@ -59,9 +57,7 @@ public partial class ModerationModule
         }
 
         await DeferAsync();
-
         await Context.Guild.RemoveBanAsync(user, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-
         await CaseService.LogAsync(Context, BotLogType.Ban, OperationType.Delete, user.Id, reason: reason);
     }
 }

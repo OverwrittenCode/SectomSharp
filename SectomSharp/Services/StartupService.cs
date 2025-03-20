@@ -27,7 +27,7 @@ internal sealed class StartupService
     {
         _eventService.RegisterEvents();
 
-        var token = _configuration["Discord:BotToken"] ?? throw new InvalidOperationException("Bot token not found in configuration.");
+        string token = _configuration["Discord:BotToken"] ?? throw new InvalidOperationException("Bot token not found in configuration.");
 
         await _client.LoginAsync(TokenType.Bot, token);
         await _client.StartAsync();

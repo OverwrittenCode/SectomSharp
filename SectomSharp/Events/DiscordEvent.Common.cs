@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Discord;
 using Discord.Webhook;
 using Microsoft.EntityFrameworkCore;
@@ -48,7 +49,8 @@ public partial class DiscordEvent
                                                         {
                                                             OperationType.Create => Color.Green,
                                                             OperationType.Update => Color.Orange,
-                                                            OperationType.Delete => Color.Red
+                                                            OperationType.Delete => Color.Red,
+                                                            _ => throw new InvalidEnumArgumentException(nameof(OperationType), (int)operationType, typeof(OperationType))
                                                         }
                                                     )
                                                    .WithFields(

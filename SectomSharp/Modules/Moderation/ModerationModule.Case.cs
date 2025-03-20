@@ -16,8 +16,10 @@ public partial class ModerationModule
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     public sealed class CaseModule : BaseModule
     {
-        [SlashCommand("view", "View a specific case on the server")]
-        public async Task View([MinLength(CaseService.IdLength)] [MaxLength(CaseService.IdLength)] string id)
+        public const int IdLength = 6;
+
+        [SlashCmd("View a specific case on the server")]
+        public async Task View([MinLength(IdLength)] [MaxLength(IdLength)] string id)
         {
             await DeferAsync();
 
@@ -45,19 +47,19 @@ public partial class ModerationModule
 
             IQueryable<Case> query = dbContext.Cases.Where(@case => @case.GuildId == Context.Guild.Id).AsNoTracking();
 
-            if (target is not null)
+            if (target?.Id is { } targetId)
             {
-                query = query.Where(@case => @case.TargetId == target.Id);
+                query = query.Where(@case => @case.TargetId == targetId);
             }
 
-            if (perpetrator is not null)
+            if (perpetrator?.Id is { } perpetratorId)
             {
-                query = query.Where(@case => @case.PerpetratorId == perpetrator.Id);
+                query = query.Where(@case => @case.PerpetratorId == perpetratorId);
             }
 
-            if (channel is not null)
+            if (channel?.Id is { } channelId)
             {
-                query = query.Where(@case => @case.ChannelId == channel.Id);
+                query = query.Where(@case => @case.ChannelId == channelId);
             }
 
             if (logType is not null)

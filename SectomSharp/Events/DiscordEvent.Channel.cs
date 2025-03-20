@@ -60,7 +60,7 @@ public partial class DiscordEvent
 
     private static string GetOverwriteTargetDisplay(Overwrite overwrite)
     {
-        var mention = overwrite.TargetType == PermissionTarget.User ? MentionUtils.MentionUser(overwrite.TargetId) : MentionUtils.MentionRole(overwrite.TargetId);
+        string mention = overwrite.TargetType == PermissionTarget.User ? MentionUtils.MentionUser(overwrite.TargetId) : MentionUtils.MentionRole(overwrite.TargetId);
 
         return $"{Format.Bold("Mention:")} {mention}";
     }
@@ -181,8 +181,8 @@ public partial class DiscordEvent
             new(
                 "Slowmode",
                 GetChangeEntry(
-                    before.SlowMode.HasValue ? TimeSpan.FromSeconds(before.SlowMode.Value) : null,
-                    after.SlowMode.HasValue ? TimeSpan.FromSeconds(after.SlowMode.Value) : null
+                    before.SlowMode is { } beforeSlowMode ? TimeSpan.FromSeconds(beforeSlowMode) : null,
+                    after.SlowMode is { } afterSlowMode ? TimeSpan.FromSeconds(afterSlowMode) : null
                 ),
                 before.SlowMode != after.SlowMode
             ),
@@ -198,7 +198,7 @@ public partial class DiscordEvent
 
             foreach (Overwrite overwrite in mergedOverwrites)
             {
-                var key = overwrite.TargetId.ToString();
+                string key = overwrite.TargetId.ToString();
 
                 Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
 
@@ -211,7 +211,7 @@ public partial class DiscordEvent
                     _ => ""
                 };
 
-                var value = "";
+                string value = "";
                 switch (beforeOverwrite, afterOverwrite)
                 {
                     case ({ } prev, { } curr):

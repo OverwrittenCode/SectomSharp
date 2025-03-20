@@ -14,12 +14,12 @@ public partial class ModerationModule
     public async Task Warn([DoHierarchyCheck] IGuildUser user, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
     {
         await DeferAsync();
-        Guild guildEntity = await CaseService.LogAsync(Context, BotLogType.Warn, OperationType.Create, user.Id, reason: reason, includeGuildCases: true);
+        Guild guild = await CaseService.LogAsync(Context, BotLogType.Warn, OperationType.Create, user.Id, reason: reason, includeGuildCases: true);
 
-        if (guildEntity.Configuration is { Warning: { IsDisabled: false, Thresholds: { Count: > 0 } thresholds } })
+        if (guild.Configuration is { Warning: { IsDisabled: false, Thresholds: { Count: > 0 } thresholds } })
         {
-            var count = guildEntity.Cases.Count(
-                @case => @case.GuildId == guildEntity.Id && @case.TargetId == user.Id && @case is { LogType: BotLogType.Warn, OperationType: OperationType.Create }
+            int count = guild.Cases.Count(
+                @case => @case.GuildId == guild.Id && @case.TargetId == user.Id && @case is { LogType: BotLogType.Warn, OperationType: OperationType.Create }
             );
 
             WarningThreshold[] orderedThresholds = thresholds.Where(threshold => count <= threshold.Value).OrderByDescending(threshold => threshold.Value).Take(2).ToArray();
@@ -31,7 +31,7 @@ public partial class ModerationModule
 
             WarningThreshold punishmentThreshold = orderedThresholds.Length == 2 && orderedThresholds[1].Value == count ? orderedThresholds[1] : orderedThresholds[0];
 
-            var warningDisplayText = $"{Format.Code(count.ToString())} warnings";
+            string warningDisplayText = $"{Format.Code(count.ToString())} warnings";
 
             async Task SendFailureMessageAsync()
                 => await RespondOrFollowUpAsync(

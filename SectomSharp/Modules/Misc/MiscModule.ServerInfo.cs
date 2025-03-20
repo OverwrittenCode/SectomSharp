@@ -18,44 +18,45 @@ public sealed partial class MiscModule
                                                       .AddField("Owner", guild.Owner.Mention, true)
                                                       .AddField("Roles", guild.Roles.Count, true)
                                                       .AddField("Members", guild.MemberCount, true);
-        if (guild.Emotes.Count > 0)
+
+        if (guild.Emotes.Count is > 0 and var emotesCount)
         {
-            embedBuilder.AddField("Emojis", guild.Emotes.Count, true);
+            embedBuilder.AddField("Emojis", emotesCount, true);
         }
 
-        if (guild.Stickers.Count > 0)
+        if (guild.Stickers.Count is > 0 and var stickersCount)
         {
-            embedBuilder.AddField("Stickers", guild.Stickers.Count, true);
+            embedBuilder.AddField("Stickers", stickersCount, true);
         }
 
-        if (guild.TextChannels.Count > 0)
+        if (guild.TextChannels.Count is > 0 and var textChannelsCount)
         {
-            embedBuilder.AddField("Text Channels", guild.TextChannels.Count, true);
+            embedBuilder.AddField("Text Channels", textChannelsCount, true);
         }
 
-        if (guild.ThreadChannels.Count > 0)
+        if (guild.ThreadChannels.Count is > 0 and var threadChannelsCount)
         {
-            embedBuilder.AddField("Thread Channels", guild.ThreadChannels.Count, true);
+            embedBuilder.AddField("Thread Channels", threadChannelsCount, true);
         }
 
-        if (guild.ForumChannels.Count > 0)
+        if (guild.ForumChannels.Count is > 0 and var forumChannelsCount)
         {
-            embedBuilder.AddField("Forum Channels", guild.ForumChannels.Count, true);
+            embedBuilder.AddField("Forum Channels", forumChannelsCount, true);
         }
 
-        if (guild.MediaChannels.Count > 0)
+        if (guild.MediaChannels.Count is > 0 and var mediaChannelsCount)
         {
-            embedBuilder.AddField("Media Channels", guild.MediaChannels.Count, true);
+            embedBuilder.AddField("Media Channels", mediaChannelsCount, true);
         }
 
-        if (guild.StageChannels.Count > 0)
+        if (guild.StageChannels.Count is > 0 and var stageChannelsCount)
         {
-            embedBuilder.AddField("Stage Channels", guild.StageChannels.Count, true);
+            embedBuilder.AddField("Stage Channels", stageChannelsCount, true);
         }
 
-        if (guild.CategoryChannels.Count > 0)
+        if (guild.CategoryChannels.Count is > 0 and var categoryChannelsCount)
         {
-            embedBuilder.AddField("Category Channels", guild.CategoryChannels.Count, true);
+            embedBuilder.AddField("Category Channels", categoryChannelsCount, true);
         }
 
         await RespondOrFollowUpAsync(embeds: [embedBuilder.Build()]);

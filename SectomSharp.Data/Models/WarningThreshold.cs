@@ -12,7 +12,7 @@ public sealed class WarningThreshold
 
     public string Display()
     {
-        var ordinalSuffix = Value % 100 is >= 11 and <= 13
+        string ordinalSuffix = Value % 100 is >= 11 and <= 13
             ? "th"
             : (Value % 10) switch
             {
@@ -22,9 +22,9 @@ public sealed class WarningThreshold
                 _ => "th"
             };
 
-        var strikePosition = Value + ordinalSuffix;
+        string strikePosition = Value + ordinalSuffix;
 
-        var durationText = Span is not { } timeSpan
+        string durationText = Span is not { } timeSpan
             ? ""
             : timeSpan switch
             {

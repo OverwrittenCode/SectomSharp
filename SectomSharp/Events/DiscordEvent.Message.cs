@@ -10,7 +10,7 @@ public partial class DiscordEvent
     public async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
 #pragma warning restore CA1822
     {
-        if (!partialMessage.HasValue || partialMessage.Value is not { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message)
+        if (partialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message })
         {
             return;
         }
@@ -50,12 +50,7 @@ public partial class DiscordEvent
     public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
 #pragma warning restore CA1822
     {
-        if (!oldPartialMessage.HasValue
-         || oldPartialMessage.Value is not
-            {
-                Author.IsBot: false,
-                Channel: IGuildChannel { Guild: { } guild }
-            } oldMessage)
+        if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } oldMessage })
         {
             return;
         }

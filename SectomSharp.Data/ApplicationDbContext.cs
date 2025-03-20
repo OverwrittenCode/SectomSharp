@@ -26,9 +26,7 @@ public sealed class ApplicationDbContext : DbContext
 
     private void UpdateEntities()
     {
-        IEnumerable<EntityEntry> entries = ChangeTracker.Entries().Where(entry => entry is { Entity: BaseEntity, State: EntityState.Modified });
-
-        foreach (EntityEntry entry in entries)
+        foreach (EntityEntry entry in ChangeTracker.Entries())
         {
             if (entry is { Entity: BaseEntity baseEntity, State: EntityState.Modified })
             {

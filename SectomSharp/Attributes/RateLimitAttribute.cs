@@ -40,8 +40,8 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
             return Task.FromResult(PreconditionResult.FromSuccess());
         }
 
-        var userId = context.User.Id;
-        var commandName = commandInfo.Name;
+        ulong userId = context.User.Id;
+        string commandName = commandInfo.Name;
 
         if (!_rateLimits.TryGetValue(userId, out Dictionary<string, DateTime>? userRateLimits))
         {
@@ -61,9 +61,9 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
 
             if (timeDifference < _rateLimit)
             {
-                var remainingSeconds = (_rateLimit - timeDifference).Seconds;
+                int remainingSeconds = (_rateLimit - timeDifference).Seconds;
 
-                var message = remainingSeconds == 0
+                string message = remainingSeconds == 0
                     ? "You are sending requests to fast!"
                     : $"Cooldown: {remainingSeconds} {(remainingSeconds == 1 ? "second" : "seconds")} remaining";
 

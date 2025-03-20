@@ -69,7 +69,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
         var chunks = new List<string>();
 
-        for (var i = 0; i < content.Length; i += ChunkSize)
+        for (int i = 0; i < content.Length; i += ChunkSize)
         {
             chunks.Add(content.Substring(i, Math.Min(ChunkSize, content.Length - i)));
         }
@@ -91,9 +91,9 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     {
         var chunks = new List<string>();
 
-        for (var i = 0; i < strings.Count; i += ChunkSize)
+        for (int i = 0; i < strings.Count; i += ChunkSize)
         {
-            var chunk = String.Join("\n", strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i)));
+            string chunk = String.Join("\n", strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i)));
 
             if (chunk.Length > EmbedBuilder.MaxDescriptionLength)
             {
@@ -185,7 +185,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
             foreach (ActionRowBuilder actionRow in componentBuilder.ActionRows)
             {
-                for (var i = 0; i < actionRow.Components.Count; i++)
+                for (int i = 0; i < actionRow.Components.Count; i++)
                 {
                     IMessageComponent component = actionRow.Components[i];
 

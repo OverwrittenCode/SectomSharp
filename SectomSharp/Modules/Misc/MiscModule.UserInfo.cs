@@ -94,23 +94,22 @@ public sealed partial class MiscModule
             embedBuilder.AddField("Premium Since", TimestampTag.FormatFromDateTime(restUser.PremiumSince.Value.DateTime, TimestampTagStyles.Relative));
         }
 
-        if (restUser.Nickname is not null)
+        if (restUser.Nickname is { } nickname)
         {
-            embedBuilder.AddField("Nickname", restUser.Nickname);
+            embedBuilder.AddField("Nickname", nickname);
         }
 
-        if (restUser.PublicFlags.HasValue)
+        if (restUser.PublicFlags is { } publicFlags)
         {
-            List<string> badges = UserPropertiesArray.Skip(1)
-                                                     .Where(property => restUser.PublicFlags.Value.HasFlag(property))
+            List<string> badges = UserPropertiesArray.Where(property => publicFlags.HasFlag(property))
                                                      .Select(
-                                                          property => Badges.TryGetValue(property, out var emoji)
+                                                          property => Badges.TryGetValue(property, out string? emoji)
                                                               ? emoji
                                                               : $"{Format.Code(StringUtils.PascalCaseToSentence(property.ToString()))}"
                                                       )
                                                      .ToList();
 
-            embedBuilder.AddField($"Badges [{badges.Count}]", String.Join(" ", badges));
+            embedBuilder.AddField($"Badges [{badges.Count}]", String.Join(' ', badges));
         }
 
         if (restUser.RoleIds.Skip(1).Select(MentionUtils.MentionRole).ToList() is { Count: > 1 and var roleCount } roleMentions)

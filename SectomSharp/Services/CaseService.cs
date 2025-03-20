@@ -113,7 +113,7 @@ internal sealed class CaseService
 
         foreach (SocketSlashCommandDataOption option in options)
         {
-            var value = option.Value switch
+            string value = option.Value switch
             {
                 IMentionable mentionable => $"{mentionable.Mention} ({mentionable})",
                 SocketEntity<ulong> entity => $"{entity.Id} ({entity})",
@@ -129,9 +129,9 @@ internal sealed class CaseService
             );
         }
 
-        var caseId = StringUtils.GenerateUniqueId();
+        string caseId = StringUtils.GenerateUniqueId();
 
-        EmbedBuilder commandInputEmbedBuilder = new EmbedBuilder().WithDescription($"</{String.Join(" ", commandMentionArguments)}:{command.CommandId}>")
+        EmbedBuilder commandInputEmbedBuilder = new EmbedBuilder().WithDescription($"</{String.Join(' ', commandMentionArguments)}:{command.CommandId}>")
                                                                   .WithAuthor($"{logType}{operationType} | {caseId}")
                                                                   .WithColor(
                                                                        perpetratorId is null
@@ -174,34 +174,34 @@ internal sealed class CaseService
         await using (var db = new ApplicationDbContext())
         {
             List<User> users = [];
-            if (perpetratorId.HasValue && !await db.Users.AnyAsync(perpetrator => perpetrator.Id == perpetratorId.Value && perpetrator.GuildId == context.Guild.Id))
+            if (perpetratorId is { } perpetratorIdValue && !await db.Users.AnyAsync(perpetrator => perpetrator.Id == perpetratorIdValue && perpetrator.GuildId == context.Guild.Id))
             {
                 users.Add(
                     new User
                     {
-                        Id = perpetratorId.Value,
+                        Id = perpetratorIdValue,
                         GuildId = context.Guild.Id
                     }
                 );
             }
 
-            if (targetId.HasValue && !await db.Users.AnyAsync(target => target.Id == targetId.Value && target.GuildId == context.Guild.Id))
+            if (targetId is { } targetIdValue && !await db.Users.AnyAsync(target => target.Id == targetIdValue && target.GuildId == context.Guild.Id))
             {
                 users.Add(
                     new User
                     {
-                        Id = targetId.Value,
+                        Id = targetIdValue,
                         GuildId = context.Guild.Id
                     }
                 );
             }
 
-            if (channelId.HasValue && !await db.Channels.AnyAsync(channel => channel.Id == channelId.Value))
+            if (channelId is { } channelIdValue && !await db.Channels.AnyAsync(channel => channel.Id == channelIdValue))
             {
                 await db.Channels.AddAsync(
                     new Channel
                     {
-                        Id = channelId.Value,
+                        Id = channelIdValue,
                         GuildId = context.Guild.Id
                     }
                 );
@@ -227,14 +227,15 @@ internal sealed class CaseService
                 {
                     Id = @case.GuildId
                 };
+
                 await db.Guilds.AddAsync(guild);
             }
             else if (guild.BotLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(logType)) is { } botLogChannel
                   && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id) is ITextChannel logChannel
                   && context.Guild.CurrentUser.GetPermissions(logChannel).Has(ChannelPermission.SendMessages))
             {
-                IUserMessage message = await logChannel.SendMessageAsync(embeds: [commandLogEmbed]);
-                @case.LogMessageUrl = message.GetJumpUrl();
+                IUserMessage userMessage = await logChannel.SendMessageAsync(embeds: [commandLogEmbed]);
+                @case.LogMessageUrl = userMessage.GetJumpUrl();
             }
 
             guildEntity = guild;

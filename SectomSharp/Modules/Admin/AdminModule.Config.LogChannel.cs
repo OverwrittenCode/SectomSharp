@@ -95,20 +95,19 @@ public partial class AdminModule
             [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(out ITextChannel channel, out BotLogType action, out var reason);
-
                 await DeferAsync();
+
+                options.Deconstruct(out ITextChannel channel, out BotLogType action, out string? reason);
+
+                var entity = new Guild
+                {
+                    Id = Context.Guild.Id
+                };
 
                 await using (var db = new ApplicationDbContext())
                 {
-                    Guild? guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.BotLogChannels).SingleOrDefaultAsync();
-
-                    guild ??= (await db.Guilds.AddAsync(
-                        new Guild
-                        {
-                            Id = Context.Guild.Id
-                        }
-                    )).Entity;
+                    Guild guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.BotLogChannels).SingleOrDefaultAsync() ?? entity;
+                    await db.Guilds.AddAsync(entity);
 
                     BotLogChannel? botLogChannel = guild.BotLogChannels.FirstOrDefault(botLogChannel => botLogChannel.Id == channel.Id);
 
@@ -143,7 +142,7 @@ public partial class AdminModule
             [RequireBotPermission(GuildPermission.ViewAuditLog)]
             public async Task SetAuditLog([ComplexParameter] LogChannelOptions<AuditLogType> options)
             {
-                options.Deconstruct(out ITextChannel? channel, out AuditLogType action, out var reason);
+                options.Deconstruct(out ITextChannel channel, out AuditLogType action, out string? reason);
 
                 if (!Context.Guild.CurrentUser.GetPermissions(channel).ManageWebhooks)
                 {
@@ -155,16 +154,17 @@ public partial class AdminModule
 
                 await DeferAsync();
 
+                var entity = new Guild
+                {
+                    Id = Context.Guild.Id
+                };
+
                 await using (var db = new ApplicationDbContext())
                 {
                     Guild? guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.AuditLogChannels).SingleOrDefaultAsync();
 
-                    guild ??= (await db.Guilds.AddAsync(
-                        new Guild
-                        {
-                            Id = Context.Guild.Id
-                        }
-                    )).Entity;
+                    guild ??= entity;
+                    await db.Guilds.AddAsync(entity);
 
                     AuditLogChannel? auditLogChannel = guild.AuditLogChannels.SingleOrDefault(auditLogChannel => auditLogChannel.Id == channel.Id);
 
@@ -176,17 +176,16 @@ public partial class AdminModule
                                                options: DiscordUtils.GetAuditReasonRequestOptions(Context, "Automated request for audit logging.")
                                            );
 
-                        guild.AuditLogChannels.Add(
-                            (await db.AuditLogChannels.AddAsync(
-                                new AuditLogChannel
-                                {
-                                    Id = channel.Id,
-                                    GuildId = Context.Guild.Id,
-                                    WebhookUrl = $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}",
-                                    Type = action
-                                }
-                            )).Entity
-                        );
+                        var logChannel = new AuditLogChannel
+                        {
+                            Id = channel.Id,
+                            GuildId = Context.Guild.Id,
+                            WebhookUrl = $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}",
+                            Type = action
+                        };
+
+                        guild.AuditLogChannels.Add(logChannel);
+                        await db.AuditLogChannels.AddAsync(logChannel);
                     }
                     else if (!auditLogChannel.Type.HasFlag(action))
                     {
@@ -207,7 +206,7 @@ public partial class AdminModule
             [SlashCommand("remove-bot-log", "Remove a bot log channel configuration")]
             public async Task RemoveBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(out ITextChannel? channel, out BotLogType action, out var reason);
+                options.Deconstruct(out ITextChannel channel, out BotLogType action, out string? reason);
 
                 await DeferAsync();
 
@@ -223,6 +222,7 @@ public partial class AdminModule
                                 Id = Context.Guild.Id
                             }
                         );
+
                         await db.SaveChangesAsync();
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;
@@ -259,7 +259,7 @@ public partial class AdminModule
             [SlashCommand("remove-audit-log", "Remove an audit log channel configuration")]
             public async Task RemoveAuditLog([ComplexParameter] LogChannelOptions<AuditLogType> options)
             {
-                options.Deconstruct(out ITextChannel? channel, out AuditLogType action, out var reason);
+                options.Deconstruct(out ITextChannel channel, out AuditLogType action, out string? reason);
 
                 await DeferAsync();
 
@@ -275,6 +275,7 @@ public partial class AdminModule
                                 Id = Context.Guild.Id
                             }
                         );
+
                         await db.SaveChangesAsync();
                         await RespondOrFollowUpAsync(NotConfiguredMessage);
                         return;

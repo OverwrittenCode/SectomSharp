@@ -51,7 +51,7 @@ internal sealed class EventService
         {
             if (!result.IsSuccess)
             {
-                var message = result.Error == InteractionCommandError.UnmetPrecondition ? result.ErrorReason : $"{result.Error}: {result.ErrorReason}";
+                string message = result.Error == InteractionCommandError.UnmetPrecondition ? result.ErrorReason : $"{result.Error}: {result.ErrorReason}";
 
                 await context.Interaction.RespondOrFollowupAsync(message, ephemeral: true);
             }

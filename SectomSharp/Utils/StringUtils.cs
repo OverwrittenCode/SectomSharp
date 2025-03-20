@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using SectomSharp.Modules.Moderation;
 
 namespace SectomSharp.Utils;
 
@@ -16,17 +17,17 @@ internal static partial class StringUtils
     /// </summary>
     /// <param name="length">The length of the unique identifier.</param>
     /// <returns>A unique identifier string with the given <paramref name="length" />.</returns>
-    public static string GenerateUniqueId(int length = 6)
+    public static string GenerateUniqueId(int length = ModerationModule.CaseModule.IdLength)
     {
-        const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         var stringBuilder = new StringBuilder(length);
 
         lock (LockObj)
         {
-            for (var i = 0; i < length; i++)
+            for (int i = 0; i < length; i++)
             {
-                stringBuilder.Append(Chars[Random.Next(Chars.Length)]);
+                stringBuilder.Append(chars[Random.Next(chars.Length)]);
             }
         }
 
@@ -60,14 +61,14 @@ internal static partial class StringUtils
     /// </remarks>
     public static string GenerateComponentIdRegex(string prefix, params string[] wildcardNames)
     {
-        const string LazyWildcardRegex = $"{Constants.ComponentWildcardSeparator}*";
+        const string lazyWildcardRegex = $"{Constants.ComponentWildcardSeparator}*";
 
         if (wildcardNames.Length == 0)
         {
             return prefix;
         }
 
-        return prefix + String.Concat(Enumerable.Repeat(LazyWildcardRegex, wildcardNames.Length));
+        return prefix + String.Concat(Enumerable.Repeat(lazyWildcardRegex, wildcardNames.Length));
     }
 
     /// <summary>

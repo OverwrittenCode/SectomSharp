@@ -155,10 +155,10 @@ internal sealed class SelectMenuPaginationBuilder
         foreach (IGrouping<TCategory, TPage> group in groupedItems)
         {
             TCategory category = group.Key;
-            var categoryName = categoryConfig.GetName(category);
-            var categoryValue = categoryConfig.GetValue(category);
+            string categoryName = categoryConfig.GetName(category);
+            string categoryValue = categoryConfig.GetValue(category);
 
-            SelectMenuBuilder? selectMenu = new SelectMenuBuilder().WithOptions(
+            SelectMenuBuilder selectMenu = new SelectMenuBuilder().WithOptions(
                 group.Select(
                           item => new SelectMenuOptionBuilder
                           {

@@ -17,7 +17,7 @@ public sealed partial class MiscModule
             return;
         }
 
-        var avatarUrl = restUser.GetDisplayAvatarUrl(size: 2048)!;
+        string avatarUrl = restUser.GetDisplayAvatarUrl(size: 2048)!;
 
         EmbedBuilder embed = new EmbedBuilder().WithColor(restUser.AccentColor ?? Color.Purple).WithAuthor(restUser.GlobalName).WithImageUrl(avatarUrl);
 
