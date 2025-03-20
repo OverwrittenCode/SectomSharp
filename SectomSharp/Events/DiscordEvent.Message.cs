@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
+using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;
 
@@ -19,7 +20,7 @@ public partial class DiscordEvent
         [
             new("Channel Id", message.Channel.Id),
             new("Author", message.Author.Mention),
-            new("Created At", TimestampTag.FormatFromDateTime(message.Timestamp.DateTime, TimestampTagStyles.Relative)),
+            new("Created At", message.Timestamp.DateTime.GetRelativeTimestamp()),
             new("Content", message.Content)
         ];
 

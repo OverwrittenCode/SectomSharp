@@ -77,21 +77,20 @@ public sealed partial class MiscModule
                                                       .WithFooter($"ID: {restUser.Id}")
                                                       .WithCurrentTimestamp();
 
-        EmbedFieldBuilder createdAtField = new EmbedFieldBuilder().WithName("Created At")
-                                                                  .WithValue(TimestampTag.FormatFromDateTime(restUser.CreatedAt.DateTime, TimestampTagStyles.Relative));
-        if (restUser.JoinedAt.HasValue)
+        EmbedFieldBuilder createdAtField = new EmbedFieldBuilder().WithName("Created At").WithValue(restUser.CreatedAt.DateTime.GetRelativeTimestamp());
+
+        if (restUser.JoinedAt is { DateTime: var joinedAt })
         {
-            embedBuilder.AddField(createdAtField.WithIsInline(true))
-                        .AddField("Joined At", TimestampTag.FormatFromDateTime(restUser.JoinedAt.Value.DateTime, TimestampTagStyles.Relative), true);
+            embedBuilder.AddField(createdAtField.WithIsInline(true)).AddField("Joined At", joinedAt.GetRelativeTimestamp(), true);
         }
         else
         {
             embedBuilder.AddField(createdAtField);
         }
 
-        if (restUser.PremiumSince.HasValue)
+        if (restUser.PremiumSince is { DateTime: var premiumSince })
         {
-            embedBuilder.AddField("Premium Since", TimestampTag.FormatFromDateTime(restUser.PremiumSince.Value.DateTime, TimestampTagStyles.Relative));
+            embedBuilder.AddField("Premium Since", premiumSince.GetRelativeTimestamp());
         }
 
         if (restUser.Nickname is { } nickname)

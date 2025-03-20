@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
+using SectomSharp.Extensions;
 using SectomSharp.Managers.Pagination.Builders;
 using SectomSharp.Managers.Pagination.Button;
 using SectomSharp.Services;
@@ -93,7 +94,7 @@ public partial class ModerationModule
 
             List<string> embedDescriptions = cases.Select(
                                                        @case
-                                                           => $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {TimestampTag.FormatFromDateTime(@case.CreatedAt, TimestampTagStyles.Relative)}"
+                                                           => $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {@case.CreatedAt.GetRelativeTimestamp()}"
                                                    )
                                                   .ToList();
 
