@@ -4,7 +4,7 @@ using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Admin;
 
-[Category("Admin", "⚙️")]
+[Category(nameof(Admin), "⚙️")]
 [RateLimit]
 [CommandContextType(InteractionContextType.Guild)]
 [DefaultMemberPermissions(GuildPermission.Administrator)]

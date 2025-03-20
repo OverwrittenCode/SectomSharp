@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
 using SectomSharp.Attributes;
@@ -8,6 +9,7 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Misc;
 
+[SuppressMessage("ReSharper", "EntityNameCapturedOnly.Global")]
 public partial class MiscModule
 {
     [SlashCommand("help", "Displays a help menu")]
@@ -46,8 +48,8 @@ public partial class MiscModule
                                                                   .Init(Context);
     }
 
-    [RegexComponentInteraction(nameof(HelpSelectMenu), "id", "category")]
-    public async Task HelpSelectMenu([SelectMenuPaginationInstanceId] string _, string category, string[] values)
+    [RegexComponentInteraction(nameof(HelpSelectMenu), nameof(id), nameof(category))]
+    public async Task HelpSelectMenu([SelectMenuPaginationInstanceId] string id, string category, string[] values)
     {
         SlashCommandInfo command = _commands.SlashCommands.First(command => command.Name == values[0]);
 

@@ -4,7 +4,7 @@ using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Misc;
 
-[Category("Misc", "🛠️")]
+[Category(nameof(Misc), "🛠️")]
 [RateLimit]
 [CommandContextType(InteractionContextType.Guild)]
 public sealed partial class MiscModule : BaseModule
