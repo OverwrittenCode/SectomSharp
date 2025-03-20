@@ -99,15 +99,15 @@ public partial class AdminModule
 
                 options.Deconstruct(out ITextChannel channel, out BotLogType action, out string? reason);
 
-                var entity = new Guild
-                {
-                    Id = Context.Guild.Id
-                };
-
                 await using (var db = new ApplicationDbContext())
                 {
-                    Guild guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.BotLogChannels).SingleOrDefaultAsync() ?? entity;
-                    await db.Guilds.AddAsync(entity);
+                    Guild guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.BotLogChannels).SingleOrDefaultAsync()
+                               ?? (await db.Guilds.AddAsync(
+                                      new Guild
+                                      {
+                                          Id = Context.Guild.Id
+                                      }
+                                  )).Entity;
 
                     BotLogChannel? botLogChannel = guild.BotLogChannels.FirstOrDefault(botLogChannel => botLogChannel.Id == channel.Id);
 
@@ -154,17 +154,15 @@ public partial class AdminModule
 
                 await DeferAsync();
 
-                var entity = new Guild
-                {
-                    Id = Context.Guild.Id
-                };
-
                 await using (var db = new ApplicationDbContext())
                 {
-                    Guild? guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.AuditLogChannels).SingleOrDefaultAsync();
-
-                    guild ??= entity;
-                    await db.Guilds.AddAsync(entity);
+                    Guild guild = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id).Include(guild => guild.AuditLogChannels).SingleOrDefaultAsync()
+                               ?? (await db.Guilds.AddAsync(
+                                      new Guild
+                                      {
+                                          Id = Context.Guild.Id
+                                      }
+                                  )).Entity;
 
                     AuditLogChannel? auditLogChannel = guild.AuditLogChannels.SingleOrDefault(auditLogChannel => auditLogChannel.Id == channel.Id);
 
