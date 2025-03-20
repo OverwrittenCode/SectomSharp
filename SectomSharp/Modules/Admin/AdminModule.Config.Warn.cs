@@ -5,7 +5,6 @@ using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
-using SectomSharp.Services;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
@@ -153,36 +152,33 @@ public partial class AdminModule
                 await LogAsync(Context, reason);
             }
 
-            [SlashCommand("add-timeout-punishment", "Add a timeout punishment on reaching a number of warnings")]
+            [SlashCmd("Add a timeout punishment on reaching a number of warnings")]
             public async Task AddTimeoutPunishment(
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
                 [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
+                [ReasonMaxLength] string? reason = null
             )
                 => await AddPunishment(threshold, duration, reason, BotLogType.Timeout);
 
-            [SlashCommand("add-ban-punishment", "Add a ban punishment on reaching a number of warnings")]
-            public async Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+            [SlashCmd("Add a ban punishment on reaching a number of warnings")]
+            public async Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [ReasonMaxLength] string? reason = null)
                 => await AddPunishment(threshold, null, reason, BotLogType.Ban);
 
-            [SlashCommand("remove-timeout-punishment", "Remove a current timeout punishment configuration")]
-            public async Task RemoveTimeoutPunishment(
-                [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
-                [MaxLength(CaseService.MaxReasonLength)] string? reason = null
-            )
+            [SlashCmd("Remove a current timeout punishment configuration")]
+            public async Task RemoveTimeoutPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [ReasonMaxLength] string? reason = null)
                 => await RemovePunishmentAsync(threshold, reason, BotLogType.Timeout);
 
-            [SlashCommand("remove-ban-punishment", "Remove a current ban punishment configuration")]
-            public async Task RemoveBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [MaxLength(CaseService.MaxReasonLength)] string? reason = null)
+            [SlashCmd("Remove a current ban punishment configuration")]
+            public async Task RemoveBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [ReasonMaxLength] string? reason = null)
                 => await RemovePunishmentAsync(threshold, reason, BotLogType.Ban);
 
-            [SlashCommand("disable", "Disable this configuration")]
-            public async Task Disable([MaxLength(CaseService.MaxReasonLength)] string? reason = null) => await SetIsDisabledAsync(true, reason);
+            [SlashCmd("Disable this configuration")]
+            public async Task Disable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(true, reason);
 
-            [SlashCommand("enable", "Enable this configuration")]
-            public async Task Enable([MaxLength(CaseService.MaxReasonLength)] string? reason = null) => await SetIsDisabledAsync(false, reason);
+            [SlashCmd("Enable this configuration")]
+            public async Task Enable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(false, reason);
 
-            [SlashCommand("view-thresholds", "View the configured warning thresholds")]
+            [SlashCmd("View the configured warning thresholds")]
             public async Task ViewThresholds()
             {
                 await DeferAsync();

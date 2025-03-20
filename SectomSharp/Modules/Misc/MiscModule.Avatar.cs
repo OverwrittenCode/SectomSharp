@@ -1,12 +1,12 @@
 using Discord;
-using Discord.Interactions;
 using Discord.Rest;
+using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Misc;
 
 public sealed partial class MiscModule
 {
-    [SlashCommand("avatar", "Display the avatar of a user")]
+    [SlashCmd("Display the avatar of a user")]
     public async Task Avatar(IUser? user = null)
     {
         RestUser? restUser = await Context.Client.Rest.GetUserAsync((user ?? Context.User).Id);

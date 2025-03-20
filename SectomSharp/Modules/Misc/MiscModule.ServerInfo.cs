@@ -1,12 +1,12 @@
 using Discord;
-using Discord.Interactions;
 using Discord.WebSocket;
+using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Misc;
 
 public sealed partial class MiscModule
 {
-    [SlashCommand("serverinfo", "Get information about the server")]
+    [SlashCmd("Get information about the server")]
     public async Task ServerInfo()
     {
         SocketGuild guild = Context.Guild;

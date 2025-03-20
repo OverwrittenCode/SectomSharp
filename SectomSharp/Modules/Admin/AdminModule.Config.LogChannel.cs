@@ -1,12 +1,12 @@
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
 using SectomSharp.Managers.Pagination.Builders;
 using SectomSharp.Managers.Pagination.Button;
-using SectomSharp.Services;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
@@ -92,7 +92,7 @@ public partial class AdminModule
                 await pagination.Build().Init(Context);
             }
 
-            [SlashCommand("set-bot-log", "Add or modify a bot log channel configuration")]
+            [SlashCmd("Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
                 await DeferAsync();
@@ -138,7 +138,7 @@ public partial class AdminModule
                 await LogAsync(Context, reason, channel.Id);
             }
 
-            [SlashCommand("set-audit-log", "Add or modify an audit log channel configuration")]
+            [SlashCmd("Add or modify an audit log channel configuration")]
             [RequireBotPermission(GuildPermission.ViewAuditLog)]
             public async Task SetAuditLog([ComplexParameter] LogChannelOptions<AuditLogType> options)
             {
@@ -203,7 +203,7 @@ public partial class AdminModule
                 await LogAsync(Context, reason, channel.Id);
             }
 
-            [SlashCommand("remove-bot-log", "Remove a bot log channel configuration")]
+            [SlashCmd("Remove a bot log channel configuration")]
             public async Task RemoveBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
                 options.Deconstruct(out ITextChannel channel, out BotLogType action, out string? reason);
@@ -256,7 +256,7 @@ public partial class AdminModule
                 await LogAsync(Context, reason, options.Channel.Id);
             }
 
-            [SlashCommand("remove-audit-log", "Remove an audit log channel configuration")]
+            [SlashCmd("Remove an audit log channel configuration")]
             public async Task RemoveAuditLog([ComplexParameter] LogChannelOptions<AuditLogType> options)
             {
                 options.Deconstruct(out ITextChannel channel, out AuditLogType action, out string? reason);
@@ -309,11 +309,11 @@ public partial class AdminModule
                 await LogAsync(Context, reason, channel.Id);
             }
 
-            [SlashCommand("view-bot-log", "View the bot log channel configuration")]
+            [SlashCmd("View the bot log channel configuration")]
             public async Task ViewBotLog()
                 => await ViewAsync("Bot Log Channels", BotLogTypes, guild => guild.BotLogChannels, query => query.Include(guild => guild.BotLogChannels), channel => channel.Type);
 
-            [SlashCommand("view-audit-log", "View the audit log channel configuration")]
+            [SlashCmd("View the audit log channel configuration")]
             public async Task ViewAuditLog()
                 => await ViewAsync(
                     "Audit Log Channels",

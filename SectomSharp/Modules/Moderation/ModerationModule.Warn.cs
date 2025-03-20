@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
 using SectomSharp.Services;
@@ -9,7 +10,7 @@ namespace SectomSharp.Modules.Moderation;
 
 public partial class ModerationModule
 {
-    [SlashCommand("warn", "Hand out an infraction to a user on the server.")]
+    [SlashCmd("Hand out an infraction to a user on the server.")]
     [DefaultMemberPermissions(GuildPermission.KickMembers)]
     public async Task Warn([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
     {

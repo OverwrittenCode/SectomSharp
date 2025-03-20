@@ -9,7 +9,7 @@ namespace SectomSharp.Modules.Moderation;
 
 public partial class ModerationModule
 {
-    [SlashCommand("timeout", "Timeout a user on the server")]
+    [SlashCmd("Timeout a user on the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     [RequireBotPermission(GuildPermission.ModerateMembers)]
     public async Task Timeout(
@@ -32,7 +32,7 @@ public partial class ModerationModule
         await CaseService.LogAsync(Context, BotLogType.Timeout, operationType, user.Id, expiresAt: user.TimedOutUntil?.UtcDateTime, reason: reason);
     }
 
-    [SlashCommand("untimeout", "Remove a timeout from a user on the server")]
+    [SlashCmd("Remove a timeout from a user on the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     [RequireBotPermission(GuildPermission.ModerateMembers)]
     public async Task Untimeout([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Services;
 using SectomSharp.Utils;
@@ -8,7 +9,7 @@ namespace SectomSharp.Modules.Moderation;
 
 public partial class ModerationModule
 {
-    [SlashCommand("deafen", "Deafen a user in their current voice channel")]
+    [SlashCmd("Deafen a user in their current voice channel")]
     [DefaultMemberPermissions(GuildPermission.DeafenMembers)]
     [RequireBotPermission(GuildPermission.DeafenMembers)]
     public async Task Deafen([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)

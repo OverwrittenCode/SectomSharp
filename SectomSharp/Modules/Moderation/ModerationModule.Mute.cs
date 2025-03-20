@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Services;
 using SectomSharp.Utils;
@@ -8,7 +9,7 @@ namespace SectomSharp.Modules.Moderation;
 
 public partial class ModerationModule
 {
-    [SlashCommand("mute", "Mute a user in their current voice channel")]
+    [SlashCmd("Mute a user in their current voice channel")]
     [DefaultMemberPermissions(GuildPermission.MuteMembers)]
     [RequireBotPermission(GuildPermission.MuteMembers)]
     public async Task Mute([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
@@ -24,7 +25,7 @@ public partial class ModerationModule
         await CaseService.LogAsync(Context, BotLogType.Mute, OperationType.Create, user.Id, reason: reason);
     }
 
-    [SlashCommand("nick", "Set the nickname of a user in the server")]
+    [SlashCmd("Set the nickname of a user in the server")]
     [DefaultMemberPermissions(GuildPermission.ManageNicknames)]
     [RequireBotPermission(GuildPermission.ManageNicknames)]
     public async Task Nick([DoHierarchyCheck] IGuildUser user, string nickname, [ReasonMaxLength] string? reason = null)
@@ -40,8 +41,8 @@ public partial class ModerationModule
         await CaseService.LogAsync(Context, BotLogType.Nick, OperationType.Create, user.Id, reason: reason);
     }
 
-    [SlashCommand("mod-note", "Add a moderation note to a user in the server")]
-    public async Task ModNote([DoHierarchyCheck] IGuildUser user, [MaxLength(CaseService.MaxReasonLength)] string note)
+    [SlashCmd("Add a moderation note to a user in the server")]
+    public async Task ModNote([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string note)
     {
         await DeferAsync();
         await CaseService.LogAsync(Context, BotLogType.ModNote, OperationType.Create, user.Id, reason: note);

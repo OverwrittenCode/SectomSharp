@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Services;
 using SectomSharp.Utils;
@@ -10,7 +11,7 @@ public partial class ModerationModule
 {
     private static uint GetPruneSeconds(int pruneDays) => (uint)pruneDays * 86_400;
 
-    [SlashCommand("ban", "Ban a user from the server")]
+    [SlashCmd("Ban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
     public async Task Ban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [ReasonMaxLength] string? reason = null)
@@ -26,7 +27,7 @@ public partial class ModerationModule
         await CaseService.LogAsync(Context, BotLogType.Ban, OperationType.Create, user.Id, reason: reason);
     }
 
-    [SlashCommand("softban", "Ban a user to prune their messages and then immediately unban them from the server")]
+    [SlashCmd("Ban a user to prune their messages and then immediately unban them from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
     public async Task Softban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [ReasonMaxLength] string? reason = null)
@@ -45,7 +46,7 @@ public partial class ModerationModule
         await CaseService.LogAsync(Context, BotLogType.Softban, OperationType.Create, user.Id, reason: reason);
     }
 
-    [SlashCommand("unban", "Unban a user from the server")]
+    [SlashCmd("Unban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
     public async Task Unban([DoHierarchyCheck] IUser user, [ReasonMaxLength] string? reason = null)

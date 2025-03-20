@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Services;
 using SectomSharp.Utils;
@@ -8,7 +9,7 @@ namespace SectomSharp.Modules.Moderation;
 
 public sealed partial class ModerationModule
 {
-    [SlashCommand("kick", "Kicks a user from the server")]
+    [SlashCmd("Kicks a user from the server")]
     [DefaultMemberPermissions(GuildPermission.KickMembers)]
     [RequireBotPermission(GuildPermission.KickMembers)]
     public async Task Kick([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)

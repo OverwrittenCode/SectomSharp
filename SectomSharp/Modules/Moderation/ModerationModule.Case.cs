@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
@@ -39,7 +40,7 @@ public partial class ModerationModule
             await RespondOrFollowUpAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseService.GenerateLogMessageButton(@case));
         }
 
-        [SlashCommand("list", "List and filter all cases on the server")]
+        [SlashCmd("List and filter all cases on the server")]
         public async Task List(IUser? target = null, IUser? perpetrator = null, IChannel? channel = null, BotLogType? logType = null, OperationType? operationType = null)
         {
             await DeferAsync();

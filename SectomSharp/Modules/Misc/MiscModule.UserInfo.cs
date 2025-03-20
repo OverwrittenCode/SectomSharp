@@ -1,6 +1,6 @@
 using Discord;
-using Discord.Interactions;
 using Discord.Rest;
+using SectomSharp.Attributes;
 using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
@@ -66,7 +66,7 @@ public sealed partial class MiscModule
         }
     };
 
-    [SlashCommand("userinfo", "Get information about a user in the server")]
+    [SlashCmd("Get information about a user in the server")]
     public async Task UserInfo(IGuildUser? user = null)
     {
         RestGuildUser? restUser = await Context.Client.Rest.GetGuildUserAsync(Context.Guild.Id, (user ?? (IGuildUser)Context.User).Id);

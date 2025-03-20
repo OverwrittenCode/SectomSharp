@@ -12,7 +12,7 @@ namespace SectomSharp.Modules.Misc;
 [SuppressMessage("ReSharper", "EntityNameCapturedOnly.Global")]
 public partial class MiscModule
 {
-    [SlashCommand("help", "Displays a help menu")]
+    [SlashCmd("Displays a help menu")]
     public async Task Help()
     {
         IEnumerable<IGrouping<CategoryAttribute, SlashCommandInfo>> groupedItems =

@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Services;
 using SectomSharp.Utils;
@@ -9,7 +10,7 @@ namespace SectomSharp.Modules.Moderation;
 
 public sealed partial class ModerationModule
 {
-    [SlashCommand("purge", "Bulk delete messages in the current channel")]
+    [SlashCmd("Bulk delete messages in the current channel")]
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     [RequireBotPermission(ChannelPermission.ManageMessages)]
     public async Task Purge([MinValue(1)] [MaxValue(DiscordConfig.MaxMessagesPerBatch)] int amount = 50, [ReasonMaxLength] string? reason = null)
