@@ -1,9 +1,11 @@
 using Discord.Interactions;
+using JetBrains.Annotations;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Attributes;
 
 /// <inheritdoc path="/summary" />
+[MeansImplicitUse]
 internal sealed class RegexComponentInteractionAttribute : ComponentInteractionAttribute
 {
     /// <inheritdoc cref="RegexComponentInteractionAttribute(RunMode, String, global::System.String[])" />
@@ -20,6 +22,7 @@ internal sealed class RegexComponentInteractionAttribute : ComponentInteractionA
 
 /// <inheritdoc cref="RegexComponentInteractionAttribute" />
 [AttributeUsage(AttributeTargets.Method)]
+[MeansImplicitUse]
 internal sealed class RegexComponentInteractionAttribute<T> : ComponentInteractionAttribute
 {
     /// <inheritdoc cref="RegexComponentInteractionAttribute(RunMode, String, global::System.String[])" />
