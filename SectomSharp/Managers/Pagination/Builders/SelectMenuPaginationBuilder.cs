@@ -11,6 +11,8 @@ namespace SectomSharp.Managers.Pagination.Builders;
 /// </summary>
 internal sealed class SelectMenuPaginationBuilder
 {
+    private const int Timeout = 180;
+    
     private readonly string _instanceId = StringUtils.GenerateUniqueId();
 
     /// <summary>
@@ -44,11 +46,6 @@ internal sealed class SelectMenuPaginationBuilder
     private bool IsEphemeral { get; set; }
 
     /// <summary>
-    ///     Gets or sets the timeout duration for the pagination in seconds.
-    /// </summary>
-    public int Timeout { get; set; } = 180;
-
-    /// <summary>
     ///     Initialises a new instance of the <see cref="SelectMenuPaginationBuilder" /> class.
     /// </summary>
     /// <param name="placeholder">The placeholder text for the select menu.</param>
@@ -74,38 +71,12 @@ internal sealed class SelectMenuPaginationBuilder
     private void WithStickyFirstRow(bool isStickyFirstRow = true) => IsStickyFirstRow = isStickyFirstRow;
 
     /// <summary>
-    ///     Sets the timeout duration for the pagination in seconds.
-    /// </summary>
-    /// <param name="timeout">The duration in seconds.</param>
-    /// <returns>The current builder.</returns>
-    public SelectMenuPaginationBuilder WithTimeout(int timeout)
-    {
-        Timeout = timeout;
-        return this;
-    }
-
-    /// <summary>
     ///     Sets whether the pagination response should be ephemeral.
     /// </summary>
     /// <returns>The current builder.</returns>
     public SelectMenuPaginationBuilder WithEphemeral(bool isEphemeral = true)
     {
         IsEphemeral = isEphemeral;
-        return this;
-    }
-
-    /// <summary>
-    ///     Adds multiple options to the pagination.
-    /// </summary>
-    /// <param name="options">A collection of select menu options.</param>
-    /// <returns>The current builder.</returns>
-    public SelectMenuPaginationBuilder AddOptions(IEnumerable<SelectMenuPageOption> options)
-    {
-        foreach (SelectMenuPageOption option in options)
-        {
-            AddOption(option);
-        }
-
         return this;
     }
 
@@ -194,16 +165,6 @@ internal sealed class SelectMenuPaginationBuilder
             );
         }
 
-        return this;
-    }
-
-    /// <summary>
-    ///     Sets whether the select menu is disabled.
-    /// </summary>
-    /// <returns>The current builder.</returns>
-    public SelectMenuPaginationBuilder WithDisabled(bool disabled = true)
-    {
-        SelectMenuBuilder.WithDisabled(disabled);
         return this;
     }
 

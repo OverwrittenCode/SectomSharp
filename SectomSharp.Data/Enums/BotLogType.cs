@@ -13,6 +13,5 @@ public enum BotLogType
     Mute = 1 << 7,
     Nick = 1 << 8,
     Purge = 1 << 9,
-    ModNote = 1 << 10,
-    All = Warn | Ban | Softban | Timeout | Configuration | Kick | Deafen | Mute | Nick | Purge | ModNote
+    ModNote = 1 << 10
 }

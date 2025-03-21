@@ -121,21 +121,6 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
         _extraActionRows = extraActionRows ?? [];
     }
 
-    /// <summary>
-    ///     Initialises a new instance of the ButtonPaginationManager class using content that will be split into embeds.
-    /// </summary>
-    /// <param name="embedTitle">The title for all generated embeds.</param>
-    /// <param name="content">The content to split into multiple embeds.</param>
-    /// <param name="extraActionRows">Optional additional action rows to include in the message.</param>
-    /// <param name="timeout">The duration in seconds.</param>
-    /// <param name="isEphemeral">If the pagination should be ephemeral.</param>
-    public ButtonPaginationManager(string embedTitle, string content, ActionRowBuilder[]? extraActionRows = null, int timeout = 180, bool isEphemeral = false) : this(
-        GetEmbeds(content, embedTitle),
-        extraActionRows,
-        timeout,
-        isEphemeral
-    ) { }
-
     protected override async Task RespondOrFollowupAsync(SocketInteractionContext context)
         => await context.Interaction.RespondOrFollowupAsync(embeds: CurrentEmbeds, components: _embeds.Length == 1 ? null : MessageComponent, ephemeral: IsEphemeral);
 }
