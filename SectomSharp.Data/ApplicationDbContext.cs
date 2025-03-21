@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
 using SectomSharp.Data.Configurations;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
@@ -12,10 +11,6 @@ namespace SectomSharp.Data;
 [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
 public sealed class ApplicationDbContext : DbContext
 {
-#pragma warning disable CS0618 // Type or member is obsolete
-    static ApplicationDbContext() => NpgsqlConnection.GlobalTypeMapper.MapEnum<SnowflakeType>().MapEnum<OperationType>();
-#pragma warning restore CS0618 // Type or member is obsolete
-
     public DbSet<Guild> Guilds { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Role> Roles { get; set; } = null!;
@@ -36,8 +31,7 @@ public sealed class ApplicationDbContext : DbContext
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
-        => builder.HasPostgresEnum<SnowflakeType>()
-                  .HasPostgresEnum<OperationType>()
+        => builder.HasPostgresEnum<OperationType>()
                   .ApplyConfiguration(new GuildConfiguration())
                   .ApplyConfiguration(new UserConfiguration())
                   .ApplyConfiguration(new RoleConfiguration())
@@ -49,8 +43,7 @@ public sealed class ApplicationDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         IConfigurationRoot config = new ConfigurationBuilder().AddUserSecrets(typeof(ApplicationDbContext).Assembly).Build();
-
-        optionsBuilder.UseNpgsql(config["PostgreSQL:ConnectionString"]);
+        optionsBuilder.UseNpgsql(config["PostgreSQL:ConnectionString"], builder => builder.MapEnum<OperationType>());
 
         base.OnConfiguring(optionsBuilder);
     }

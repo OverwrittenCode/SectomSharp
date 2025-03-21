@@ -7,9 +7,7 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
-#pragma warning disable CA1822
-    public async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
-#pragma warning restore CA1822
+    public static async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
     {
         if (partialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message })
         {
@@ -47,9 +45,7 @@ public partial class DiscordEvent
         await LogAsync(guild, AuditLogType.Message, OperationType.Delete, entries, message.Id.ToString(), message.Author.Username, message.Author.GetDisplayAvatarUrl());
     }
 
-#pragma warning disable CA1822
-    public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
-#pragma warning restore CA1822
+    public static async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
     {
         if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } oldMessage })
         {

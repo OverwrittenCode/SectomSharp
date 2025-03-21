@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -12,6 +13,7 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Services;
 
+[UsedImplicitly]
 internal sealed class CaseService
 {
     /// <summary>

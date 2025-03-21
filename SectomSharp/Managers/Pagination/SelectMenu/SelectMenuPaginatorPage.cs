@@ -1,4 +1,5 @@
 using Discord;
+using JetBrains.Annotations;
 
 namespace SectomSharp.Managers.Pagination.SelectMenu;
 
@@ -27,5 +28,6 @@ internal readonly record struct SelectMenuPaginatorPage
     }
 
     /// <inheritdoc cref="SelectMenuPaginatorPage(Embed[], List{ActionRowBuilder})" />
+    [UsedImplicitly]
     public SelectMenuPaginatorPage(Embed[] embeds) : this(embeds, []) { }
 }

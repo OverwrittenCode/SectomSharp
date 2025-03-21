@@ -3,7 +3,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
 
-internal sealed class UserConfiguration : BaseEntityConfiguration<User>
+public sealed class UserConfiguration : BaseEntityConfiguration<User>
 {
     public override void Configure(EntityTypeBuilder<User> builder)
     {

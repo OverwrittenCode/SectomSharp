@@ -82,9 +82,7 @@ public partial class DiscordEvent
         return String.Join("\n", parts);
     }
 
-#pragma warning disable CA1822 // Mark members as static
-    private async Task HandleChannelAlteredAsync(
-#pragma warning restore CA1822 // Mark members as static
+    private static async Task HandleChannelAlteredAsync(
         SocketChannel socketChannel,
         OperationType operationType
     )
@@ -152,13 +150,11 @@ public partial class DiscordEvent
         await LogAsync(guildChannel.Guild, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
-    public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
+    public static async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
 
-    public async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
+    public static async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
 
-#pragma warning disable CA1822 // Mark members as static
-    public async Task HandleChannelUpdatedAsync(
-#pragma warning restore CA1822 // Mark members as static
+    public static async Task HandleChannelUpdatedAsync(
         SocketChannel oldSocketChannel,
         SocketChannel newSocketChannel
     )

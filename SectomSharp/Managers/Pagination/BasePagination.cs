@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Discord;
 using Discord.Interactions;
 using Discord.Net;
@@ -55,34 +56,10 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) => await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
 
     /// <summary>
-    ///     Creates an array of embeds by splitting content into chunks if it exceeds Discord's maximum length.
-    /// </summary>
-    /// <param name="content">The content to split into embeds.</param>
-    /// <param name="title">The title for all generated embeds.</param>
-    /// <returns>An array of Embed objects.</returns>
-    public static Embed[] GetEmbeds(string content, string title)
-    {
-        if (content.Length <= EmbedBuilder.MaxDescriptionLength)
-        {
-            return [GetEmbedBuilder(content, title).Build()];
-        }
-
-        var chunks = new List<string>();
-
-        for (int i = 0; i < content.Length; i += ChunkSize)
-        {
-            chunks.Add(content.Substring(i, Math.Min(ChunkSize, content.Length - i)));
-        }
-
-        return ToSanitisedEmbeds(title, chunks);
-    }
-
-    /// <summary>
     ///     Creates an array of embeds by splitting <paramref name="strings" /> into chunks of <see cref="ChunkSize" />.
     /// </summary>
     /// <param name="strings">The strings to split into chunks.</param>
     /// <param name="title">The title of each embed.</param>
-    /// <inheritdoc cref="GetEmbeds(String, String)" path="/param[@name='title']" />
     /// <returns>An array of embed objects.</returns>
     /// <exception cref="InvalidOperationException">
     ///     A chunk of <paramref name="strings" /> exceeds <see cref="EmbedBuilder.MaxDescriptionLength" />
@@ -95,10 +72,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         {
             string chunk = String.Join("\n", strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i)));
 
-            if (chunk.Length > EmbedBuilder.MaxDescriptionLength)
-            {
-                throw new InvalidOperationException("Value exceeds maximum description length.");
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(chunk.Length, EmbedBuilder.MaxDescriptionLength);
 
             chunks.Add(chunk);
         }
@@ -144,10 +118,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
     protected BasePagination(int timeout, bool isEphemeral = false, string? id = null) : base(id)
     {
-        if (timeout <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(timeout), "Must be greater than 0");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeout);
 
         Timeout = timeout;
         IsEphemeral = isEphemeral;
@@ -210,7 +181,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
                             break;
 
                         default:
-                            throw new ArgumentOutOfRangeException(nameof(component.Type), component.Type, "Unexpected component type encountered.");
+                            throw new InvalidEnumArgumentException(nameof(component.Type), (int)component.Type, typeof(ComponentType));
                     }
                 }
             }

@@ -3,7 +3,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
 
-internal sealed class ChannelConfiguration : BaseEntityConfiguration<Channel>
+public sealed class ChannelConfiguration : BaseEntityConfiguration<Channel>
 {
     public override void Configure(EntityTypeBuilder<Channel> builder)
     {

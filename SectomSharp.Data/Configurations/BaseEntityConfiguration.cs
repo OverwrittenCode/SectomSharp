@@ -4,7 +4,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
 
-internal abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
+public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
     where T : BaseEntity
 {
     public virtual void Configure(EntityTypeBuilder<T> builder)

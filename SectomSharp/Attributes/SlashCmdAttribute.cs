@@ -1,10 +1,12 @@
 using System.Runtime.CompilerServices;
 using Discord.Interactions;
+using JetBrains.Annotations;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Attributes;
 
 /// <inheritdoc />
+[MeansImplicitUse]
 public sealed class SlashCmdAttribute : SlashCommandAttribute
 {
     /// <inheritdoc />

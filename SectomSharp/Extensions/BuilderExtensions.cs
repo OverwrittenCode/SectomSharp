@@ -1,4 +1,5 @@
 using Discord;
+using JetBrains.Annotations;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Extensions;
@@ -15,6 +16,7 @@ internal static class BuilderExtensions
     ///     See <seealso cref="StringUtils.GenerateComponentIdRegex(String, global::System.String[])" />
     ///     for generating the corresponding regex.
     /// </remarks>
+    [PublicAPI]
     public static SelectMenuBuilder WithComponentId(this SelectMenuBuilder builder, string prefix, params object[] values)
         => builder.WithCustomId(StringUtils.GenerateComponentId(prefix, values));
 
@@ -23,6 +25,7 @@ internal static class BuilderExtensions
     public static SelectMenuBuilder WithComponentId<T>(this SelectMenuBuilder builder, params object[] values) => builder.WithCustomId(StringUtils.GenerateComponentId<T>(values));
 
     /// <inheritdoc cref="WithComponentId(SelectMenuBuilder, String, global::System.Object[])" />
+    [PublicAPI]
     public static ButtonBuilder WithComponentId(this ButtonBuilder builder, string prefix, params object[] values)
         => builder.WithCustomId(StringUtils.GenerateComponentId(prefix, values));
 

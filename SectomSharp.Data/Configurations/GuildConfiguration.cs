@@ -4,7 +4,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
 
-internal sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
+public sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
 {
     public override void Configure(EntityTypeBuilder<Guild> builder)
     {

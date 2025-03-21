@@ -13,15 +13,15 @@ using SectomSharp.Data.Enums;
 namespace SectomSharp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241028214400_SimplifyColumnNames")]
-    partial class SimplifyColumnNames
+    [Migration("20250321105857_UpgradeVersion")]
+    partial class UpgradeVersion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.10")
+                .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "operation_type", new[] { "create", "update", "delete" });
@@ -327,7 +327,7 @@ namespace SectomSharp.Data.Migrations
                                             b3.Property<decimal>("WarningConfigurationConfigurationGuildId")
                                                 .HasColumnType("numeric(20,0)");
 
-                                            b3.Property<int>("Id")
+                                            b3.Property<int>("__synthesizedOrdinal")
                                                 .ValueGeneratedOnAdd()
                                                 .HasColumnType("integer");
 
@@ -340,7 +340,7 @@ namespace SectomSharp.Data.Migrations
                                             b3.Property<int>("Value")
                                                 .HasColumnType("integer");
 
-                                            b3.HasKey("WarningConfigurationConfigurationGuildId", "Id");
+                                            b3.HasKey("WarningConfigurationConfigurationGuildId", "__synthesizedOrdinal");
 
                                             b3.ToTable("Guilds");
 

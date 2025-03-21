@@ -1,11 +1,10 @@
 using Discord.Interactions;
+using SectomSharp.Data.Configurations;
 
 namespace SectomSharp.Attributes;
 
 /// <inheritdoc />
 public sealed class ReasonMaxLengthAttribute : MaxLengthAttribute
 {
-    private const int MaxLength = 250;
-
-    public ReasonMaxLengthAttribute() : base(MaxLength) { }
+    public ReasonMaxLengthAttribute() : base(CaseConfiguration.ReasonMaxLength) { }
 }

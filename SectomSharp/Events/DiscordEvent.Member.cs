@@ -6,9 +6,7 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
-#pragma warning disable CA1822
-    public async Task HandleGuildMemberUpdatedAsync(Cacheable<SocketGuildUser, ulong> oldPartialUser, SocketGuildUser newUser)
-#pragma warning restore CA1822
+    public static async Task HandleGuildMemberUpdatedAsync(Cacheable<SocketGuildUser, ulong> oldPartialUser, SocketGuildUser newUser)
     {
         SocketGuildUser oldUser = await oldPartialUser.GetOrDownloadAsync();
 

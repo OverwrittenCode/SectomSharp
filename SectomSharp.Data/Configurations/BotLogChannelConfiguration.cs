@@ -3,7 +3,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
 
-internal sealed class BotLogChannelConfiguration : BaseEntityConfiguration<BotLogChannel>
+public sealed class BotLogChannelConfiguration : BaseEntityConfiguration<BotLogChannel>
 {
     public override void Configure(EntityTypeBuilder<BotLogChannel> builder)
     {

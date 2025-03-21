@@ -13,26 +13,6 @@ namespace SectomSharp.Utils;
 internal static class DiscordUtils
 {
     /// <summary>
-    ///     Gets a hyperlinked URL for a discord user's profile.
-    /// </summary>
-    /// <param name="userId">The user id.</param>
-    /// <returns>
-    ///     The hyperlinked URL for the discord user's profile.
-    /// </returns>
-    public static string GetHyperlinkedUserProfile(ulong userId) => Format.Url(userId.ToString(), $"https://discordapp.com/users/{userId}");
-
-    /// <summary>
-    ///     Gets a URL that jumps to a message.
-    /// </summary>
-    /// <param name="guildId">The guild id.</param>
-    /// <param name="channelId">The channel id.</param>
-    /// <param name="messageId">The message id.</param>
-    /// <returns>
-    ///     The URL for the message.
-    /// </returns>
-    public static string GetMessageUrl(ulong guildId, ulong channelId, ulong messageId) => $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
-
-    /// <summary>
     ///     Creates a new instance of <see cref="RequestOptions" />
     ///     with a set audit log reason.
     /// </summary>
