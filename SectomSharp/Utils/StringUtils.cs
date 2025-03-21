@@ -24,7 +24,7 @@ internal static partial class StringUtils
 
         lock (Lock)
         {
-            for (int i = 0; i < stringBuilder.Length; i++)
+            for (int i = 0; i < CaseConfiguration.IdLength; i++)
             {
                 stringBuilder.Append(chars[Random.Next(chars.Length)]);
             }
