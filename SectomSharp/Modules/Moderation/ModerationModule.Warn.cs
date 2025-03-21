@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Discord;
 using Discord.Interactions;
 using SectomSharp.Attributes;
@@ -95,7 +96,7 @@ public partial class ModerationModule
                     break;
 
                 default:
-                    throw new InvalidOperationException($"{punishmentThreshold.LogType} is not supported.");
+                    throw new InvalidEnumArgumentException(nameof(punishmentThreshold), (int)punishmentThreshold.LogType, typeof(BotLogType));
             }
         }
     }

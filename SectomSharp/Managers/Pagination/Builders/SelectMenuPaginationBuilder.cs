@@ -181,15 +181,8 @@ internal sealed class SelectMenuPaginationBuilder
     /// <exception cref="InvalidOperationException">Empty list of options.</exception>
     public SelectMenuPaginationManager Build()
     {
-        if (Timeout <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(Timeout), "Value must be greater than 0.");
-        }
-
-        if (Options.Count == 0)
-        {
-            throw new InvalidOperationException("At least one option must be added before building.");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(Timeout);
+        ArgumentOutOfRangeException.ThrowIfZero(Options.Count);
 
         return new SelectMenuPaginationManager(SelectMenuBuilder, OptionKvp, ResponseType, Timeout, IsEphemeral, IsStickyFirstRow, _instanceId);
     }

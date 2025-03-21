@@ -29,16 +29,9 @@ internal sealed class ButtonPaginationBuilder
     /// <exception cref="InvalidOperationException">Empty list of <see cref="Embeds" />.</exception>
     public ButtonPaginationManager Build()
     {
-        if (Timeout <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(Timeout), "Value must be greater than 0.");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(Timeout);
+        ArgumentOutOfRangeException.ThrowIfZero(Embeds.Count);
 
-        if (Embeds.Count == 0)
-        {
-            throw new InvalidOperationException("At least one embed must be added before building.");
-        }
-
-        return new ButtonPaginationManager([.. Embeds], [.. ExtraActionRows], Timeout, IsEphemeral);
+        return new ButtonPaginationManager([.. Embeds], [.. ExtraActionRows]);
     }
 }

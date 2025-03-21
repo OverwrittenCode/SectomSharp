@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Discord;
 using Discord.Interactions;
 using Discord.Net;
@@ -71,10 +72,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         {
             string chunk = String.Join("\n", strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i)));
 
-            if (chunk.Length > EmbedBuilder.MaxDescriptionLength)
-            {
-                throw new InvalidOperationException("Value exceeds maximum description length.");
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(chunk.Length, EmbedBuilder.MaxDescriptionLength);
 
             chunks.Add(chunk);
         }
@@ -120,10 +118,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
     protected BasePagination(int timeout, bool isEphemeral = false, string? id = null) : base(id)
     {
-        if (timeout <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(timeout), "Must be greater than 0");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeout);
 
         Timeout = timeout;
         IsEphemeral = isEphemeral;
@@ -186,7 +181,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
                             break;
 
                         default:
-                            throw new ArgumentOutOfRangeException(nameof(component.Type), component.Type, "Unexpected component type encountered.");
+                            throw new InvalidEnumArgumentException(nameof(component.Type), (int)component.Type, typeof(ComponentType));
                     }
                 }
             }

@@ -50,7 +50,7 @@ public partial class DiscordEvent
                                                             OperationType.Create => Color.Green,
                                                             OperationType.Update => Color.Orange,
                                                             OperationType.Delete => Color.Red,
-                                                            _ => throw new InvalidEnumArgumentException(nameof(OperationType), (int)operationType, typeof(OperationType))
+                                                            _ => throw new InvalidEnumArgumentException(nameof(operationType), (int)operationType, typeof(OperationType))
                                                         }
                                                     )
                                                    .WithFields(
