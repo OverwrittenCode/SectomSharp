@@ -8,7 +8,7 @@ namespace SectomSharp.Managers.Pagination.Builders;
 /// </summary>
 internal sealed class ButtonPaginationBuilder
 {
-    private const int Timeout  = 180;
+    private const int Timeout = 180;
 
     /// <summary>
     ///     Gets or sets the list of extra action rows to be added to the pagination.
@@ -19,7 +19,6 @@ internal sealed class ButtonPaginationBuilder
     ///     Gets or sets the list of embeds used in the pagination.
     /// </summary>
     public List<Embed> Embeds { get; init; } = [];
-
 
     /// <summary>
     ///     Builds a new instance of <see cref="ButtonPaginationManager" />.

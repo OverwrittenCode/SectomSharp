@@ -82,10 +82,7 @@ public partial class DiscordEvent
         return String.Join("\n", parts);
     }
 
-    private static async Task HandleChannelAlteredAsync(
-        SocketChannel socketChannel,
-        OperationType operationType
-    )
+    private static async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)
     {
         if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel))
         {
@@ -154,10 +151,7 @@ public partial class DiscordEvent
 
     public static async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
 
-    public static async Task HandleChannelUpdatedAsync(
-        SocketChannel oldSocketChannel,
-        SocketChannel newSocketChannel
-    )
+    public static async Task HandleChannelUpdatedAsync(SocketChannel oldSocketChannel, SocketChannel newSocketChannel)
     {
         if (!(TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel) && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel))
          || oldChannel.Position != newChannel.Position)
