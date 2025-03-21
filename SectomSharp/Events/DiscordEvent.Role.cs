@@ -9,9 +9,7 @@ public partial class DiscordEvent
 {
     private static string GetRoleDisplayName(SocketRole role) => role.Emoji is null ? role.Name : $"{role.Emoji} {role.Name}";
 
-#pragma warning disable CA1822 // Mark members as static
-    private async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
-#pragma warning restore CA1822 // Mark members as static
+    private static async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
     {
         List<AuditLogEntry> entries =
         [
@@ -30,13 +28,11 @@ public partial class DiscordEvent
         await LogAsync(role.Guild, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 
-    public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
+    public static async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
 
-    public async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
+    public static async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
 
-#pragma warning disable CA1822 // Mark members as static
-    public async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
-#pragma warning restore CA1822 // Mark members as static
+    public static async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
     {
         if (oldRole.Position != newRole.Position)
         {

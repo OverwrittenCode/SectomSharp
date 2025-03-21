@@ -6,9 +6,7 @@ namespace SectomSharp.Events;
 
 public sealed partial class DiscordEvent
 {
-#pragma warning disable CA1822
-    public async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
-#pragma warning restore CA1822
+    public static async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
     {
         List<AuditLogEntry> entries =
         [

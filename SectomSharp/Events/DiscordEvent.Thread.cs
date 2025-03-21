@@ -6,9 +6,7 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
-#pragma warning disable CA1822
-    private async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
-#pragma warning restore CA1822
+    private static async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
     {
         List<AuditLogEntry> entries =
         [
@@ -22,14 +20,12 @@ public partial class DiscordEvent
         await LogAsync(thread.Guild, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
     }
 
-    public async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
+    public static async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
 
-    public async Task HandleThreadDeleteAsync(Cacheable<SocketThreadChannel, ulong> partialThread)
+    public static async Task HandleThreadDeleteAsync(Cacheable<SocketThreadChannel, ulong> partialThread)
         => await HandleThreadAlteredAsync(await partialThread.GetOrDownloadAsync(), OperationType.Delete);
 
-#pragma warning disable CA1822
-    public async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
-#pragma warning restore CA1822
+    public static async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
     {
         SocketThreadChannel oldThread = await oldPartialThread.GetOrDownloadAsync();
 
