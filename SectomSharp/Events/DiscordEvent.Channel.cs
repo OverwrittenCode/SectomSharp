@@ -82,9 +82,7 @@ public partial class DiscordEvent
         return String.Join("\n", parts);
     }
 
-#pragma warning disable CA1822 // Mark members as static
     private static async Task HandleChannelAlteredAsync(
-#pragma warning restore CA1822 // Mark members as static
         SocketChannel socketChannel,
         OperationType operationType
     )
