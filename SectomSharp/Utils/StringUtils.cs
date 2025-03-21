@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using SectomSharp.Modules.Moderation;
+using SectomSharp.Data.Configurations;
 
 namespace SectomSharp.Utils;
 
@@ -15,17 +15,16 @@ internal static partial class StringUtils
     /// <summary>
     ///     Generates a unique identifier string consisting of uppercase letters and digits.
     /// </summary>
-    /// <param name="length">The length of the unique identifier.</param>
-    /// <returns>A unique identifier string with the given <paramref name="length" />.</returns>
-    public static string GenerateUniqueId(int length = ModerationModule.CaseModule.IdLength)
+    /// <returns>A unique identifier string.</returns>
+    public static string GenerateUniqueId()
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-        var stringBuilder = new StringBuilder(length);
+        var stringBuilder = new StringBuilder(CaseConfiguration.IdLength);
 
         lock (Lock)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < stringBuilder.Length; i++)
             {
                 stringBuilder.Append(chars[Random.Next(chars.Length)]);
             }

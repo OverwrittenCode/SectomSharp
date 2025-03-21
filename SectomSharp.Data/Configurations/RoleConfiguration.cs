@@ -3,7 +3,7 @@ using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data.Configurations;
 
-internal sealed class RoleConfiguration : BaseEntityConfiguration<Role>
+public sealed class RoleConfiguration : BaseEntityConfiguration<Role>
 {
     public override void Configure(EntityTypeBuilder<Role> builder)
     {

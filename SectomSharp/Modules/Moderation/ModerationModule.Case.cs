@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
+using SectomSharp.Data.Configurations;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
 using SectomSharp.Extensions;
@@ -18,10 +19,8 @@ public partial class ModerationModule
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     public sealed class CaseModule : BaseModule
     {
-        public const int IdLength = 6;
-
         [SlashCmd("View a specific case on the server")]
-        public async Task View([MinLength(IdLength)] [MaxLength(IdLength)] string id)
+        public async Task View([MinLength(CaseConfiguration.IdLength)] [MaxLength(CaseConfiguration.IdLength)] string id)
         {
             await DeferAsync();
 
