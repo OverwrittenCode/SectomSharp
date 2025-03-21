@@ -11,7 +11,7 @@ using Serilog;
 RunAsync().GetAwaiter().GetResult();
 return;
 
-async Task RunAsync()
+static async Task RunAsync()
 {
     var services = new ServiceCollection();
     RegisterServices(services);
@@ -24,10 +24,10 @@ async Task RunAsync()
     await Task.Delay(-1);
 }
 
-IConfiguration BuildConfiguration()
+static IConfiguration BuildConfiguration()
     => new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddUserSecrets<Program>(false, true).AddEnvironmentVariables().Build();
 
-void RegisterServices(IServiceCollection services)
+static void RegisterServices(IServiceCollection services)
 {
     IConfiguration configuration = BuildConfiguration();
 

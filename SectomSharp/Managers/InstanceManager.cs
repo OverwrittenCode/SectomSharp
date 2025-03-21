@@ -159,7 +159,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     protected Task StartExpirationTimer(int seconds)
     {
         ThrowIfDisposed();
-        
+
         ArgumentOutOfRangeException.ThrowIfNegative(seconds);
 
         lock (_timerLock)

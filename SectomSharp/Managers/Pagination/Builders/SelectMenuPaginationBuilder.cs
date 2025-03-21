@@ -12,7 +12,7 @@ namespace SectomSharp.Managers.Pagination.Builders;
 internal sealed class SelectMenuPaginationBuilder
 {
     private const int Timeout = 180;
-    
+
     private readonly string _instanceId = StringUtils.GenerateUniqueId();
 
     /// <summary>

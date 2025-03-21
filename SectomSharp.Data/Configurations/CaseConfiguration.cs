@@ -9,10 +9,10 @@ namespace SectomSharp.Data.Configurations;
 public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
 {
     private const int LogMessageUrlMaxLength = 128;
-    
+
     public const int IdLength = 6;
     public const int ReasonMaxLength = 255;
-    
+
     public override void Configure(EntityTypeBuilder<Case> builder)
     {
         builder.HasOne(@case => @case.Guild).WithMany(guild => guild.Cases).HasForeignKey(@case => @case.GuildId).IsRequired();
@@ -23,7 +23,7 @@ public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
         builder.Property(@case => @case.Reason).HasMaxLength(ReasonMaxLength);
         builder.Property(@case => @case.Id).HasMaxLength(IdLength);
         builder.Property(@case => @case.LogMessageUrl).HasMaxLength(LogMessageUrlMaxLength);
-        
+
         builder.Property(@case => @case.ExpiresAt).HasColumnType(Constants.PostgreSql.Timestamptz);
         builder.Property(@case => @case.LogType).IsRequired();
         builder.Property(@case => @case.OperationType).IsRequired();
