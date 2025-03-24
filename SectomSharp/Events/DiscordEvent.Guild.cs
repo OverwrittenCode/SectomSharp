@@ -8,6 +8,16 @@ public sealed partial class DiscordEvent
 {
     public static async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
     {
+        if (await GetAuditLogChannelsAsync(newGuild) is not { } auditLogChannels)
+        {
+            return;
+        }
+
+        if (GetDiscordWebhookClient(auditLogChannels, AuditLogType.Server) is not { } serverDiscordWebhookClient)
+        {
+            return;
+        }
+
         List<AuditLogEntry> entries =
         [
             new("Name", GetChangeEntry(oldGuild.Name, newGuild.Name), oldGuild.Name != newGuild.Name),
@@ -47,6 +57,6 @@ public sealed partial class DiscordEvent
             )
         ];
 
-        await LogAsync(newGuild, AuditLogType.Server, OperationType.Update, entries, newGuild.Name, newGuild.Name, newGuild.IconUrl);
+        await LogAsync(newGuild, serverDiscordWebhookClient, AuditLogType.Server, OperationType.Update, entries, newGuild.Name, newGuild.Name, newGuild.IconUrl);
     }
 }

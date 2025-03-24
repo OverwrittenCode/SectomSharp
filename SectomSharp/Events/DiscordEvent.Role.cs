@@ -11,6 +11,11 @@ public partial class DiscordEvent
 
     private static async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
     {
+        if (await GetDiscordWebhookClientAsync(role.Guild, AuditLogType.Role) is not { } discordWebhookClient)
+        {
+            return;
+        }
+
         List<AuditLogEntry> entries =
         [
             new("Position", role.Position),
@@ -25,7 +30,7 @@ public partial class DiscordEvent
             entries.Add(new AuditLogEntry("Icon", iconUrl));
         }
 
-        await LogAsync(role.Guild, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
+        await LogAsync(role.Guild, discordWebhookClient, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 
     public static async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
@@ -34,7 +39,7 @@ public partial class DiscordEvent
 
     public static async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
     {
-        if (oldRole.Position != newRole.Position)
+        if (oldRole.Position != newRole.Position || await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role) is not { } discordWebhookClient)
         {
             return;
         }
@@ -65,6 +70,16 @@ public partial class DiscordEvent
             }
         }
 
-        await LogAsync(newRole.Guild, AuditLogType.Role, OperationType.Update, entries, newRole.Id.ToString(), GetRoleDisplayName(newRole), newRole.GetIconUrl(), newRole.Color);
+        await LogAsync(
+            newRole.Guild,
+            discordWebhookClient,
+            AuditLogType.Role,
+            OperationType.Update,
+            entries,
+            newRole.Id.ToString(),
+            GetRoleDisplayName(newRole),
+            newRole.GetIconUrl(),
+            newRole.Color
+        );
     }
 }

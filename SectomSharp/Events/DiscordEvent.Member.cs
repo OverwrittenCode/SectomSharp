@@ -8,6 +8,11 @@ public partial class DiscordEvent
 {
     public static async Task HandleGuildMemberUpdatedAsync(Cacheable<SocketGuildUser, ulong> oldPartialUser, SocketGuildUser newUser)
     {
+        if (await GetDiscordWebhookClientAsync(newUser.Guild, AuditLogType.Member) is not { } discordWebhookClient)
+        {
+            return;
+        }
+
         SocketGuildUser oldUser = await oldPartialUser.GetOrDownloadAsync();
 
         List<AuditLogEntry> entries =
@@ -20,6 +25,6 @@ public partial class DiscordEvent
             new("Server Avatar", GetChangeEntry(oldUser.GetGuildAvatarUrl(), newUser.GetGuildAvatarUrl()), oldUser.GuildAvatarId != newUser.GuildAvatarId)
         ];
 
-        await LogAsync(newUser.Guild, AuditLogType.Member, OperationType.Update, entries, newUser.Id.ToString(), newUser.DisplayName, newUser.GetAvatarUrl());
+        await LogAsync(newUser.Guild, discordWebhookClient, AuditLogType.Member, OperationType.Update, entries, newUser.Id.ToString(), newUser.DisplayName, newUser.GetAvatarUrl());
     }
 }

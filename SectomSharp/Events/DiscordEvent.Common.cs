@@ -11,8 +11,21 @@ namespace SectomSharp.Events;
 
 public partial class DiscordEvent
 {
+    private static async Task<ICollection<AuditLogChannel>?> GetAuditLogChannelsAsync(IGuild guild)
+    {
+        await using var db = new ApplicationDbContext();
+        return await db.Guilds.Where(x => x.Id == guild.Id).AsNoTracking().Include(x => x.AuditLogChannels).Select(x => x.AuditLogChannels).FirstOrDefaultAsync();
+    }
+
+    private static async Task<DiscordWebhookClient?> GetDiscordWebhookClientAsync(IGuild guild, AuditLogType auditLogType)
+        => GetDiscordWebhookClient(await GetAuditLogChannelsAsync(guild), auditLogType);
+
+    private static DiscordWebhookClient? GetDiscordWebhookClient(ICollection<AuditLogChannel>? auditLogChannels, AuditLogType auditLogType)
+        => auditLogChannels?.FirstOrDefault(channel => channel.Type.HasFlag(auditLogType)) is { } auditLogChannel ? new DiscordWebhookClient(auditLogChannel.WebhookUrl) : null;
+
     private static async Task LogAsync(
         IGuild guild,
+        DiscordWebhookClient webhookClient,
         AuditLogType auditLogType,
         OperationType operationType,
         IEnumerable<AuditLogEntry> entries,
@@ -22,24 +35,6 @@ public partial class DiscordEvent
         Color? colour = null
     )
     {
-        DiscordWebhookClient webhookClient;
-
-        await using (var db = new ApplicationDbContext())
-        {
-            ICollection<AuditLogChannel>? logChannels = await db.Guilds.Where(x => x.Id == guild.Id)
-                                                                .AsNoTracking()
-                                                                .Include(x => x.AuditLogChannels)
-                                                                .Select(x => x.AuditLogChannels)
-                                                                .FirstOrDefaultAsync();
-
-            if (logChannels?.FirstOrDefault(channel => channel.Type.HasFlag(auditLogType)) is not { } auditLogChannel)
-            {
-                return;
-            }
-
-            webhookClient = new DiscordWebhookClient(auditLogChannel.WebhookUrl);
-        }
-
         try
         {
             EmbedBuilder embed = new EmbedBuilder().WithAuthor(authorName, authorIconUrl)

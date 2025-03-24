@@ -8,6 +8,11 @@ public partial class DiscordEvent
 {
     private static async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
     {
+        if (await GetDiscordWebhookClientAsync(thread.Guild, AuditLogType.Thread) is not { } discordWebhookClient)
+        {
+            return;
+        }
+
         List<AuditLogEntry> entries =
         [
             new("Id", thread.Id),
@@ -17,7 +22,7 @@ public partial class DiscordEvent
             new("Topic", thread.Topic)
         ];
 
-        await LogAsync(thread.Guild, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
+        await LogAsync(thread.Guild, discordWebhookClient, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
     }
 
     public static async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
@@ -27,6 +32,11 @@ public partial class DiscordEvent
 
     public static async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
     {
+        if (await GetDiscordWebhookClientAsync(newThread.Guild, AuditLogType.Thread) is not { } discordWebhookClient)
+        {
+            return;
+        }
+
         SocketThreadChannel oldThread = await oldPartialThread.GetOrDownloadAsync();
 
         List<AuditLogEntry> entries =
@@ -41,6 +51,6 @@ public partial class DiscordEvent
             new("Topic", GetChangeEntry(oldThread.Topic, newThread.Topic), oldThread.Topic != newThread.Topic)
         ];
 
-        await LogAsync(newThread.Guild, AuditLogType.Thread, OperationType.Update, entries, newThread.Id.ToString(), newThread.Name);
+        await LogAsync(newThread.Guild, discordWebhookClient, AuditLogType.Thread, OperationType.Update, entries, newThread.Id.ToString(), newThread.Name);
     }
 }

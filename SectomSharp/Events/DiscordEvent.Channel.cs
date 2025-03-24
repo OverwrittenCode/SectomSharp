@@ -84,7 +84,8 @@ public partial class DiscordEvent
 
     private static async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)
     {
-        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel))
+        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel)
+         || await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel) is not { } discordWebhookClient)
         {
             return;
         }
@@ -144,7 +145,7 @@ public partial class DiscordEvent
             );
         }
 
-        await LogAsync(guildChannel.Guild, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
+        await LogAsync(guildChannel.Guild, discordWebhookClient, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
     public static async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
@@ -154,7 +155,8 @@ public partial class DiscordEvent
     public static async Task HandleChannelUpdatedAsync(SocketChannel oldSocketChannel, SocketChannel newSocketChannel)
     {
         if (!(TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel) && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel))
-         || oldChannel.Position != newChannel.Position)
+         || oldChannel.Position != newChannel.Position
+         || await GetDiscordWebhookClientAsync(newChannel.Guild, AuditLogType.Channel) is not { } discordWebhookClient)
         {
             return;
         }
@@ -239,7 +241,7 @@ public partial class DiscordEvent
             return;
         }
 
-        await LogAsync(newChannel.Guild, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
+        await LogAsync(newChannel.Guild, discordWebhookClient, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
     }
 
     private readonly record struct ChannelDetails
