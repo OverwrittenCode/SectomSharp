@@ -62,9 +62,12 @@ public partial class DiscordEvent
                                                    .WithFooter($"{footerPrefix} | {auditLogType}{operationType}")
                                                    .WithCurrentTimestamp();
 
-            IGuildUser bot = await guild.GetCurrentUserAsync();
+            if (embed.Fields.Count > 0)
+            {
+                IGuildUser bot = await guild.GetCurrentUserAsync();
 
-            await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: [embed.Build()]);
+                await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: [embed.Build()]);
+            }
         }
         finally
         {
