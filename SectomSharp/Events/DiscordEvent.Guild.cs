@@ -22,9 +22,9 @@ public sealed partial class DiscordEvent
             new("Icon", GetChangeEntry(oldGuild.IconUrl, newGuild.IconUrl), oldGuild.IconUrl != newGuild.IconUrl),
             new("Banner", GetChangeEntry(oldGuild.BannerUrl, newGuild.BannerUrl), oldGuild.BannerUrl != newGuild.BannerUrl),
             new("Splash", GetChangeEntry(oldGuild.SplashUrl, newGuild.SplashUrl), oldGuild.SplashUrl != newGuild.SplashUrl),
-            new("Afk Channel", GetChangeEntry(oldGuild.AFKChannel.Mention, newGuild.AFKChannel.Mention), oldGuild.AFKChannel.Id != newGuild.AFKChannel.Id),
-            new("System Channel", GetChangeEntry(oldGuild.SystemChannel.Mention, newGuild.SystemChannel.Mention), oldGuild.SystemChannel.Id != newGuild.SystemChannel.Id),
-            new("Owner", GetChangeEntry(oldGuild.Owner.Mention, newGuild.Owner.Mention), oldGuild.Owner.Id != newGuild.Owner.Id),
+            new("Afk Channel", GetChangeEntry(oldGuild.AFKChannel?.Mention, newGuild.AFKChannel?.Mention), oldGuild.AFKChannel?.Id != newGuild.AFKChannel?.Id),
+            new("System Channel", GetChangeEntry(oldGuild.SystemChannel?.Mention, newGuild.SystemChannel?.Mention), oldGuild.SystemChannel?.Id != newGuild.SystemChannel?.Id),
+            new("Owner", GetChangeEntry(oldGuild.Owner?.Mention, newGuild.Owner?.Mention), oldGuild.Owner?.Id != newGuild.Owner?.Id),
             new(
                 "Explicit Content Filter Level",
                 GetChangeEntry(oldGuild.ExplicitContentFilter, newGuild.ExplicitContentFilter),
@@ -33,13 +33,16 @@ public sealed partial class DiscordEvent
             new("Preferred Local", GetChangeEntry(oldGuild.PreferredLocale, newGuild.PreferredLocale), oldGuild.PreferredLocale != newGuild.PreferredLocale),
             new(
                 "Preferred Culture",
-                GetChangeEntry(oldGuild.PreferredCulture.NativeName, newGuild.PreferredCulture.NativeName),
-                !oldGuild.PreferredCulture.Equals(newGuild.PreferredCulture)
+                GetChangeEntry(oldGuild.PreferredCulture?.NativeName, newGuild.PreferredCulture?.NativeName),
+                oldGuild.PreferredCulture?.Equals(newGuild.PreferredCulture) == false
             ),
             new("Enable Boost Progress Bar", $"Set to {newGuild.IsBoostProgressBarEnabled}", oldGuild.IsBoostProgressBarEnabled != newGuild.IsBoostProgressBarEnabled),
             new(
                 "Safety Alerts Channel Id",
-                GetChangeEntry(MentionUtils.MentionChannel(oldGuild.SafetyAlertsChannel.Id), MentionUtils.MentionChannel(newGuild.SafetyAlertsChannel.Id)),
+                GetChangeEntry(
+                    oldGuild.SafetyAlertsChannel?.Id is { } oldGuildSafetyAlertsChannelId ? MentionUtils.MentionChannel(oldGuildSafetyAlertsChannelId) : null,
+                    newGuild.SafetyAlertsChannel?.Id is { } newGuildSafetyAlertsChannelId ? MentionUtils.MentionChannel(newGuildSafetyAlertsChannelId) : null
+                ),
                 oldGuild.SafetyAlertsChannel != newGuild.SafetyAlertsChannel
             )
         ];
