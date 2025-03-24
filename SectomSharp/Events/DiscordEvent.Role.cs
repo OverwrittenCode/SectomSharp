@@ -51,18 +51,17 @@ public partial class DiscordEvent
 
         if (oldRole.Permissions.RawValue != newRole.Permissions.RawValue)
         {
-            (IEnumerable<GuildPermission> added, IEnumerable<GuildPermission> removed) = GetPermissionChanges(oldRole.Permissions, newRole.Permissions);
+            var beforeSet = new HashSet<GuildPermission>(oldRole.Permissions.ToList());
+            var afterSet = new HashSet<GuildPermission>(newRole.Permissions.ToList());
 
-            List<GuildPermission> guildPermissions = added.ToList();
-            if (guildPermissions.Count != 0)
+            if (String.Join(", ", afterSet.Except(beforeSet)) is { Length: > 0 } addedPermissions)
             {
-                entries.Add(new AuditLogEntry("Added Permissions", String.Join(", ", guildPermissions)));
+                entries.Add(new AuditLogEntry("Added Permissions", addedPermissions));
             }
 
-            List<GuildPermission> permissions = removed.ToList();
-            if (permissions.Count != 0)
+            if (String.Join(", ", beforeSet.Except(afterSet)) is { Length: > 0 } removedPermissions)
             {
-                entries.Add(new AuditLogEntry("Removed Permissions", String.Join(", ", permissions)));
+                entries.Add(new AuditLogEntry("Removed Permissions", removedPermissions));
             }
         }
 

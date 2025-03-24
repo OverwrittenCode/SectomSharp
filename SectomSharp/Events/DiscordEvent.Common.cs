@@ -76,14 +76,8 @@ public partial class DiscordEvent
         }
     }
 
-    private static string GetChangeEntry(object? before, object? after) => $"{Format.Bold("Before:")} {before ?? "N/A"}\n{Format.Bold("After:")} {after ?? "N/A"}";
-
-    private static ( IEnumerable<GuildPermission> Added, IEnumerable<GuildPermission> Removed ) GetPermissionChanges(GuildPermissions before, GuildPermissions after)
-    {
-        List<GuildPermission> beforePerms = before.ToList();
-        List<GuildPermission> afterPerms = after.ToList();
-        return (afterPerms.Except(beforePerms), beforePerms.Except(afterPerms));
-    }
+    private static string GetChangeEntry<T>(T before, T after)
+        => $"{Format.Bold("Before:")} {(before is null ? "N/A" : before)}\n{Format.Bold("After:")} {(after is null ? "N/A" : after)}";
 
     private record struct AuditLogEntry(string Key, object? Value, bool ShouldInclude = true);
 }

@@ -168,14 +168,7 @@ public partial class DiscordEvent
             new("Category", GetChangeEntry(before.CategoryId, after.CategoryId), before.CategoryId != after.CategoryId),
             new("Topic", GetChangeEntry(before.Topic, after.Topic), before.Topic != after.Topic),
             new("NSFW", after.IsNsfw, before.IsNsfw != after.IsNsfw),
-            new(
-                "Slowmode",
-                GetChangeEntry(
-                    before.SlowMode is { } beforeSlowMode ? TimeSpan.FromSeconds(beforeSlowMode) : null,
-                    after.SlowMode is { } afterSlowMode ? TimeSpan.FromSeconds(afterSlowMode) : null
-                ),
-                before.SlowMode != after.SlowMode
-            ),
+            new("Slowmode", GetChangeEntry(TimeSpan.FromSeconds(before.SlowMode ?? 0), TimeSpan.FromSeconds(after.SlowMode ?? 0)), before.SlowMode != after.SlowMode),
             new("Bitrate", GetChangeEntry(before.Bitrate, after.Bitrate), before.Bitrate != after.Bitrate),
             new("User Limit", GetChangeEntry(before.UserLimit, after.UserLimit), before.UserLimit != after.UserLimit)
         ];
