@@ -6,8 +6,6 @@ public enum AuditLogType
     Server = 1 << 0,
     Member = 1 << 1,
     Message = 1 << 2,
-
-    // TODO: implement emoji events
     Emoji = 1 << 3,
     Sticker = 1 << 4,
     Channel = 1 << 5,

@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Collections.Immutable;
+using Discord;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 
@@ -11,6 +12,11 @@ public sealed partial class DiscordEvent
         if (await GetAuditLogChannelsAsync(newGuild) is not { } auditLogChannels)
         {
             return;
+        }
+
+        if (GetDiscordWebhookClient(auditLogChannels, AuditLogType.Emoji) is { } emojiDiscordWebhookClient)
+        {
+            await HandleGuildEmoteAsync(newGuild, emojiDiscordWebhookClient, (ImmutableArray<GuildEmote>)oldGuild.Emotes, (ImmutableArray<GuildEmote>)newGuild.Emotes);
         }
 
         if (GetDiscordWebhookClient(auditLogChannels, AuditLogType.Server) is not { } serverDiscordWebhookClient)
