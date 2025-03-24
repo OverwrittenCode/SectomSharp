@@ -54,14 +54,15 @@ public partial class DiscordEvent
                                                         }
                                                     )
                                                    .WithFields(
-                                                        entries.Where(entry => entry.ShouldInclude && !String.IsNullOrWhiteSpace(entry.Value?.ToString()))
-                                                               .Select(
-                                                                    entry => new EmbedFieldBuilder
-                                                                    {
-                                                                        Name = entry.Key,
-                                                                        Value = entry.Value?.ToString()?.Truncate(EmbedFieldBuilder.MaxFieldValueLength)
-                                                                    }
-                                                                )
+                                                        from entry in entries
+                                                        where entry.ShouldInclude
+                                                        let fieldValue = entry.Value?.ToString()?.Truncate(EmbedFieldBuilder.MaxFieldValueLength)
+                                                        where !String.IsNullOrEmpty(fieldValue)
+                                                        select new EmbedFieldBuilder
+                                                        {
+                                                            Name = entry.Key,
+                                                            Value = fieldValue
+                                                        }
                                                     )
                                                    .WithFooter($"{footerPrefix} | {auditLogType}{operationType}")
                                                    .WithCurrentTimestamp();
