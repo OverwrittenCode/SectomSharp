@@ -1,15 +1,26 @@
 using Discord;
 using Discord.Interactions;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using SectomSharp.Extensions;
 
 namespace SectomSharp.Modules;
 
 /// <inheritdoc />
 [UsedImplicitly(ImplicitUseKindFlags.Access, ImplicitUseTargetFlags.WithInheritors)]
-public abstract class BaseModule : InteractionModuleBase<SocketInteractionContext>
+public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractionContext>
+    where TThis : BaseModule<TThis>
 {
     private protected const string TimespanDescription = "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)";
+
+    private readonly ILogger<BaseModule<TThis>> _logger;
+    private string _source = null!;
+
+    /// <summary>
+    ///     Creates a new instance of the class.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    protected BaseModule(ILogger<BaseModule<TThis>> logger) => _logger = logger;
 
     /// <inheritdoc cref="DiscordExtensions.RespondOrFollowupAsync" />
     protected async Task RespondOrFollowUpAsync(
@@ -22,4 +33,20 @@ public abstract class BaseModule : InteractionModuleBase<SocketInteractionContex
         PollProperties? poll = null
     )
         => await Context.Interaction.RespondOrFollowupAsync(text, embeds, ephemeral, allowedMentions, components, options, poll);
+
+    public override void BeforeExecute(ICommandInfo command)
+    {
+        _source = command.MethodName;
+        base.BeforeExecute(command);
+    }
+
+    public void LogError(string message, Exception? ex = null) => _logger.LogError(ex, "[{Source}] {Message}", _source, message);
+
+    public void LogWarning(string message, Exception? ex = null) => _logger.LogWarning(ex, "[{Source}] {Message}", _source, message);
+
+    public void LogInfo(string message, Exception? ex = null) => _logger.LogInformation(ex, "[{Source}] {Message}", _source, message);
+
+    public void LogVerbose(string message, Exception? ex = null) => _logger.LogTrace(ex, "[{Source}] {Message}", _source, message);
+
+    public void LogDebug(string message, Exception? ex = null) => _logger.LogDebug(ex, "[{Source}] {Message}", _source, message);
 }

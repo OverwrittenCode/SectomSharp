@@ -7,7 +7,7 @@ using SectomSharp.Data.Enums;
 namespace SectomSharp.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class UpgradeVersion : Migration
+    public sealed partial class UpgradeVersion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

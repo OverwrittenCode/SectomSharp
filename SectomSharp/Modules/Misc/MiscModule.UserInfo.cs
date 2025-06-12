@@ -101,10 +101,9 @@ public sealed partial class MiscModule
         if (restUser.PublicFlags is { } publicFlags)
         {
             List<string> badges = UserPropertiesArray.Where(property => publicFlags.HasFlag(property))
-                                                     .Select(
-                                                          property => Badges.TryGetValue(property, out string? emoji)
-                                                              ? emoji
-                                                              : $"{Format.Code(StringUtils.PascalCaseToSentenceCase(property.ToString()))}"
+                                                     .Select(property => Badges.TryGetValue(property, out string? emoji)
+                                                          ? emoji
+                                                          : $"{Format.Code(StringUtils.PascalCaseToSentenceCase(property.ToString()))}"
                                                       )
                                                      .ToList();
 

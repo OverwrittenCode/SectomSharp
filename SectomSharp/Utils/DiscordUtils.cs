@@ -20,11 +20,11 @@ internal static class DiscordUtils
     /// <param name="reason">The given reason.</param>
     /// <param name="extra">A list of key-value pairs to include.</param>
     /// <returns>A new instance of <see cref="RequestOptions" />.</returns>
-    public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason, List<KeyValuePair<string, object>>? extra = null)
+    public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason, List<KeyValuePair<string, string>>? extra = null)
     {
         const int maxAuditReasonLength = 512;
 
-        List<KeyValuePair<string, object>> keyValuePairs =
+        List<KeyValuePair<string, string>> keyValuePairs =
         [
             new("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
             new("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),

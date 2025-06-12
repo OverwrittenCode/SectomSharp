@@ -5,7 +5,7 @@ using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;
 
-public partial class DiscordEvent
+public static partial class DiscordEvent
 {
     private static string GetRoleDisplayName(SocketRole role) => role.Emoji is null ? role.Name : $"{role.Emoji} {role.Name}";
 

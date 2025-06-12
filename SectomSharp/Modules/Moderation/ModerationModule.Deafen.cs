@@ -7,7 +7,7 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;
 
-public partial class ModerationModule
+public sealed partial class ModerationModule
 {
     [SlashCmd("Deafen a user in their current voice channel")]
     [DefaultMemberPermissions(GuildPermission.DeafenMembers)]
@@ -22,6 +22,6 @@ public partial class ModerationModule
 
         await DeferAsync();
         await user.ModifyAsync(properties => properties.Deaf = true, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseService.LogAsync(Context, BotLogType.Deafen, OperationType.Create, user.Id, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Deafen, OperationType.Create, user.Id, reason: reason);
     }
 }

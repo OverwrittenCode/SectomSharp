@@ -9,19 +9,19 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;
 
-public partial class ModerationModule
+public sealed partial class ModerationModule
 {
     [SlashCmd("Hand out an infraction to a user on the server.")]
     [DefaultMemberPermissions(GuildPermission.KickMembers)]
     public async Task Warn([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         await DeferAsync();
-        Guild guild = await CaseService.LogAsync(Context, BotLogType.Warn, OperationType.Create, user.Id, reason: reason, includeGuildCases: true);
+        Guild guild = await CaseUtils.LogAsync(Context, BotLogType.Warn, OperationType.Create, user.Id, reason: reason, includeGuildCases: true);
 
         if (guild.Configuration is { Warning: { IsDisabled: false, Thresholds: { Count: > 0 } thresholds } })
         {
-            int count = guild.Cases.Count(
-                @case => @case.GuildId == guild.Id && @case.TargetId == user.Id && @case is { LogType: BotLogType.Warn, OperationType: OperationType.Create }
+            int count = guild.Cases.Count(@case
+                => @case.GuildId == guild.Id && @case.TargetId == user.Id && @case is { LogType: BotLogType.Warn, OperationType: OperationType.Create }
             );
 
             WarningThreshold[] orderedThresholds = thresholds.Where(threshold => count <= threshold.Value).OrderByDescending(threshold => threshold.Value).Take(2).ToArray();
@@ -41,7 +41,7 @@ public partial class ModerationModule
                 );
 
             async Task LogCaseAsync()
-                => await CaseService.LogAsync(
+                => await CaseUtils.LogAsync(
                     Context,
                     punishmentThreshold.LogType,
                     OperationType.Create,

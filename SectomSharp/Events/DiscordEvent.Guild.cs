@@ -5,7 +5,7 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public sealed partial class DiscordEvent
+public static partial class DiscordEvent
 {
     public static async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
     {

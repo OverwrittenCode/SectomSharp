@@ -7,7 +7,7 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;
 
-public partial class ModerationModule
+public sealed partial class ModerationModule
 {
     [SlashCmd("Timeout a user on the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
@@ -29,7 +29,7 @@ public partial class ModerationModule
         await DeferAsync();
         await user.SetTimeOutAsync(duration, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
 
-        await CaseService.LogAsync(Context, BotLogType.Timeout, operationType, user.Id, expiresAt: user.TimedOutUntil?.UtcDateTime, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Timeout, operationType, user.Id, expiresAt: user.TimedOutUntil?.UtcDateTime, reason: reason);
     }
 
     [SlashCmd("Remove a timeout from a user on the server")]
@@ -46,6 +46,6 @@ public partial class ModerationModule
         await DeferAsync();
         await user.RemoveTimeOutAsync(DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
 
-        await CaseService.LogAsync(Context, BotLogType.Timeout, OperationType.Delete, user.Id, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Timeout, OperationType.Delete, user.Id, reason: reason);
     }
 }

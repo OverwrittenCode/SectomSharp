@@ -130,8 +130,7 @@ internal sealed class SelectMenuPaginationBuilder
             string categoryValue = categoryConfig.GetValue(category);
 
             SelectMenuBuilder selectMenu = new SelectMenuBuilder().WithOptions(
-                group.Select(
-                          item => new SelectMenuOptionBuilder
+                group.Select(item => new SelectMenuOptionBuilder
                           {
                               Label = itemConfig.GetLabel(item),
                               Value = itemConfig.GetValue(item),

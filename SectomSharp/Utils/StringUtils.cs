@@ -1,4 +1,4 @@
-using System.Text;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using SectomSharp.Data.Configurations;
 
@@ -6,8 +6,7 @@ namespace SectomSharp.Utils;
 
 internal static partial class StringUtils
 {
-    private static readonly Random Random = new();
-    private static readonly Lock Lock = new();
+    private static ReadOnlySpan<byte> ByteSpan => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"u8;
 
     [GeneratedRegex(@"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")]
     private static partial Regex HumanisePascalCase { get; }
@@ -17,21 +16,17 @@ internal static partial class StringUtils
     /// </summary>
     /// <returns>A unique identifier string.</returns>
     public static string GenerateUniqueId()
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-        var stringBuilder = new StringBuilder(CaseConfiguration.IdLength);
-
-        lock (Lock)
-        {
-            for (int i = 0; i < CaseConfiguration.IdLength; i++)
+        => String.Create(
+            CaseConfiguration.IdLength,
+            (byte)0,
+            (span, _) =>
             {
-                stringBuilder.Append(chars[Random.Next(chars.Length)]);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    span[i] = (char)Unsafe.Add(ref Unsafe.AsRef(in ByteSpan.GetPinnableReference()), Random.Shared.Next(ByteSpan.Length));
+                }
             }
-        }
-
-        return stringBuilder.ToString();
-    }
+        );
 
     /// <summary>
     ///     Transforms string with PascalCase by adding a whitespace gap between each word.
@@ -67,14 +62,27 @@ internal static partial class StringUtils
     /// </remarks>
     public static string GenerateComponentIdRegex(string prefix, params string[] wildcardNames)
     {
-        const string lazyWildcardRegex = $"{Constants.ComponentWildcardSeparator}*";
-
         if (wildcardNames.Length == 0)
         {
             return prefix;
         }
 
-        return prefix + String.Concat(Enumerable.Repeat(lazyWildcardRegex, wildcardNames.Length));
+        return String.Create(
+            prefix.Length + 2 * wildcardNames.Length,
+            (prefix, wildCardLength: wildcardNames.Length),
+            (span, tuple) =>
+            {
+                tuple.prefix.CopyTo(span);
+                int written = tuple.prefix.Length;
+
+                ref char reference = ref span.GetPinnableReference();
+                for (int i = 0; i < tuple.wildCardLength; i++)
+                {
+                    Unsafe.Add(ref reference, written++) = Storage.ComponentWildcardSeparator;
+                    Unsafe.Add(ref reference, written++) = '*';
+                }
+            }
+        );
     }
 
     /// <summary>
@@ -83,7 +91,7 @@ internal static partial class StringUtils
     /// <param name="prefix">The prefix of the component id.</param>
     /// <param name="values">The arguments of the wildcards.</param>
     public static string GenerateComponentId(string prefix, params object[] values)
-        => values.Length == 0 ? prefix : String.Join(Constants.ComponentWildcardSeparator, values.Prepend(prefix).Select(val => val.ToString()));
+        => values.Length == 0 ? prefix : String.Join(Storage.ComponentWildcardSeparator, values.Prepend(prefix).Select(val => val.ToString()));
 
     /// <inheritdoc cref="GenerateComponentId(String, global::System.Object[])" />
     /// <inheritdoc cref="GenerateComponentIdRegex{T}(global::System.String[])" path="/typeparam" />

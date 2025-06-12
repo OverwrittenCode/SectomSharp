@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -9,19 +10,22 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
 
-public partial class AdminModule
+public sealed partial class AdminModule
 {
-    public partial class ConfigModule
+    public sealed partial class ConfigModule
     {
         [Group("warn", "Warning configuration")]
-        public sealed class WarnModule : BaseModule
+        public sealed class WarnModule : BaseModule<WarnModule>
         {
             private const int MinThreshold = 1;
             private const int MaxThreshold = 20;
 
+            /// <inheritdoc />
+            public WarnModule(ILogger<WarnModule> logger) : base(logger) { }
+
             private async Task AddPunishment(int threshold, TimeSpan? duration, string? reason, BotLogType punishment)
             {
-                WarningThreshold warningThreshold = new()
+                var warningThreshold = new WarningThreshold
                 {
                     LogType = punishment,
                     Value = threshold,
@@ -222,8 +226,8 @@ public partial class AdminModule
                 var embed = new EmbedBuilder
                 {
                     Title = $"{Context.Guild.Name} Warning Thresholds",
-                    Color = Constants.LightGold,
-                    Description = String.Join("\n", descriptionArray)
+                    Color = Storage.LightGold,
+                    Description = String.Join('\n', descriptionArray)
                 };
 
                 if (warningConfiguration.IsDisabled)

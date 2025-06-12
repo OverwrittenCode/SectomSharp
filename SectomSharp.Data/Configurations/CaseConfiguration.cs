@@ -33,8 +33,7 @@ public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
                .IsRequired();
 
         builder.HasIndex(@case => @case.Id).IsUnique();
-        builder.HasIndex(
-            @case => new
+        builder.HasIndex(@case => new
             {
                 @case.GuildId,
                 @case.TargetId,
@@ -43,8 +42,7 @@ public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
             }
         );
 
-        builder.HasKey(
-            @case => new
+        builder.HasKey(@case => new
             {
                 @case.Id,
                 @case.GuildId

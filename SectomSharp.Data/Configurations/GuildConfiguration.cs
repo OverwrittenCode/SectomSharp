@@ -18,7 +18,6 @@ public sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
         );
 
         builder.HasIndex(guild => guild.Id).IsUnique();
-
         base.Configure(builder);
     }
 }

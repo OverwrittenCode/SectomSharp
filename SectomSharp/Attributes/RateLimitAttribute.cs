@@ -10,6 +10,7 @@ namespace SectomSharp.Attributes;
 internal sealed class RateLimitAttribute : PreconditionAttribute
 {
     private const int DefaultSeconds = 3;
+
     private readonly InteractionType _interactionType;
     private readonly TimeSpan _rateLimit;
 
@@ -47,9 +48,7 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
         {
             _rateLimits[userId] = new Dictionary<string, DateTime>
             {
-                {
-                    commandName, new DateTime()
-                }
+                [commandName] = new()
             };
 
             return Task.FromResult(PreconditionResult.FromSuccess());
@@ -64,18 +63,14 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
                 int remainingSeconds = (_rateLimit - timeDifference).Seconds;
 
                 string message = remainingSeconds == 0
-                    ? "You are sending requests to fast!"
+                    ? "You are sending requests too fast!"
                     : $"Cooldown: {remainingSeconds} {(remainingSeconds == 1 ? "second" : "seconds")} remaining";
 
                 return Task.FromResult(PreconditionResult.FromError(message));
             }
+        }
 
-            userRateLimits[commandName] = DateTime.UtcNow;
-        }
-        else
-        {
-            userRateLimits[commandName] = DateTime.UtcNow;
-        }
+        userRateLimits[commandName] = DateTime.UtcNow;
 
         return Task.FromResult(PreconditionResult.FromSuccess());
     }

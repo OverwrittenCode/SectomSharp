@@ -35,8 +35,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
             }
             else
             {
-                await context.UpdateAsync(
-                    message =>
+                await context.UpdateAsync(message =>
                     {
                         message.Components = components;
                         message.Embeds = page.Embeds;

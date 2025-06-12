@@ -5,7 +5,7 @@ using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;
 
-public partial class DiscordEvent
+public static partial class DiscordEvent
 {
     public static async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
     {

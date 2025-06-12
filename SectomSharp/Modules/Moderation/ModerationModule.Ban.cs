@@ -7,14 +7,17 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;
 
-public partial class ModerationModule
+public sealed partial class ModerationModule
 {
-    private static uint GetPruneSeconds(int pruneDays) => (uint)pruneDays * 86_400;
+    private const uint MaxPruneSeconds = 604_800;
+    private const uint MaxPruneDays = MaxPruneSeconds / (uint)TimeSpan.SecondsPerDay;
+
+    private static uint GetPruneSeconds(uint pruneDays) => pruneDays * (uint)TimeSpan.SecondsPerDay;
 
     [SlashCmd("Ban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Ban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [ReasonMaxLength] string? reason = null)
+    public async Task Ban([DoHierarchyCheck] IUser user, [MaxValue(MaxPruneDays)] uint pruneDays = 0, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
@@ -24,13 +27,13 @@ public partial class ModerationModule
 
         await DeferAsync();
         await Context.Guild.BanUserAsync(user, GetPruneSeconds(pruneDays), DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseService.LogAsync(Context, BotLogType.Ban, OperationType.Create, user.Id, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Ban, OperationType.Create, user.Id, reason: reason);
     }
 
     [SlashCmd("Ban a user to prune their messages and then immediately unban them from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Softban([DoHierarchyCheck] IUser user, [MinValue(0)] [MaxValue(7)] int pruneDays, [ReasonMaxLength] string? reason = null)
+    public async Task Softban([DoHierarchyCheck] IUser user, [MaxValue(MaxPruneDays)] uint pruneDays = 0, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
@@ -38,12 +41,12 @@ public partial class ModerationModule
             return;
         }
 
-        RequestOptions requestOptions = DiscordUtils.GetAuditReasonRequestOptions(Context, reason, [new KeyValuePair<string, object>("Operation", BotLogType.Softban)]);
+        RequestOptions requestOptions = DiscordUtils.GetAuditReasonRequestOptions(Context, reason, [new KeyValuePair<string, string>("Operation", nameof(BotLogType.Softban))]);
 
         await DeferAsync();
-        await Context.Guild.BanUserAsync(user, GetPruneSeconds(pruneDays), requestOptions);
+        await Context.Guild.BanUserAsync(user, pruneDays, requestOptions);
         await Context.Guild.RemoveBanAsync(user, requestOptions);
-        await CaseService.LogAsync(Context, BotLogType.Softban, OperationType.Create, user.Id, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Softban, OperationType.Create, user.Id, reason: reason);
     }
 
     [SlashCmd("Unban a user from the server")]
@@ -59,6 +62,6 @@ public partial class ModerationModule
 
         await DeferAsync();
         await Context.Guild.RemoveBanAsync(user, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseService.LogAsync(Context, BotLogType.Ban, OperationType.Delete, user.Id, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Ban, OperationType.Delete, user.Id, reason: reason);
     }
 }

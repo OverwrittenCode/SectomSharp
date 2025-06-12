@@ -5,7 +5,7 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public partial class DiscordEvent
+public static partial class DiscordEvent
 {
     private static bool TryGetGuildChannel(SocketChannel socketChannel, [MaybeNullWhen(false)] out IGuildChannel guildChannel)
     {
@@ -79,7 +79,7 @@ public partial class DiscordEvent
             parts.Add($"{Format.Bold("Denied:")} {String.Join(", ", denied)}");
         }
 
-        return String.Join("\n", parts);
+        return String.Join('\n', parts);
     }
 
     private static async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)

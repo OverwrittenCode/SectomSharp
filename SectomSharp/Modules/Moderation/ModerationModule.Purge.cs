@@ -33,6 +33,6 @@ public sealed partial class ModerationModule
         }
 
         await channel.DeleteMessagesAsync(messages, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseService.LogAsync(Context, BotLogType.Purge, OperationType.Create, channelId: channel.Id, reason: reason);
+        await CaseUtils.LogAsync(Context, BotLogType.Purge, OperationType.Create, channelId: channel.Id, reason: reason);
     }
 }

@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Configurations;
@@ -13,12 +14,15 @@ using SectomSharp.Services;
 
 namespace SectomSharp.Modules.Moderation;
 
-public partial class ModerationModule
+public sealed partial class ModerationModule
 {
     [Group("case", "Container of all cases in the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
-    public sealed class CaseModule : BaseModule
+    public sealed class CaseModule : BaseModule<CaseModule>
     {
+        /// <inheritdoc />
+        public CaseModule(ILogger<CaseModule> logger) : base(logger) { }
+
         [SlashCmd("View a specific case on the server")]
         public async Task View([MinLength(CaseConfiguration.IdLength)] [MaxLength(CaseConfiguration.IdLength)] string id)
         {
@@ -36,7 +40,7 @@ public partial class ModerationModule
 
             dbContext.Entry(@case).State = EntityState.Detached;
 
-            await RespondOrFollowUpAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseService.GenerateLogMessageButton(@case));
+            await RespondOrFollowUpAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(@case));
         }
 
         [SlashCmd("List and filter all cases on the server")]
@@ -45,7 +49,6 @@ public partial class ModerationModule
             await DeferAsync();
 
             await using var dbContext = new ApplicationDbContext();
-
             IQueryable<Case> query = dbContext.Cases.Where(@case => @case.GuildId == Context.Guild.Id).AsNoTracking();
 
             if (target?.Id is { } targetId)
@@ -75,8 +78,7 @@ public partial class ModerationModule
 
             query = query.OrderByDescending(@case => @case.CreatedAt);
 
-            var cases = await query.Select(
-                                        @case => new
+            var cases = await query.Select(@case => new
                                         {
                                             @case.Id,
                                             @case.LogType,
@@ -92,15 +94,14 @@ public partial class ModerationModule
                 return;
             }
 
-            List<string> embedDescriptions = cases.Select(
-                                                       @case
-                                                           => $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {@case.CreatedAt.GetRelativeTimestamp()}"
+            List<string> embedDescriptions = cases.Select(@case
+                                                       => $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {@case.CreatedAt.GetRelativeTimestamp()}"
                                                    )
                                                   .ToList();
 
             Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Cases ({cases.Count})");
 
-            ButtonPaginationBuilder pagination = new()
+            var pagination = new ButtonPaginationBuilder
             {
                 Embeds = [.. embeds]
             };

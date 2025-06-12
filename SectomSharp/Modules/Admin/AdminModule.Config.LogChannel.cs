@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -11,15 +12,18 @@ using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
 
-public partial class AdminModule
+public sealed partial class AdminModule
 {
-    public partial class ConfigModule
+    public sealed partial class ConfigModule
     {
         [Group("log-channel", "Log Channel configuration")]
-        public sealed class LogChannelModule : BaseModule
+        public sealed class LogChannelModule : BaseModule<LogChannelModule>
         {
             private static readonly BotLogType[] BotLogTypes = Enum.GetValues<BotLogType>();
             private static readonly AuditLogType[] AuditLogTypes = Enum.GetValues<AuditLogType>();
+
+            /// <inheritdoc />
+            public LogChannelModule(ILogger<LogChannelModule> logger) : base(logger) { }
 
             private async Task ViewAsync<TChannel, TLogType>(
                 string titleSuffix,
@@ -32,15 +36,12 @@ public partial class AdminModule
                 where TChannel : Snowflake
             {
                 await DeferAsync();
-
                 await using var db = new ApplicationDbContext();
 
                 IQueryable<Guild> query = db.Guilds.Where(guild => guild.Id == Context.Guild.Id);
-
                 query = withInclude(query);
 
                 Guild? guild = await query.SingleOrDefaultAsync();
-
                 if (guild is null)
                 {
                     await db.Guilds.AddAsync(
@@ -58,15 +59,13 @@ public partial class AdminModule
                 db.Entry(guild).State = EntityState.Detached;
 
                 ICollection<TChannel> channels = channelSelector(guild);
-
                 if (channels.Count == 0)
                 {
                     await RespondOrFollowUpAsync(NothingToView);
                     return;
                 }
 
-                List<string> embedDescriptions = channels.SelectMany(
-                                                              channel =>
+                List<string> embedDescriptions = channels.SelectMany(channel =>
                                                               {
                                                                   List<string> descriptions = [];
                                                                   TLogType logType = logTypeSelector(channel);
@@ -83,12 +82,10 @@ public partial class AdminModule
                                                          .ToList();
 
                 Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} {titleSuffix}");
-
                 var pagination = new ButtonPaginationBuilder
                 {
                     Embeds = [.. embeds]
                 };
-
                 await pagination.Build().Init(Context);
             }
 
@@ -147,7 +144,7 @@ public partial class AdminModule
                 if (!Context.Guild.CurrentUser.GetPermissions(channel).ManageWebhooks)
                 {
                     await RespondOrFollowUpAsync(
-                        $"Bot requires channel permission {ChannelPermission.ManageWebhooks} in {MentionUtils.MentionChannel(channel.Id)}",
+                        $"Bot requires channel permission {nameof(ChannelPermission.ManageWebhooks)} in {MentionUtils.MentionChannel(channel.Id)}",
                         ephemeral: true
                     );
                 }

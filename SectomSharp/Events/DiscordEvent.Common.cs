@@ -9,7 +9,7 @@ using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;
 
-public partial class DiscordEvent
+public static partial class DiscordEvent
 {
     private static async Task<ICollection<AuditLogChannel>?> GetAuditLogChannelsAsync(IGuild guild)
     {

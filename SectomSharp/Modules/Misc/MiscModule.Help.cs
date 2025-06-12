@@ -10,7 +10,7 @@ using SectomSharp.Utils;
 namespace SectomSharp.Modules.Misc;
 
 [SuppressMessage("ReSharper", "EntityNameCapturedOnly.Global")]
-public partial class MiscModule
+public sealed partial class MiscModule
 {
     [SlashCmd("Displays a help menu")]
     public async Task Help()
@@ -38,7 +38,7 @@ public partial class MiscModule
         var menuConfig = new NestedMenuConfig
         {
             EmbedTitle = "Help Menu",
-            EmbedColour = Constants.LightGold
+            EmbedColour = Storage.LightGold
         };
 
         await new SelectMenuPaginationBuilder("Select a category").WithEphemeral()
@@ -58,7 +58,7 @@ public partial class MiscModule
             [
                 new EmbedBuilder
                 {
-                    Color = Constants.LightGold,
+                    Color = Storage.LightGold,
                     Description = $"""
                                    {Format.Bold("Name")}: {command.Name}
                                    {Format.Bold("Description")}: {command.Description}

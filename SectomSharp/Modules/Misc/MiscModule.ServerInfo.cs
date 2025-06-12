@@ -19,46 +19,24 @@ public sealed partial class MiscModule
                                                       .AddField("Roles", guild.Roles.Count, true)
                                                       .AddField("Members", guild.MemberCount, true);
 
-        if (guild.Emotes.Count is > 0 and var emotesCount)
-        {
-            embedBuilder.AddField("Emojis", emotesCount, true);
-        }
-
-        if (guild.Stickers.Count is > 0 and var stickersCount)
-        {
-            embedBuilder.AddField("Stickers", stickersCount, true);
-        }
-
-        if (guild.TextChannels.Count is > 0 and var textChannelsCount)
-        {
-            embedBuilder.AddField("Text Channels", textChannelsCount, true);
-        }
-
-        if (guild.ThreadChannels.Count is > 0 and var threadChannelsCount)
-        {
-            embedBuilder.AddField("Thread Channels", threadChannelsCount, true);
-        }
-
-        if (guild.ForumChannels.Count is > 0 and var forumChannelsCount)
-        {
-            embedBuilder.AddField("Forum Channels", forumChannelsCount, true);
-        }
-
-        if (guild.MediaChannels.Count is > 0 and var mediaChannelsCount)
-        {
-            embedBuilder.AddField("Media Channels", mediaChannelsCount, true);
-        }
-
-        if (guild.StageChannels.Count is > 0 and var stageChannelsCount)
-        {
-            embedBuilder.AddField("Stage Channels", stageChannelsCount, true);
-        }
-
-        if (guild.CategoryChannels.Count is > 0 and var categoryChannelsCount)
-        {
-            embedBuilder.AddField("Category Channels", categoryChannelsCount, true);
-        }
+        AddInlineFieldEntryIfNotEmpty(guild.Emotes, "Emojis");
+        AddInlineFieldEntryIfNotEmpty(guild.Stickers, "Stickers");
+        AddInlineFieldEntryIfNotEmpty(guild.TextChannels, "Text Channels");
+        AddInlineFieldEntryIfNotEmpty(guild.ThreadChannels, "Thread Channels");
+        AddInlineFieldEntryIfNotEmpty(guild.ForumChannels, "Forum Channels");
+        AddInlineFieldEntryIfNotEmpty(guild.MediaChannels, "Media Channels");
+        AddInlineFieldEntryIfNotEmpty(guild.StageChannels, "Stage Channels");
+        AddInlineFieldEntryIfNotEmpty(guild.CategoryChannels, "Category Channels");
 
         await RespondOrFollowUpAsync(embeds: [embedBuilder.Build()]);
+        return;
+
+        void AddInlineFieldEntryIfNotEmpty<T>(IReadOnlyCollection<T> collection, string fieldName)
+        {
+            if (collection.Count is > 0 and var count)
+            {
+                embedBuilder.AddField(fieldName, count, true);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using System.Runtime.InteropServices;
 using Discord;
 using Discord.Interactions;
 using Discord.Net;
@@ -27,14 +27,16 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
     public const string PaginationExpiredMessage = "The pagination for this message has expired.";
 
-    private static Embed[] ToSanitisedEmbeds(string title, List<string> chunks)
+    private static Embed[] ToSanitisedEmbeds(string title, string[] chunks)
     {
-        if (chunks.Count == 1)
+        if (chunks.Length == 1)
         {
             return [GetEmbedBuilder(chunks[0], title).Build()];
         }
 
-        List<Embed> embeds = chunks.Select((t, i) => GetEmbedBuilder(t, title).WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}")).Build()).ToList();
+        IEnumerable<Embed> embeds = chunks.Select((description, i)
+            => GetEmbedBuilder(description, title).WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Length}")).Build()
+        );
 
         return [.. embeds];
     }
@@ -50,7 +52,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         {
             Description = description,
             Title = title,
-            Color = Constants.LightGold
+            Color = Storage.LightGold
         };
 
     protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) => await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
@@ -66,15 +68,14 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// </exception>
     public static Embed[] GetEmbeds(List<string> strings, string title)
     {
-        var chunks = new List<string>();
+        Span<string> span = CollectionsMarshal.AsSpan(strings);
+        string[] chunks = new string[span.Length];
 
-        for (int i = 0; i < strings.Count; i += ChunkSize)
+        for (int i = 0; i < span.Length; i += ChunkSize)
         {
-            string chunk = String.Join("\n", strings.GetRange(i, Math.Min(ChunkSize, strings.Count - i)));
-
+            string chunk = String.Join('\n', span.Slice(i, Math.Min(ChunkSize, span.Length - i)));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(chunk.Length, EmbedBuilder.MaxDescriptionLength);
-
-            chunks.Add(chunk);
+            chunks[i] = chunk;
         }
 
         return ToSanitisedEmbeds(title, chunks);
@@ -152,44 +153,9 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
         try
         {
-            ComponentBuilder componentBuilder = ComponentBuilder.FromMessage(Message);
+            MessageComponent components = Message.Components.FromComponentsWithAllDisabled().Build();
 
-            foreach (ActionRowBuilder actionRow in componentBuilder.ActionRows)
-            {
-                for (int i = 0; i < actionRow.Components.Count; i++)
-                {
-                    IMessageComponent component = actionRow.Components[i];
-
-                    switch (component.Type)
-                    {
-                        case ComponentType.Button:
-                            {
-                                ButtonBuilder builder = ((ButtonComponent)component).ToBuilder();
-                                builder.IsDisabled = true;
-                                actionRow.Components[i] = builder.Build();
-                            }
-
-                            break;
-
-                        case ComponentType.SelectMenu:
-                            {
-                                SelectMenuBuilder builder = ((SelectMenuComponent)component).ToBuilder();
-                                builder.IsDisabled = true;
-                                actionRow.Components[i] = builder.Build();
-                            }
-
-                            break;
-
-                        default:
-                            throw new InvalidEnumArgumentException(nameof(component.Type), (int)component.Type, typeof(ComponentType));
-                    }
-                }
-            }
-
-            MessageComponent components = componentBuilder.Build();
-
-            await Message.ModifyAsync(
-                props =>
+            await Message.ModifyAsync(props =>
                 {
                     props.Components = components;
                 }
