@@ -8,9 +8,8 @@ using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Data.Models;
 using SectomSharp.Extensions;
-using SectomSharp.Utils;
 
-namespace SectomSharp.Services;
+namespace SectomSharp.Utils;
 
 internal static class CaseUtils
 {

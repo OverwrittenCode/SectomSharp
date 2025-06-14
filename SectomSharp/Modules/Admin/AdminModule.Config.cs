@@ -1,7 +1,7 @@
 using Discord.Interactions;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Data.Enums;
-using SectomSharp.Services;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
 

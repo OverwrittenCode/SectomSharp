@@ -3,7 +3,6 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
-using SectomSharp.Services;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;

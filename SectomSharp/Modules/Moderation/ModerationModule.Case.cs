@@ -10,7 +10,7 @@ using SectomSharp.Data.Models;
 using SectomSharp.Extensions;
 using SectomSharp.Managers.Pagination.Builders;
 using SectomSharp.Managers.Pagination.Button;
-using SectomSharp.Services;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;
 
