@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class Role : Snowflake;
 
 public sealed class RoleConfiguration : BaseEntityConfiguration<Role>
 {

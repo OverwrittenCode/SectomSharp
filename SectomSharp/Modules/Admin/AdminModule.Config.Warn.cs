@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
+using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Data.Models;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;

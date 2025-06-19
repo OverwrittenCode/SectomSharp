@@ -1,7 +1,7 @@
 using Discord;
 using SectomSharp.Data.Enums;
 
-namespace SectomSharp.Data.Models;
+namespace SectomSharp.Data.Entities;
 
 public sealed class WarningThreshold
 {

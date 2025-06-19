@@ -2,8 +2,8 @@ using System.ComponentModel;
 using Discord;
 using Discord.Interactions;
 using SectomSharp.Attributes;
+using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Data.Models;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;

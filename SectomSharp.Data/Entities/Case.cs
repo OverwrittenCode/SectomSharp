@@ -1,10 +1,34 @@
+using Discord;
 using Discord.Rest;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Newtonsoft.Json;
-using SectomSharp.Data.Models;
+using SectomSharp.Data.Enums;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class Case : BaseOneToManyGuildRelation
+{
+    public required string Id { get; init; }
+
+    public ulong? PerpetratorId { get; init; }
+    public User? Perpetrator { get; init; }
+
+    public ulong? TargetId { get; init; }
+    public User? Target { get; init; }
+
+    public ulong? ChannelId { get; init; }
+    public Channel? Channel { get; init; }
+
+    public required BotLogType LogType { get; init; }
+    public required OperationType OperationType { get; init; }
+
+    public required EmbedBuilder CommandInputEmbedBuilder { get; init; }
+
+    public DateTime? ExpiresAt { get; init; }
+    public string? Reason { get; init; }
+    public string? LogMessageUrl { get; set; }
+}
 
 public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
 {

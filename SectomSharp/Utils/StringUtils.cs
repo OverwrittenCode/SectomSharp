@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using SectomSharp.Data.Configurations;
+using SectomSharp.Data.Entities;
 
 namespace SectomSharp.Utils;
 

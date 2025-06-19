@@ -1,8 +1,28 @@
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class Guild : BaseEntity
+{
+    public required ulong Id { get; init; }
+
+    [UsedImplicitly]
+    public ICollection<User> Users { get; } = [];
+
+    [UsedImplicitly]
+    public ICollection<Role> Roles { get; } = [];
+
+    [UsedImplicitly]
+    public ICollection<Channel> Channels { get; } = [];
+
+    public ICollection<AuditLogChannel> AuditLogChannels { get; } = [];
+    public ICollection<BotLogChannel> BotLogChannels { get; } = [];
+    public ICollection<Case> Cases { get; } = [];
+
+    public Configuration? Configuration { get; set; }
+}
 
 public sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
 {

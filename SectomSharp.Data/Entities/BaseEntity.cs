@@ -1,8 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public abstract class BaseEntity
+{
+    public DateTime CreatedAt { get; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; internal set; }
+}
 
 public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
     where T : BaseEntity

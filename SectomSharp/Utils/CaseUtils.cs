@@ -5,8 +5,8 @@ using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
+using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Data.Models;
 using SectomSharp.Extensions;
 
 namespace SectomSharp.Utils;

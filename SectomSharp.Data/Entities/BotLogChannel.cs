@@ -1,7 +1,12 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
+using SectomSharp.Data.Enums;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class BotLogChannel : Snowflake
+{
+    public required BotLogType Type { get; set; }
+}
 
 public sealed class BotLogChannelConfiguration : BaseEntityConfiguration<BotLogChannel>
 {

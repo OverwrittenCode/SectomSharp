@@ -1,7 +1,16 @@
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class User : Snowflake
+{
+    [UsedImplicitly]
+    public ICollection<Case> TargetCases { get; } = [];
+
+    [UsedImplicitly]
+    public ICollection<Case> PerpetratorCases { get; private set; } = [];
+}
 
 public sealed class UserConfiguration : BaseEntityConfiguration<User>
 {

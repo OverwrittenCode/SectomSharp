@@ -1,7 +1,14 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
+using SectomSharp.Data.Enums;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class AuditLogChannel : Snowflake
+{
+    public required string WebhookUrl { get; init; }
+
+    public required AuditLogType Type { get; set; }
+}
 
 public sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<AuditLogChannel>
 {

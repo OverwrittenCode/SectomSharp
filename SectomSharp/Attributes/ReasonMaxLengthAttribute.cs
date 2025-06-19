@@ -1,5 +1,5 @@
 using Discord.Interactions;
-using SectomSharp.Data.Configurations;
+using SectomSharp.Data.Entities;
 
 namespace SectomSharp.Attributes;
 

@@ -1,7 +1,13 @@
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SectomSharp.Data.Models;
 
-namespace SectomSharp.Data.Configurations;
+namespace SectomSharp.Data.Entities;
+
+public sealed class Channel : Snowflake
+{
+    [UsedImplicitly]
+    public ICollection<Case> Cases { get; } = [];
+}
 
 public sealed class ChannelConfiguration : BaseEntityConfiguration<Channel>
 {

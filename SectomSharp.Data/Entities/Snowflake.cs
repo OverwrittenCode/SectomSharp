@@ -1,4 +1,4 @@
-namespace SectomSharp.Data.Models;
+namespace SectomSharp.Data.Entities;
 
 public abstract class Snowflake : BaseOneToManyGuildRelation
 {

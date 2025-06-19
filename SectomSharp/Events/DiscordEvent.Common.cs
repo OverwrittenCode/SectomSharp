@@ -3,8 +3,8 @@ using Discord;
 using Discord.Webhook;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
+using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Data.Models;
 using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;

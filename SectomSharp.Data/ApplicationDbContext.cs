@@ -2,9 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
-using SectomSharp.Data.Configurations;
+using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Data.Models;
 
 namespace SectomSharp.Data;
 
