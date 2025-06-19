@@ -5,13 +5,9 @@ namespace SectomSharp.Extensions;
 internal static class DiscordExtensions
 {
     /// <summary>
-    ///     Asynchronously responds or follows up a module
-    ///     based on <see cref="IDiscordInteraction.HasResponded" />.
+    ///     Asynchronously responds or follows up a module based on <see cref="IDiscordInteraction.HasResponded" />.
     /// </summary>
-    /// <returns>
-    ///     A task representing the asynchronous operation of
-    ///     responding or following up the interaction.
-    /// </returns>
+    /// <returns>A task representing the asynchronous operation of responding or following up the interaction.</returns>
     /// <inheritdoc cref="IDiscordInteraction.RespondAsync" />
     public static async Task RespondOrFollowupAsync(
         this IDiscordInteraction interaction,

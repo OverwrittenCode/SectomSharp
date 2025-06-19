@@ -6,8 +6,7 @@ using SectomSharp.Extensions;
 namespace SectomSharp.Managers.Pagination.Button;
 
 /// <summary>
-///     Manages button-based pagination for Discord embeds, allowing users to navigate
-///     through multiple pages of content.
+///     Manages button-based pagination for Discord embeds, allowing users to navigate through multiple pages of content.
 /// </summary>
 internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationManager>
 {
@@ -19,7 +18,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
     /// <param name="context">The message component context.</param>
     /// <param name="id">The <see cref="InstanceManager{T}.Id" />.</param>
     /// <param name="position">The <see cref="PageNavigationButton" />.</param>
-    /// <inheritdoc cref="SocketMessageComponent.UpdateAsync(Action{MessageProperties}, RequestOptions)" path="/returns" />
+    /// <returns>A task representing the asynchronous operation of updating a message.</returns>
     public static async Task OnHit(SocketMessageComponent context, string id, PageNavigationButton position)
     {
         try
@@ -119,6 +118,7 @@ internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationM
         _extraActionRows = extraActionRows ?? [];
     }
 
+    /// <inheritdoc />
     protected override async Task RespondOrFollowupAsync(SocketInteractionContext context)
         => await context.Interaction.RespondOrFollowupAsync(embeds: CurrentEmbeds, components: _embeds.Length == 1 ? null : MessageComponent, ephemeral: IsEphemeral);
 }

@@ -34,6 +34,7 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     )
         => await Context.Interaction.RespondOrFollowupAsync(text, embeds, ephemeral, allowedMentions, components, options, poll);
 
+    /// <inheritdoc />
     public override void BeforeExecute(ICommandInfo command)
     {
         _source = command.MethodName;

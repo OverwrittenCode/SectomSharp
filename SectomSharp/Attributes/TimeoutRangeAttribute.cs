@@ -9,6 +9,7 @@ internal sealed class TimeoutRangeAttribute : ParameterPreconditionAttribute
     private static readonly TimeSpan Min = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan Max = TimeSpan.FromDays(28);
 
+    /// <inheritdoc />
     public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, IParameterInfo parameterInfo, object value, IServiceProvider services)
         => value is not TimeSpan timeSpan
             ? Task.FromResult(PreconditionResult.FromError("Expected a timespan for the duration."))

@@ -26,6 +26,7 @@ public sealed class Guild : BaseEntity
 
 public sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
 {
+    /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<Guild> builder)
     {
         builder.OwnsOne(

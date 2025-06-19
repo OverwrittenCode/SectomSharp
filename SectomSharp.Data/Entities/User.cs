@@ -14,6 +14,7 @@ public sealed class User : Snowflake
 
 public sealed class UserConfiguration : BaseEntityConfiguration<User>
 {
+    /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<User> builder)
     {
         builder.HasOne(user => user.Guild).WithMany(guild => guild.Users).HasForeignKey(user => user.GuildId).IsRequired();

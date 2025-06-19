@@ -12,6 +12,7 @@ public abstract class BaseEntity
 public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
     where T : BaseEntity
 {
+    /// <inheritdoc />
     public virtual void Configure(EntityTypeBuilder<T> builder)
     {
         builder.Property(entity => entity.CreatedAt).HasColumnType(Constants.PostgreSql.Timestamptz).IsRequired();

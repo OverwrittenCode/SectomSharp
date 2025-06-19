@@ -10,8 +10,10 @@ namespace SectomSharp.Attributes;
 [AttributeUsage(AttributeTargets.Parameter)]
 internal sealed class SelectMenuPaginationInstanceIdAttribute : ParameterPreconditionAttribute
 {
+    /// <inheritdoc />
     public override string ErrorMessage => SelectMenuPaginationManager.PaginationExpiredMessage;
 
+    /// <inheritdoc />
     public override async Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, IParameterInfo parameterInfo, object value, IServiceProvider services)
     {
         if (value is not string instanceId)

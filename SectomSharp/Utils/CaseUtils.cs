@@ -16,14 +16,8 @@ internal static class CaseUtils
     /// <summary>
     ///     Generates a <see cref="MessageComponent" />.
     /// </summary>
-    /// <inheritdoc cref="GenerateLogEmbeds" path="/param" />
-    /// <returns>A <see cref="MessageComponent" />.</returns>
-    /// <value>
-    ///     If <see cref="Case.LogMessageUrl" /> is <see langword="string" />;
-    ///     a component with the log message button.<br />
-    ///     If <see cref="Case.LogMessageUrl" /> is <see langword="null" />;
-    ///     an empty component.
-    /// </value>
+    /// <param name="case">The case.</param>
+    /// <returns>A component with a log message button if <see cref="Case.LogMessageUrl" /> is not <c>null</c>; otherwise, an empty component.</returns>
     public static MessageComponent GenerateLogMessageButton(Case @case)
     {
         var component = new ComponentBuilder();
@@ -48,24 +42,18 @@ internal static class CaseUtils
     /// <summary>
     ///     Creates a new case, logs it, and notifies relevant parties.
     /// </summary>
-    /// <inheritdoc cref="GenerateLogEmbeds" path="/param" />
     /// <param name="context">The interaction context.</param>
     /// <param name="logType">The log type.</param>
     /// <param name="operationType">The operation type.</param>
-    /// <param name="perpetratorId">The id of the responsible user.</param>
     /// <param name="targetId">The id of the targeted user.</param>
     /// <param name="channelId">The targeted channel.</param>
     /// <param name="expiresAt">When the case has expired.</param>
     /// <param name="reason">The reason.</param>
     /// <param name="includeGuildCases">If <see cref="Guild.Cases" /> should be included.</param>
     /// <returns>
-    ///     The current <see cref="Guild" /> entity.
+    ///     The current <see cref="Guild" /> entity with <see cref="Guild.BotLogChannels" /> included.<br />
+    ///     If <paramref name="includeGuildCases" /> is <c>true</c>, <see cref="Guild.Cases" /> will be included.
     /// </returns>
-    /// <value>
-    ///     Includes <see cref="Guild.BotLogChannels" />.<br />
-    ///     If <paramref name="includeGuildCases" /> is <see langword="true" />;
-    ///     <see cref="Guild.Cases" /> will be included.
-    /// </value>
     public static async Task<Guild> LogAsync(
         SocketInteractionContext context,
         BotLogType logType,

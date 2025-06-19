@@ -89,10 +89,7 @@ internal sealed class SelectMenuPaginationBuilder
     /// <param name="categoryConfig">Configuration for category display.</param>
     /// <param name="itemConfig">Configuration for item display.</param>
     /// <param name="menuConfig">Configuration for the overall menu structure.</param>
-    /// <param name="prependIdWithInstanceId">
-    ///     If <see cref="InstanceManager{T}.Id" /> should be added to the start of
-    ///     the second menu's <see cref="SelectMenuBuilder.CustomId" />
-    /// </param>
+    /// <param name="prependIdWithInstanceId">If <see cref="InstanceManager{T}.Id" /> should be added to the start of the second menu's custom id.</param>
     /// <returns>The current builder.</returns>
     public SelectMenuPaginationBuilder AddNestedMenu<TCategory, TPage>(
         IEnumerable<IGrouping<TCategory, TPage>> groupedItems,

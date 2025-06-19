@@ -14,6 +14,7 @@ public sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<Audit
 {
     private const int WebhookUrlLength = 255;
 
+    /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<AuditLogChannel> builder)
     {
         builder.HasOne(channel => channel.Guild).WithMany(guild => guild.AuditLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();

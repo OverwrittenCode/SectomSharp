@@ -7,8 +7,7 @@ using SectomSharp.Managers.Pagination.Button;
 namespace SectomSharp.Managers.Pagination.SelectMenu;
 
 /// <summary>
-///     Manages select menu-based pagination for Discord embeds, allowing users to navigate
-///     through multiple pages of content.
+///     Manages select menu-based pagination for Discord embeds, allowing users to navigate through multiple pages of content.
 /// </summary>
 internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPaginationManager>
 {
@@ -63,10 +62,8 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
     /// <param name="optionKvp">The list of key value pair paginator pages.</param>
     /// <param name="replyType">The response type for the paginator.</param>
     /// <param name="isStickySelectMenu">
-    ///     The action row of <paramref name="selectMenuBuilder" /> should be added to
-    ///     the start of
-    ///     <see langword="true" />; all pages
-    ///     <see langword="false" />; the first page
+    ///     <c>true</c>; the action row is added to all pages.
+    ///     <c>false</c>; the action row is added only to the first page.
     /// </param>
     /// <inheritdoc cref="BasePagination{T}(Int32, Boolean, global::System.String?)" />
     public SelectMenuPaginationManager(
@@ -102,6 +99,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         }
     }
 
+    /// <inheritdoc />
     protected override async Task RespondOrFollowupAsync(SocketInteractionContext context)
         => await context.Interaction.RespondOrFollowupAsync(
             embeds: _firstPage.Embeds,

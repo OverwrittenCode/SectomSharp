@@ -4,8 +4,7 @@ using JetBrains.Annotations;
 namespace SectomSharp.Managers.Pagination.SelectMenu;
 
 /// <summary>
-///     Represents a single page in a select menu-based pagination system,
-///     containing embeds and interactive components.
+///     Represents a single page in a select menu-based pagination system, containing embeds and interactive components.
 /// </summary>
 internal readonly record struct SelectMenuPaginatorPage
 {

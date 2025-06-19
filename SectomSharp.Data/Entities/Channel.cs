@@ -11,6 +11,7 @@ public sealed class Channel : Snowflake
 
 public sealed class ChannelConfiguration : BaseEntityConfiguration<Channel>
 {
+    /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<Channel> builder)
     {
         builder.HasOne(channel => channel.Guild).WithMany(guild => guild.Channels).HasForeignKey(channel => channel.GuildId).IsRequired();

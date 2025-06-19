@@ -5,7 +5,13 @@ namespace SectomSharp.Managers.Pagination.Models;
 /// <summary>
 ///     Configuration for how to handle categories in a nested menu.
 /// </summary>
-/// <typeparam name="T">The type of the category.</typeparam>
+/// <param name="CustomIdPrefix">The prefix for the custom id.</param>
+/// <param name="GetName">A callback for generating the name.</param>
+/// <param name="GetValue">A callback for generating the value.</param>
+/// <param name="GetCustomIdWildcards">A callback for getting the custom id wildcards.</param>
+/// <param name="GetDescription">A callback for generating the description.</param>
+/// <param name="GetEmote">A callback for generating the emote.</param>
+/// <typeparam name="T">The data for the category.</typeparam>
 internal readonly record struct CategoryConfig<T>
 (
     string CustomIdPrefix,

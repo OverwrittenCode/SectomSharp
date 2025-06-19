@@ -24,7 +24,7 @@ public sealed partial class GameModule
     private static T GetRandomElement<T>(Span<T> array) => array[Random.Shared.Next(array.Length)];
 
     /// <summary>
-    ///     Sets the <paramref name="color" /> and <paramref name="summary" /> based on the <paramref name="result" />
+    ///     Sets the <paramref name="color" /> and <paramref name="summary" /> based on the <paramref name="result" />.
     /// </summary>
     /// <param name="result">The round outcome.</param>
     /// <param name="color">The color.</param>
@@ -70,7 +70,7 @@ public sealed partial class GameModule
     }
 
     /// <summary>
-    ///     Sets the <paramref name="color" /> and <paramref name="summary" /> based on the <paramref name="opponent" /> and <paramref name="result" />
+    ///     Sets the <paramref name="color" /> and <paramref name="summary" /> based on the <paramref name="opponent" /> and <paramref name="result" />.
     /// </summary>
     /// <param name="opponent">The opponent.</param>
     /// <param name="result">The round outcome.</param>

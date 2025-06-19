@@ -48,6 +48,7 @@ public sealed class DiscordBotService : BackgroundService
         await _interactionService.RegisterCommandsToGuildAsync(Storage.ServerId);
     }
 
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         string token = _config["Discord:BotToken"] ?? throw new InvalidOperationException("Missing bot token");
@@ -84,6 +85,7 @@ public sealed class DiscordBotService : BackgroundService
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
+    /// <inheritdoc />
     public override Task StopAsync(CancellationToken cancellationToken)
     {
         if (ExecuteTask is null)

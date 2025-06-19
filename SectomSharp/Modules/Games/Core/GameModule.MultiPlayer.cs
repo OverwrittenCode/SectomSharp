@@ -16,7 +16,7 @@ public sealed partial class GameModule
     /// <param name="playerTwoId">The other player's id.</param>
     /// <param name="processPlayerChoice">Executed when either player makes their choice.</param>
     /// <typeparam name="T">The data for the choice.</typeparam>
-    /// <returns>The data for both players, or null if at least one player did not provide a choice in time.</returns>
+    /// <returns>The data for both players, or <c>null</c> if at least one player did not provide a choice in time.</returns>
     private async Task<MultiPlayerChoice<T>?> ObtainMultiPlayerChoiceAsync<T>(
         ComponentType componentType,
         IUserMessage message,

@@ -62,6 +62,7 @@ public sealed class InteractionHandler : BackgroundService
         await interaction.RespondOrFollowupAsync(message, ephemeral: true);
     }
 
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _services);

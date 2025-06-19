@@ -29,6 +29,7 @@ public sealed class ApplicationDbContext : DbContext
         }
     }
 
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
         => builder.HasPostgresEnum<OperationType>()
                   .ApplyConfiguration(new GuildConfiguration())
@@ -39,6 +40,7 @@ public sealed class ApplicationDbContext : DbContext
                   .ApplyConfiguration(new BotLogChannelConfiguration())
                   .ApplyConfiguration(new CaseConfiguration());
 
+    /// <inheritdoc />
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         IConfigurationRoot config = new ConfigurationBuilder().AddUserSecrets(typeof(ApplicationDbContext).Assembly).Build();
@@ -47,12 +49,14 @@ public sealed class ApplicationDbContext : DbContext
         base.OnConfiguring(optionsBuilder);
     }
 
+    /// <inheritdoc />
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         UpdateEntities();
         return base.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public override int SaveChanges()
     {
         UpdateEntities();

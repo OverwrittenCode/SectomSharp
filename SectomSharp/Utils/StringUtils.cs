@@ -47,18 +47,13 @@ internal static partial class StringUtils
     public static string GenerateComponentIdRegex<T>(params string[] wildcardNames) => GenerateComponentIdRegex(typeof(T).Name, wildcardNames);
 
     /// <summary>
-    ///     Generates a lazy regex match for a component to match
-    ///     <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId" />.
+    ///     Generates a lazy regex match for a component to match <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId" />.
     /// </summary>
     /// <param name="prefix">The prefix of the component id.</param>
     /// <param name="wildcardNames">The names of the wildcard matches.</param>
-    /// <returns>
-    ///     A <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId" />
-    ///     with lazy regex matching.
-    /// </returns>
+    /// <returns>A <see cref="Discord.Interactions.ComponentInteractionAttribute.CustomId" /> with lazy regex matching.</returns>
     /// <remarks>
-    ///     See <seealso cref="GenerateComponentIdRegex(String, global::System.String[])" />
-    ///     for generating the corresponding component id.
+    ///     See <see cref="GenerateComponentIdRegex(String, global::System.String[])" /> for generating the corresponding component id.
     /// </remarks>
     public static string GenerateComponentIdRegex(string prefix, params string[] wildcardNames)
     {

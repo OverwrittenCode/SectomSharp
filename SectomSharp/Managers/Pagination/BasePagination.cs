@@ -12,10 +12,7 @@ namespace SectomSharp.Managers.Pagination;
 ///     Represents a base class for pagination functionality with shared utility methods.
 ///     Provides common functionality for handling paginated content in Discord interactions.
 /// </summary>
-/// <typeparam name="T">
-///     The type of the implementing pagination manager.
-///     Must inherit from <see cref="InstanceManager{T}" />.
-/// </typeparam>
+/// <typeparam name="T">The type of the implementing pagination manager. Must inherit from <see cref="InstanceManager{T}" />.</typeparam>
 internal abstract class BasePagination<T> : InstanceManager<T>
     where T : InstanceManager<T>
 {
@@ -63,9 +60,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <param name="strings">The strings to split into chunks.</param>
     /// <param name="title">The title of each embed.</param>
     /// <returns>An array of embed objects.</returns>
-    /// <exception cref="InvalidOperationException">
-    ///     A chunk of <paramref name="strings" /> exceeds <see cref="EmbedBuilder.MaxDescriptionLength" />
-    /// </exception>
+    /// <exception cref="InvalidOperationException">A chunk of <paramref name="strings" /> exceeds <see cref="EmbedBuilder.MaxDescriptionLength" />.</exception>
     public static Embed[] GetEmbeds(List<string> strings, string title)
     {
         Span<string> span = CollectionsMarshal.AsSpan(strings);
@@ -92,29 +87,16 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     protected bool IsEphemeral { get; }
 
     /// <summary>
-    ///     Gets the original message structure from
-    ///     <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)" />.
+    ///     Gets the original message structure from <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)" />.
     /// </summary>
-    /// <value>
-    ///     <see langword="null" /> if <see cref="Init(SocketInteractionContext)" />
-    ///     has not been called yet.
-    /// </value>
+    /// <value><c>null</c> if <see cref="Init(SocketInteractionContext)" /> has not been called yet.</value>
     public RestInteractionMessage? Message { get; protected set; }
 
     /// <summary>
     ///     Initialises a new instance of the <typeparamref name="T" /> class with specified visibility settings.
     /// </summary>
-    /// <param name="isEphemeral">
-    ///     <see langword="true" />;
-    ///     the pagination response will only be visible to the user
-    ///     who triggered the interaction.<br />
-    ///     <see langword="false" />;
-    ///     the response will be visible to
-    ///     all users in the channel.
-    /// </param>
-    /// <param name="timeout">
-    ///     The time in seconds to wait before invoking <see cref="CleanupAsync" />.
-    /// </param>
+    /// <param name="isEphemeral">Whether the pagination response should be ephemeral.</param>
+    /// <param name="timeout">The time in seconds to wait before invoking <see cref="CleanupAsync" />.</param>
     /// <inheritdoc cref="InstanceManager{T}(global::System.String?)" path="/param" />
     /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
     protected BasePagination(int timeout, bool isEphemeral = false, string? id = null) : base(id)
@@ -128,14 +110,8 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <summary>
     ///     Responds or follows up a Discord interaction with the initial pagination state.
     /// </summary>
-    /// <param name="context">
-    ///     The interaction context containing information about the Discord interaction
-    ///     that triggered the pagination.
-    /// </param>
-    /// <returns>
-    ///     A task representing the asynchronous operation of
-    ///     responding or following up the interaction.
-    /// </returns>
+    /// <param name="context">The interaction context containing information about the Discord interaction that triggered the pagination.</param>
+    /// <returns>A task representing the asynchronous operation of responding or following up the interaction.</returns>
     protected abstract Task RespondOrFollowupAsync(SocketInteractionContext context);
 
     /// <summary>
@@ -143,7 +119,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// </summary>
     /// <inheritdoc />
     /// <inheritdoc cref="RestInteractionMessage.ModifyAsync(Action{MessageProperties}, RequestOptions)" path="/exception" />
-    /// <exception cref="InvalidOperationException"><see cref="Message" /> is <see langword="null" /></exception>
+    /// <exception cref="InvalidOperationException"><see cref="Message" /> is <c>null</c>.</exception>
     protected sealed override async Task CleanupAsync()
     {
         if (Message is null)

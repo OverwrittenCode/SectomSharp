@@ -12,8 +12,8 @@ public sealed partial class GameModule
     /// <param name="componentType"> The type of component event to listen to.</param>
     /// <param name="components">The components to use.</param>
     /// <param name="processPlayerChoice">Executed when either player makes their choice.</param>
-    /// <typeparam name="T">The choice data.</typeparam>
-    /// <returns>null if the user took too long, otherwise the processed choice.</returns>
+    /// <typeparam name="T">The data for the choice.</typeparam>
+    /// <returns><c>null</c> if the user took too long, otherwise the processed choice.</returns>
     private async Task<T?> TryWaitForSinglePlayerChoiceAsync<T>(
         ComponentType componentType,
         MessageComponent components,

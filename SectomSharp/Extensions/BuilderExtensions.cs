@@ -13,8 +13,7 @@ internal static class BuilderExtensions
     /// <param name="values">The arguments of the wildcards.</param>
     /// <returns>The current builder.</returns>
     /// <remarks>
-    ///     See <seealso cref="StringUtils.GenerateComponentIdRegex(String, global::System.String[])" />
-    ///     for generating the corresponding regex.
+    ///     See <see cref="StringUtils.GenerateComponentIdRegex(String, global::System.String[])" /> for generating the corresponding regex.
     /// </remarks>
     [PublicAPI]
     public static SelectMenuBuilder WithComponentId(this SelectMenuBuilder builder, string prefix, params object[] values)
@@ -32,6 +31,11 @@ internal static class BuilderExtensions
     /// <inheritdoc cref="WithComponentId{T}(SelectMenuBuilder, global::System.Object[])" />
     public static ButtonBuilder WithComponentId<T>(this ButtonBuilder builder, params object[] values) => builder.WithCustomId(StringUtils.GenerateComponentId<T>(values));
 
+    /// <summary>
+    ///     Clones a given collection of message components with all components disabled.
+    /// </summary>
+    /// <param name="components">The collection of message components.</param>
+    /// <returns>A <see cref="ComponentBuilder" /> containing the cloned components with all components disabled.</returns>
     public static ComponentBuilder FromComponentsWithAllDisabled(this IReadOnlyCollection<IMessageComponent> components)
     {
         var builder = new ComponentBuilder();

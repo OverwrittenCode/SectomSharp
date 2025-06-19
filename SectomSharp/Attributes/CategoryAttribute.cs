@@ -22,7 +22,7 @@ internal sealed class CategoryAttribute : Attribute
     ///     Extend a module by categorising the commands attached to it.
     /// </summary>
     /// <param name="name">The name of the category.</param>
-    /// <param name="unicode">The Unicode associated with the category</param>
+    /// <param name="unicode">The Unicode associated with the category.</param>
     public CategoryAttribute(string name, string unicode)
     {
         Name = name;

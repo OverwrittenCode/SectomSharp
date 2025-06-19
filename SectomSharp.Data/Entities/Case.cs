@@ -37,6 +37,7 @@ public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
     public const int IdLength = 6;
     public const int ReasonMaxLength = 255;
 
+    /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<Case> builder)
     {
         builder.HasOne(@case => @case.Guild).WithMany(guild => guild.Cases).HasForeignKey(@case => @case.GuildId).IsRequired();

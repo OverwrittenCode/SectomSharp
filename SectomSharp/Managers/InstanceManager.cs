@@ -5,22 +5,17 @@ namespace SectomSharp.Managers;
 /// <summary>
 ///     Provides base functionality for managing instances of a specific type with unique identifiers.
 /// </summary>
-/// <typeparam name="T">
-///     The type of instance being managed.
-///     Must inherit from <see cref="InstanceManager{T}" />.
-/// </typeparam>
+/// <typeparam name="T">The type of instance being managed. Must inherit from <see cref="InstanceManager{T}" />.</typeparam>
 internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     where T : InstanceManager<T>
 {
     /// <summary>
-    ///     A dictionary storing all active instances of <typeparamref name="T" />
-    ///     keyed by <see cref="Id" />.
+    ///     A dictionary storing all active instances of <typeparamref name="T" /> keyed by <see cref="Id" />.
     /// </summary>
     private static readonly Dictionary<string, T> Instances = [];
 
     /// <summary>
-    ///     Gets a read-only collection of all active instances of <typeparamref name="T" />
-    ///     keyed by <see cref="Id" />.
+    ///     Gets a read-only collection of all active instances of <typeparamref name="T" /> keyed by <see cref="Id" />.
     /// </summary>
     public static IReadOnlyDictionary<string, T> AllInstances => Instances;
 
@@ -38,7 +33,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Initialises a new instance of the InstanceManager class with an optional pre-generated ID.
     /// </summary>
-    /// <param name="id">An optional pre-generated ID. If null, a new ID will be generated.</param>
+    /// <param name="id">An optional pre-generated ID. If <c>null</c>, a new ID will be generated.</param>
     protected InstanceManager(string? id = null)
     {
         Id = id ?? StringUtils.GenerateUniqueId();
@@ -67,8 +62,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    ///     Performs synchronous cleanup of resources and
-    ///     removes this instance from the instance collection.
+    ///     Performs synchronous cleanup of resources and removes this instance from the instance collection.
     /// </summary>
     public void Dispose()
     {
@@ -77,8 +71,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    ///     Throws an <see cref="ObjectDisposedException" /> if this
-    ///     <typeparamref name="T" /> instance has been disposed.
+    ///     Throws an <see cref="ObjectDisposedException" /> if this <typeparamref name="T" /> instance has been disposed.
     /// </summary>
     /// <exception cref="ObjectDisposedException">Thrown when the instance has been disposed.</exception>
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposedValue, this);
@@ -120,12 +113,11 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    ///     Releases the unmanaged resources used by this
-    ///     instance and optionally releases managed resources.
+    ///     Releases the unmanaged resources used by the object and optionally releases the managed resources.
     /// </summary>
     /// <param name="disposing">
-    ///     <see langword="true" /> to release both managed and unmanaged resources;
-    ///     <see langword="false" /> to release only unmanaged resources.
+    ///     <c>true</c> to release both managed and unmanaged resources;
+    ///     <c>false</c> to release only unmanaged resources.
     /// </param>
     private void Dispose(bool disposing)
     {

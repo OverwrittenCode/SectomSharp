@@ -13,8 +13,7 @@ namespace SectomSharp.Utils;
 internal static class DiscordUtils
 {
     /// <summary>
-    ///     Creates a new instance of <see cref="RequestOptions" />
-    ///     with a set audit log reason.
+    ///     Creates a new instance of <see cref="RequestOptions" /> with a set audit log reason.
     /// </summary>
     /// <param name="context">The interaction context.</param>
     /// <param name="reason">The given reason.</param>
