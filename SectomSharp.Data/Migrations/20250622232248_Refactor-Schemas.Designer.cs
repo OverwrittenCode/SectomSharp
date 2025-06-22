@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SectomSharp.Data;
@@ -12,9 +13,11 @@ using SectomSharp.Data.Enums;
 namespace SectomSharp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250622232248_Refactor-Schemas")]
+    partial class RefactorSchemas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -304,62 +307,6 @@ namespace SectomSharp.Data.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("GuildId");
 
-                            b1.OwnsOne("SectomSharp.Data.Entities.LevelingConfiguration", "Leveling", b2 =>
-                                {
-                                    b2.Property<decimal>("ConfigurationGuildId")
-                                        .HasColumnType("numeric(20,0)");
-
-                                    b2.Property<bool>("AccumulateMultipliers")
-                                        .HasColumnType("boolean");
-
-                                    b2.Property<long>("GlobalCooldown")
-                                        .HasColumnType("bigint");
-
-                                    b2.Property<double>("GlobalMultiplier")
-                                        .HasColumnType("double precision");
-
-                                    b2.Property<bool>("IsDisabled")
-                                        .HasColumnType("boolean");
-
-                                    b2.HasKey("ConfigurationGuildId");
-
-                                    b2.ToTable("Guilds");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ConfigurationGuildId");
-
-                                    b2.OwnsMany("SectomSharp.Data.Entities.LevelingRole", "AutoRoles", b3 =>
-                                        {
-                                            b3.Property<decimal>("LevelingConfigurationConfigurationGuildId")
-                                                .HasColumnType("numeric(20,0)");
-
-                                            b3.Property<int>("__synthesizedOrdinal")
-                                                .ValueGeneratedOnAdd()
-                                                .HasColumnType("integer");
-
-                                            b3.Property<long?>("Cooldown")
-                                                .HasColumnType("bigint");
-
-                                            b3.Property<decimal>("Id")
-                                                .HasColumnType("numeric(20,0)");
-
-                                            b3.Property<long>("Level")
-                                                .HasColumnType("bigint");
-
-                                            b3.Property<double?>("Multiplier")
-                                                .HasColumnType("double precision");
-
-                                            b3.HasKey("LevelingConfigurationConfigurationGuildId", "__synthesizedOrdinal");
-
-                                            b3.ToTable("Guilds");
-
-                                            b3.WithOwner()
-                                                .HasForeignKey("LevelingConfigurationConfigurationGuildId");
-                                        });
-
-                                    b2.Navigation("AutoRoles");
-                                });
-
                             b1.OwnsOne("SectomSharp.Data.Entities.WarningConfiguration", "Warning", b2 =>
                                 {
                                     b2.Property<decimal>("ConfigurationGuildId")
@@ -403,9 +350,6 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.Navigation("Thresholds");
                                 });
-
-                            b1.Navigation("Leveling")
-                                .IsRequired();
 
                             b1.Navigation("Warning")
                                 .IsRequired();

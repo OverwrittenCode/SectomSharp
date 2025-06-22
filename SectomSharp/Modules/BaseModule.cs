@@ -2,6 +2,8 @@ using Discord;
 using Discord.Interactions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
+using SectomSharp.Data;
+using SectomSharp.Data.Entities;
 using SectomSharp.Extensions;
 
 namespace SectomSharp.Modules;
@@ -34,7 +36,23 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     )
         => await Context.Interaction.RespondOrFollowupAsync(text, embeds, ephemeral, allowedMentions, components, options, poll);
 
-    /// <inheritdoc />
+    protected async Task<Guild> EnsureGuildAsync(ApplicationDbContext db)
+    {
+        Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
+        if (guild != null)
+        {
+            return guild;
+        }
+
+        guild = new Guild
+        {
+            Id = Context.Guild.Id
+        };
+
+        db.Guilds.Add(guild);
+        return guild;
+    }
+
     public override void BeforeExecute(ICommandInfo command)
     {
         _source = command.MethodName;

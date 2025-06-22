@@ -21,7 +21,7 @@ public sealed class Guild : BaseEntity
     public ICollection<BotLogChannel> BotLogChannels { get; } = [];
     public ICollection<Case> Cases { get; } = [];
 
-    public Configuration? Configuration { get; set; }
+    public Configuration Configuration { get; init; } = new();
 }
 
 public sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
@@ -35,8 +35,10 @@ public sealed class GuildConfiguration : BaseEntityConfiguration<Guild>
             {
                 configBuilder.ToJson();
                 configBuilder.OwnsOne(configuration => configuration.Warning, warningBuilder => warningBuilder.OwnsMany(warning => warning.Thresholds));
+                configBuilder.OwnsOne(configuration => configuration.Leveling, levelBuilder => levelBuilder.OwnsMany(level => level.AutoRoles));
             }
         );
+        builder.Navigation(guild => guild.Configuration).IsRequired();
 
         builder.HasIndex(guild => guild.Id).IsUnique();
         base.Configure(builder);

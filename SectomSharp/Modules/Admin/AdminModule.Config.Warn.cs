@@ -1,12 +1,9 @@
-using Discord;
 using Discord.Interactions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
 
@@ -15,7 +12,7 @@ public sealed partial class AdminModule
     public sealed partial class ConfigModule
     {
         [Group("warn", "Warning configuration")]
-        public sealed class WarnModule : BaseModule<WarnModule>
+        public sealed class WarnModule : DisableableModule<WarnModule, WarningConfiguration>
         {
             private const int MinThreshold = 1;
             private const int MaxThreshold = 20;
@@ -36,30 +33,9 @@ public sealed partial class AdminModule
 
                 await using (var db = new ApplicationDbContext())
                 {
-                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
+                    Guild guild = await EnsureGuildAsync(db);
 
-                    if (guild is null)
-                    {
-                        await db.Guilds.AddAsync(
-                            new Guild
-                            {
-                                Id = Context.Guild.Id,
-                                Configuration = new Configuration
-                                {
-                                    Warning = new WarningConfiguration
-                                    {
-                                        Thresholds = [warningThreshold]
-                                    }
-                                }
-                            }
-                        );
-
-                        await db.SaveChangesAsync();
-                        await LogAsync(Context, reason);
-                        return;
-                    }
-
-                    if ((guild.Configuration ??= new Configuration()).Warning.Thresholds.Exists(x => x.Value == threshold))
+                    if (guild.Configuration.Warning.Thresholds.Exists(x => x.Value == threshold))
                     {
                         await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
                         return;
@@ -92,7 +68,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                WarningThreshold? match = (guild.Configuration ??= new Configuration()).Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
+                WarningThreshold? match = guild.Configuration.Warning.Thresholds.Find(x => x.Value == threshold && x.LogType == punishment);
 
                 if (match is null)
                 {
@@ -103,56 +79,6 @@ public sealed partial class AdminModule
                 guild.Configuration.Warning.Thresholds.Remove(match);
                 await db.SaveChangesAsync();
 
-                await LogAsync(Context, reason);
-            }
-
-            private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
-            {
-                await DeferAsync();
-
-                Configuration disabledEntry = new()
-                {
-                    Warning = new WarningConfiguration
-                    {
-                        IsDisabled = isDisabled
-                    }
-                };
-
-                await using var db = new ApplicationDbContext();
-
-                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-                if (guild is null)
-                {
-                    await db.Guilds.AddAsync(
-                        new Guild
-                        {
-                            Id = Context.Guild.Id,
-                            Configuration = disabledEntry
-                        }
-                    );
-
-                    await db.SaveChangesAsync();
-                    await LogAsync(Context, reason);
-                    return;
-                }
-
-                if (guild.Configuration is not { } configuration)
-                {
-                    guild.Configuration = disabledEntry;
-
-                    await db.SaveChangesAsync();
-                    await LogAsync(Context, reason);
-                    return;
-                }
-
-                if (configuration.Warning.IsDisabled == isDisabled)
-                {
-                    await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                configuration.Warning.IsDisabled = isDisabled;
-                await db.SaveChangesAsync();
                 await LogAsync(Context, reason);
             }
 
@@ -176,44 +102,13 @@ public sealed partial class AdminModule
             public async Task RemoveBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [ReasonMaxLength] string? reason = null)
                 => await RemovePunishmentAsync(threshold, reason, BotLogType.Ban);
 
-            [SlashCmd("Disable this configuration")]
-            public async Task Disable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(true, reason);
-
-            [SlashCmd("Enable this configuration")]
-            public async Task Enable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(false, reason);
-
             [SlashCmd("View the configured warning thresholds")]
             public async Task ViewThresholds()
             {
-                await DeferAsync();
-
-                await using var db = new ApplicationDbContext();
-
-                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                if (guild is null)
+                if (await TryGetConfigurationViewAsync() is not var (warningConfiguration, embedBuilder))
                 {
-                    await db.Guilds.AddAsync(
-                        new Guild
-                        {
-                            Id = Context.Guild.Id,
-                            Configuration = new Configuration()
-                        }
-                    );
-                    await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NothingToView);
                     return;
                 }
-
-                if (guild.Configuration is not { Warning: var warningConfiguration })
-                {
-                    guild.Configuration = new Configuration();
-                    await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NothingToView);
-                    return;
-                }
-
-                db.Entry(guild).State = EntityState.Detached;
 
                 if (warningConfiguration.Thresholds.Count == 0)
                 {
@@ -221,21 +116,10 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                IEnumerable<string> descriptionArray = warningConfiguration.Thresholds.OrderBy(threshold => threshold.Value).Select(threshold => threshold.Display());
+                embedBuilder.WithTitle($"{Context.Guild.Name} Warning Thresholds")
+                            .WithDescription(String.Join('\n', warningConfiguration.Thresholds.OrderBy(threshold => threshold.Value).Select(threshold => threshold.Display())));
 
-                var embed = new EmbedBuilder
-                {
-                    Title = $"{Context.Guild.Name} Warning Thresholds",
-                    Color = Storage.LightGold,
-                    Description = String.Join('\n', descriptionArray)
-                };
-
-                if (warningConfiguration.IsDisabled)
-                {
-                    embed.WithFooter("Module is currently disabled: /config warn enable");
-                }
-
-                await RespondOrFollowUpAsync(embeds: [embed.Build()]);
+                await RespondOrFollowUpAsync(embeds: [embedBuilder.Build()]);
             }
         }
     }
