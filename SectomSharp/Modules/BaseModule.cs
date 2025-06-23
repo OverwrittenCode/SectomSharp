@@ -49,7 +49,7 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
             Id = Context.Guild.Id
         };
 
-        db.Guilds.Add(guild);
+        await db.Guilds.AddAsync(guild);
         return guild;
     }
 
