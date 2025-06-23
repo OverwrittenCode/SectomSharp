@@ -7,7 +7,6 @@ using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
-using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
@@ -76,13 +75,15 @@ public sealed partial class AdminModule
                 throw new NotSupportedException();
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static async Task SetIsDisabledAsync(SocketInteractionContext context, bool isDisabled, string? reason)
+            /// <inheritdoc />
+            protected DisableableModule(ILogger<BaseModule<TThis>> logger) : base(logger) { }
+
+            private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
             {
-                await context.Interaction.DeferAsync();
+                await DeferAsync();
                 await using (var db = new ApplicationDbContext())
                 {
-                    Guild? guild = await db.Guilds.FindAsync(context.Guild.Id);
+                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
 
                     if (guild is null)
                     {
@@ -115,20 +116,20 @@ public sealed partial class AdminModule
                         await db.Guilds.AddAsync(
                             new Guild
                             {
-                                Id = context.Guild.Id,
+                                Id = Context.Guild.Id,
                                 Configuration = configuration
                             }
                         );
 
                         await db.SaveChangesAsync();
-                        await LogAsync(context, reason);
+                        await LogAsync(Context, reason);
                         return;
                     }
 
                     TConfig config = GetConfig(guild);
                     if (config.IsDisabled == isDisabled)
                     {
-                        await context.Interaction.RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -136,11 +137,8 @@ public sealed partial class AdminModule
                     await db.SaveChangesAsync();
                 }
 
-                await LogAsync(context, reason);
+                await LogAsync(Context, reason);
             }
-
-            /// <inheritdoc />
-            protected DisableableModule(ILogger<BaseModule<TThis>> logger) : base(logger) { }
 
             protected async Task<(TConfig Config, EmbedBuilder EmbedBuilder)?> TryGetConfigurationViewAsync()
             {
@@ -176,10 +174,10 @@ public sealed partial class AdminModule
             }
 
             [SlashCmd("Disable this configuration")]
-            public async Task Disable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(Context, true, reason);
+            public async Task Disable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(true, reason);
 
             [SlashCmd("Enable this configuration")]
-            public async Task Enable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(Context, false, reason);
+            public async Task Enable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(false, reason);
         }
     }
 }
