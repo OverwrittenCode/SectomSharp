@@ -39,7 +39,7 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     protected async Task<Guild> EnsureGuildAsync(ApplicationDbContext db)
     {
         Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-        if (guild != null)
+        if (guild is not null)
         {
             return guild;
         }
