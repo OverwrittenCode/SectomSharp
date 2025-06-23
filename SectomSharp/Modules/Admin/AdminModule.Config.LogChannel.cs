@@ -246,7 +246,7 @@ public sealed partial class AdminModule
                     await db.SaveChangesAsync();
                 }
 
-                await LogAsync(Context, reason, options.Channel.Id);
+                await LogAsync(Context, reason, channel.Id);
             }
 
             [SlashCmd("Remove an audit log channel configuration")]
