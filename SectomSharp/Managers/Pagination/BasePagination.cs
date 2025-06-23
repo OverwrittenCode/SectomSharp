@@ -24,20 +24,6 @@ internal abstract class BasePagination<T> : InstanceManager<T>
 
     public const string PaginationExpiredMessage = "The pagination for this message has expired.";
 
-    private static Embed[] ToSanitisedEmbeds(string title, string[] chunks)
-    {
-        if (chunks.Length == 1)
-        {
-            return [GetEmbedBuilder(chunks[0], title).Build()];
-        }
-
-        IEnumerable<Embed> embeds = chunks.Select((description, i)
-            => GetEmbedBuilder(description, title).WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Length}")).Build()
-        );
-
-        return [.. embeds];
-    }
-
     /// <summary>
     ///     Creates an embed builder with standard formatting.
     /// </summary>
@@ -64,16 +50,25 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     public static Embed[] GetEmbeds(List<string> strings, string title)
     {
         Span<string> span = CollectionsMarshal.AsSpan(strings);
-        string[] chunks = new string[span.Length];
+        var chunks = new List<string>();
 
         for (int i = 0; i < span.Length; i += ChunkSize)
         {
             string chunk = String.Join('\n', span.Slice(i, Math.Min(ChunkSize, span.Length - i)));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(chunk.Length, EmbedBuilder.MaxDescriptionLength);
-            chunks[i] = chunk;
+            chunks.Add(chunk);
         }
 
-        return ToSanitisedEmbeds(title, chunks);
+        if (chunks.Count == 1)
+        {
+            return [GetEmbedBuilder(chunks[0], title).Build()];
+        }
+
+        IEnumerable<Embed> embeds = chunks.Select((description, i)
+            => GetEmbedBuilder(description, title).WithFooter(builder => builder.WithText($"Page {i + 1} / {chunks.Count}")).Build()
+        );
+
+        return [.. embeds];
     }
 
     /// <summary>
