@@ -48,7 +48,6 @@ public sealed partial class AdminModule
                         new Guild
                         {
                             Id = Context.Guild.Id,
-                            Configuration = new Configuration()
                         }
                     );
                     await db.SaveChangesAsync();
