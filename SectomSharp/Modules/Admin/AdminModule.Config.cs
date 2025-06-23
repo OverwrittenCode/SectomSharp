@@ -33,8 +33,8 @@ public sealed partial class AdminModule
         /// <typeparam name="TThis">Type of interaction context to be injected into the module.</typeparam>
         /// <typeparam name="TConfig">Type of <see cref="BaseConfiguration" /> in <see cref="Configuration" />.</typeparam>
         public abstract class DisableableModule<TThis, TConfig> : BaseModule<TThis>
-            where TConfig : BaseConfiguration, new()
-            where TThis : BaseModule<TThis>
+            where TConfig : BaseConfiguration
+            where TThis : DisableableModule<TThis, TConfig>
         {
             private static string ModuleIsCurrentlyDisabledMessage
             {
