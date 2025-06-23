@@ -123,6 +123,6 @@ public sealed partial class MiscModule
             embedBuilder.AddField($"Dangerous Permissions [{dangerousPermissionCount}]", String.Join(", ", dangerousPermissions).Truncate(EmbedFieldBuilder.MaxFieldValueLength));
         }
 
-        await RespondOrFollowUpAsync(embeds: [embedBuilder.Build()]);
+        await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
     }
 }

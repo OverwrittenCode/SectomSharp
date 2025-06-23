@@ -25,7 +25,7 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     protected BaseModule(ILogger<BaseModule<TThis>> logger) => _logger = logger;
 
     /// <inheritdoc cref="DiscordExtensions.RespondOrFollowupAsync" />
-    protected async Task RespondOrFollowUpAsync(
+    protected async Task RespondOrFollowupAsync(
         string? text = null,
         Embed[]? embeds = null,
         bool ephemeral = false,

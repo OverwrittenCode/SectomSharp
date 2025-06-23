@@ -15,7 +15,7 @@ public sealed partial class ModerationModule
     {
         if (user.Nickname == nickname)
         {
-            await RespondOrFollowUpAsync("Current nickname is already set to given nickname.", ephemeral: true);
+            await RespondOrFollowupAsync("Current nickname is already set to given nickname.", ephemeral: true);
             return;
         }
 

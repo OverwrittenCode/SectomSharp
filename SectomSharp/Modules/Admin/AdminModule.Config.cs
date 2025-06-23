@@ -129,7 +129,7 @@ public sealed partial class AdminModule
                     TConfig config = GetConfig(guild);
                     if (config.IsDisabled == isDisabled)
                     {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -157,7 +157,7 @@ public sealed partial class AdminModule
                         }
                     );
                     await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NothingToView);
+                    await RespondOrFollowupAsync(NothingToView);
                     return null;
                 }
 

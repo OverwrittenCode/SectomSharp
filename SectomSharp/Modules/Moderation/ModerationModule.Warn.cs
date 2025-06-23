@@ -35,7 +35,7 @@ public sealed partial class ModerationModule
             string warningDisplayText = $"{Format.Code(count.ToString())} warnings";
 
             async Task SendFailureMessageAsync()
-                => await RespondOrFollowUpAsync(
+                => await RespondOrFollowupAsync(
                     $"Warning configuration is setup to {punishmentThreshold.LogType} a user on reaching {warningDisplayText} but I lack permission to do so. Please contact a server administrator to fix this."
                 );
 

@@ -52,7 +52,7 @@ public sealed partial class AdminModule
                         }
                     );
                     await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NothingToView);
+                    await RespondOrFollowupAsync(NothingToView);
                     return;
                 }
 
@@ -61,7 +61,7 @@ public sealed partial class AdminModule
                 ICollection<TChannel> channels = channelSelector(guild);
                 if (channels.Count == 0)
                 {
-                    await RespondOrFollowUpAsync(NothingToView);
+                    await RespondOrFollowupAsync(NothingToView);
                     return;
                 }
 
@@ -125,7 +125,7 @@ public sealed partial class AdminModule
                     }
                     else
                     {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -143,7 +143,7 @@ public sealed partial class AdminModule
 
                 if (!Context.Guild.CurrentUser.GetPermissions(channel).ManageWebhooks)
                 {
-                    await RespondOrFollowUpAsync(
+                    await RespondOrFollowupAsync(
                         $"Bot requires channel permission {nameof(ChannelPermission.ManageWebhooks)} in {MentionUtils.MentionChannel(channel.Id)}",
                         ephemeral: true
                     );
@@ -187,7 +187,7 @@ public sealed partial class AdminModule
                     }
                     else
                     {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -218,7 +218,7 @@ public sealed partial class AdminModule
                         );
 
                         await db.SaveChangesAsync();
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -226,7 +226,7 @@ public sealed partial class AdminModule
 
                     if (botLogChannel is null)
                     {
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -240,7 +240,7 @@ public sealed partial class AdminModule
                     }
                     else
                     {
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -271,7 +271,7 @@ public sealed partial class AdminModule
                         );
 
                         await db.SaveChangesAsync();
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -279,7 +279,7 @@ public sealed partial class AdminModule
 
                     if (auditLogChannel is null)
                     {
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -293,7 +293,7 @@ public sealed partial class AdminModule
                     }
                     else
                     {
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 

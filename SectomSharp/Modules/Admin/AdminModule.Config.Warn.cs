@@ -37,7 +37,7 @@ public sealed partial class AdminModule
 
                     if (guild.Configuration.Warning.Thresholds.Exists(x => x.Value == threshold))
                     {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -64,7 +64,7 @@ public sealed partial class AdminModule
                         }
                     );
                     await db.SaveChangesAsync();
-                    await RespondOrFollowUpAsync(NotConfiguredMessage);
+                    await RespondOrFollowupAsync(NotConfiguredMessage);
                     return;
                 }
 
@@ -72,7 +72,7 @@ public sealed partial class AdminModule
 
                 if (match is null)
                 {
-                    await RespondOrFollowUpAsync(NotConfiguredMessage);
+                    await RespondOrFollowupAsync(NotConfiguredMessage);
                     return;
                 }
 
@@ -112,14 +112,14 @@ public sealed partial class AdminModule
 
                 if (warningConfiguration.Thresholds.Count == 0)
                 {
-                    await RespondOrFollowUpAsync(NothingToView);
+                    await RespondOrFollowupAsync(NothingToView);
                     return;
                 }
 
                 embedBuilder.WithTitle($"{Context.Guild.Name} Warning Thresholds")
                             .WithDescription(String.Join('\n', warningConfiguration.Thresholds.OrderBy(threshold => threshold.Value).Select(threshold => threshold.Display())));
 
-                await RespondOrFollowUpAsync(embeds: [embedBuilder.Build()]);
+                await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
             }
         }
     }

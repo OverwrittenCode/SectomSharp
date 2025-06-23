@@ -40,7 +40,7 @@ public sealed partial class AdminModule
                     }
                     else
                     {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -79,7 +79,7 @@ public sealed partial class AdminModule
 
                     if (guild.Configuration.Leveling.AutoRoles.Exists(x => x.Level == level || x.Id == role.Id))
                     {
-                        await RespondOrFollowUpAsync(AlreadyConfiguredMessage);
+                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                         return;
                     }
 
@@ -117,7 +117,7 @@ public sealed partial class AdminModule
                         );
 
                         await db.SaveChangesAsync();
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -125,7 +125,7 @@ public sealed partial class AdminModule
 
                     if (match is null)
                     {
-                        await RespondOrFollowUpAsync(NotConfiguredMessage);
+                        await RespondOrFollowupAsync(NotConfiguredMessage);
                         return;
                     }
 
@@ -146,14 +146,14 @@ public sealed partial class AdminModule
 
                 if (levelingConfiguration.AutoRoles.Count == 0)
                 {
-                    await RespondOrFollowUpAsync(NothingToView);
+                    await RespondOrFollowupAsync(NothingToView);
                     return;
                 }
 
                 embedBuilder.WithTitle($"{Context.Guild.Name} Leveling Auto Roles")
                             .WithDescription(String.Join('\n', levelingConfiguration.AutoRoles.OrderBy(autoRole => autoRole.Level).Select(autoRole => autoRole.Display())));
 
-                await RespondOrFollowUpAsync(embeds: [embedBuilder.Build()]);
+                await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
             }
         }
     }

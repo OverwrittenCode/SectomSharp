@@ -33,13 +33,13 @@ public sealed partial class ModerationModule
 
             if (@case is null)
             {
-                await RespondOrFollowUpAsync("Invalid case id provided.");
+                await RespondOrFollowupAsync("Invalid case id provided.");
                 return;
             }
 
             dbContext.Entry(@case).State = EntityState.Detached;
 
-            await RespondOrFollowUpAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(@case));
+            await RespondOrFollowupAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(@case));
         }
 
         [SlashCmd("List and filter all cases on the server")]
@@ -89,7 +89,7 @@ public sealed partial class ModerationModule
 
             if (cases.Count == 0)
             {
-                await RespondOrFollowUpAsync("No cases found.");
+                await RespondOrFollowupAsync("No cases found.");
                 return;
             }
 

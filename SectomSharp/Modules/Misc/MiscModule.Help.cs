@@ -53,7 +53,7 @@ public sealed partial class MiscModule
     {
         SlashCommandInfo command = _commands.SlashCommands.First(command => command.Name == values[0]);
 
-        await RespondOrFollowUpAsync(
+        await RespondOrFollowupAsync(
             embeds:
             [
                 new EmbedBuilder
