@@ -117,7 +117,6 @@ public sealed partial class AdminModule
                             Type = action
                         };
 
-                        guild.BotLogChannels.Add(logChannel);
                         await db.BotLogChannels.AddAsync(logChannel);
                     }
                     else if (!botLogChannel.Type.HasFlag(action))
@@ -180,7 +179,6 @@ public sealed partial class AdminModule
                             Type = action
                         };
 
-                        guild.AuditLogChannels.Add(logChannel);
                         await db.AuditLogChannels.AddAsync(logChannel);
                     }
                     else if (!auditLogChannel.Type.HasFlag(action))
