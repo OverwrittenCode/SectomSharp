@@ -110,14 +110,15 @@ public sealed partial class AdminModule
 
                     if (botLogChannel is null)
                     {
-                        guild.BotLogChannels.Add(
-                            new BotLogChannel
-                            {
-                                Id = channel.Id,
-                                GuildId = Context.Guild.Id,
-                                Type = action
-                            }
-                        );
+                        var logChannel = new BotLogChannel
+                        {
+                            Id = channel.Id,
+                            GuildId = Context.Guild.Id,
+                            Type = action
+                        };
+
+                        guild.BotLogChannels.Add(logChannel);
+                        await db.BotLogChannels.AddAsync(logChannel);
                     }
                     else if (!botLogChannel.Type.HasFlag(action))
                     {
