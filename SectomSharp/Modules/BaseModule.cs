@@ -13,7 +13,8 @@ namespace SectomSharp.Modules;
 public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractionContext>
     where TThis : BaseModule<TThis>
 {
-    private protected const string TimespanDescription = "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)";
+    protected const string TimespanDescription = "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)";
+    protected const string NothingToView = "Nothing to view yet.";
 
     private readonly ILogger<BaseModule<TThis>> _logger;
     private string _source = null!;

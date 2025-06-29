@@ -298,6 +298,13 @@ public sealed partial class AdminModule
                                                          .ToListAsync();
 
                 Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Bot Log Channels");
+
+                if (embeds.Length == 0)
+                {
+                    await RespondOrFollowupAsync(NothingToView);
+                    return;
+                }
+
                 var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
                 await pagination.Build().Init(Context);
             }
@@ -324,6 +331,13 @@ public sealed partial class AdminModule
                                                          .ToListAsync();
 
                 Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Audit Log Channels");
+
+                if (embeds.Length == 0)
+                {
+                    await RespondOrFollowupAsync(NothingToView);
+                    return;
+                }
+
                 var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
                 await pagination.Build().Init(Context);
             }

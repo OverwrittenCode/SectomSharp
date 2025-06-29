@@ -104,8 +104,13 @@ public sealed partial class ModerationModule
 
             Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Cases ({cases.Count})");
 
-            var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
+            if (embeds.Length == 0)
+            {
+                await RespondOrFollowupAsync(NothingToView);
+                return;
+            }
 
+            var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
             await pagination.Build().Init(Context);
         }
     }

@@ -19,7 +19,6 @@ public sealed partial class AdminModule
     {
         private const string AlreadyConfiguredMessage = "You cannot add this new configuration as there is already a matching configuration.";
         private const string NotConfiguredMessage = "You cannot remove this configuration as it has not been configured.";
-        private const string NothingToView = "Nothing to view yet.";
 
         private static async Task LogAsync(ApplicationDbContext db, SocketInteractionContext context, string? reason = null, ulong? channelId = null)
             => await CaseUtils.LogAsync(db, context, BotLogType.Configuration, OperationType.Update, channelId: channelId, reason: reason);
