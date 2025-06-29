@@ -32,9 +32,7 @@ string connectionString = builder.Configuration["PostgreSQL:ConnectionString"] ?
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(loggerConfig, true);
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options
-    => options.UseNpgsql(connectionString).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking).EnableSensitiveDataLogging()
-);
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
 builder.Services.AddSingleton(
     new DiscordSocketConfig
