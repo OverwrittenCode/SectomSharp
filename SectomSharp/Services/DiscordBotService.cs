@@ -12,13 +12,15 @@ namespace SectomSharp.Services;
 public sealed class DiscordBotService : BackgroundService
 {
     private readonly DiscordSocketClient _client;
+    private readonly DiscordEvent _discord;
     private readonly InteractionService _interactionService;
     private readonly IConfiguration _config;
     private readonly ILogger<DiscordBotService> _logger;
 
-    public DiscordBotService(DiscordSocketClient client, InteractionService interactionService, IConfiguration config, ILogger<DiscordBotService> logger)
+    public DiscordBotService(DiscordSocketClient client, DiscordEvent discord, InteractionService interactionService, IConfiguration config, ILogger<DiscordBotService> logger)
     {
         _client = client;
+        _discord = discord;
         _interactionService = interactionService;
         _config = config;
         _logger = logger;
@@ -57,28 +59,29 @@ public sealed class DiscordBotService : BackgroundService
         _client.Log += LogAsync;
         _interactionService.Log += LogAsync;
 
-        _client.GuildUpdated += DiscordEvent.HandleGuildUpdatedAsync;
+        _client.GuildUpdated += _discord.HandleGuildUpdatedAsync;
 
-        _client.GuildMemberUpdated += DiscordEvent.HandleGuildMemberUpdatedAsync;
+        _client.GuildMemberUpdated += _discord.HandleGuildMemberUpdatedAsync;
 
-        _client.MessageDeleted += DiscordEvent.HandleMessageDeletedAsync;
-        _client.MessageUpdated += DiscordEvent.HandleMessageUpdatedAsync;
+        // _client.MessageReceived += DiscordEvent.HandleMessageReceivedAsync;
+        _client.MessageDeleted += _discord.HandleMessageDeletedAsync;
+        _client.MessageUpdated += _discord.HandleMessageUpdatedAsync;
 
-        _client.GuildStickerCreated += DiscordEvent.HandleGuildStickerCreatedAsync;
-        _client.GuildStickerDeleted += DiscordEvent.HandleGuildStickerDeletedAsync;
-        _client.GuildStickerUpdated += DiscordEvent.HandleGuildStickerUpdatedAsync;
+        _client.GuildStickerCreated += _discord.HandleGuildStickerCreatedAsync;
+        _client.GuildStickerDeleted += _discord.HandleGuildStickerDeletedAsync;
+        _client.GuildStickerUpdated += _discord.HandleGuildStickerUpdatedAsync;
 
-        _client.ChannelCreated += DiscordEvent.HandleChannelCreatedAsync;
-        _client.ChannelDestroyed += DiscordEvent.HandleChannelDestroyedAsync;
-        _client.ChannelUpdated += DiscordEvent.HandleChannelUpdatedAsync;
+        _client.ChannelCreated += _discord.HandleChannelCreatedAsync;
+        _client.ChannelDestroyed += _discord.HandleChannelDestroyedAsync;
+        _client.ChannelUpdated += _discord.HandleChannelUpdatedAsync;
 
-        _client.ThreadCreated += DiscordEvent.HandleThreadCreatedAsync;
-        _client.ThreadDeleted += DiscordEvent.HandleThreadDeleteAsync;
-        _client.ThreadUpdated += DiscordEvent.HandleThreadUpdatedAsync;
+        _client.ThreadCreated += _discord.HandleThreadCreatedAsync;
+        _client.ThreadDeleted += _discord.HandleThreadDeleteAsync;
+        _client.ThreadUpdated += _discord.HandleThreadUpdatedAsync;
 
-        _client.RoleCreated += DiscordEvent.HandleRoleCreatedAsync;
-        _client.RoleDeleted += DiscordEvent.HandleRoleDeletedAsync;
-        _client.RoleUpdated += DiscordEvent.HandleRoleUpdateAsync;
+        _client.RoleCreated += _discord.HandleRoleCreatedAsync;
+        _client.RoleDeleted += _discord.HandleRoleDeletedAsync;
+        _client.RoleUpdated += _discord.HandleRoleUpdateAsync;
 
         await _client.LoginAsync(TokenType.Bot, token);
         await _client.StartAsync();

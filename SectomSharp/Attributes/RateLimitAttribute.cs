@@ -46,10 +46,7 @@ internal sealed class RateLimitAttribute : PreconditionAttribute
 
         if (!_rateLimits.TryGetValue(userId, out Dictionary<string, DateTime>? userRateLimits))
         {
-            _rateLimits[userId] = new Dictionary<string, DateTime>
-            {
-                [commandName] = new()
-            };
+            _rateLimits[userId] = new Dictionary<string, DateTime> { [commandName] = new() };
 
             return Task.FromResult(PreconditionResult.FromSuccess());
         }

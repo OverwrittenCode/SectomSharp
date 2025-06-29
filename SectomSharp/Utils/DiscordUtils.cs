@@ -39,9 +39,6 @@ internal static class DiscordUtils
             extra.InsertRange(0, keyValuePairs);
         }
 
-        return new RequestOptions
-        {
-            AuditLogReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(maxAuditReasonLength)
-        };
+        return new RequestOptions { AuditLogReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(maxAuditReasonLength) };
     }
 }

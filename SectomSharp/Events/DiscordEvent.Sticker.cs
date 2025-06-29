@@ -3,9 +3,9 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
-    private static async Task HandleGuildStickerAlteredAsync(SocketCustomSticker sticker, OperationType operationType)
+    private async Task HandleGuildStickerAlteredAsync(SocketCustomSticker sticker, OperationType operationType)
     {
         if (await GetDiscordWebhookClientAsync(sticker.Guild, AuditLogType.Sticker) is not { } webhookClient)
         {
@@ -23,11 +23,11 @@ public static partial class DiscordEvent
         await LogAsync(sticker.Guild, webhookClient, AuditLogType.Sticker, operationType, entries, sticker.Guild.Id.ToString(), sticker.Name);
     }
 
-    public static async Task HandleGuildStickerCreatedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Create);
+    public async Task HandleGuildStickerCreatedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Create);
 
-    public static async Task HandleGuildStickerDeletedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Delete);
+    public async Task HandleGuildStickerDeletedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Delete);
 
-    public static async Task HandleGuildStickerUpdatedAsync(SocketCustomSticker oldSticker, SocketCustomSticker newSticker)
+    public async Task HandleGuildStickerUpdatedAsync(SocketCustomSticker oldSticker, SocketCustomSticker newSticker)
     {
         if (await GetDiscordWebhookClientAsync(newSticker.Guild, AuditLogType.Sticker) is not { } webhookClient)
         {

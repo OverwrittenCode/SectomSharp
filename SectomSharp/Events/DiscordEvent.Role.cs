@@ -5,11 +5,11 @@ using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
     private static string GetRoleDisplayName(SocketRole role) => role.Emoji is null ? role.Name : $"{role.Emoji} {role.Name}";
 
-    private static async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
+    private async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
     {
         if (await GetDiscordWebhookClientAsync(role.Guild, AuditLogType.Role) is not { } discordWebhookClient)
         {
@@ -33,11 +33,11 @@ public static partial class DiscordEvent
         await LogAsync(role.Guild, discordWebhookClient, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 
-    public static async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
+    public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
 
-    public static async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
+    public async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
 
-    public static async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
+    public async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
     {
         if (oldRole.Position != newRole.Position || await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role) is not { } discordWebhookClient)
         {

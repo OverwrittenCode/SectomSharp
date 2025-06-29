@@ -12,6 +12,6 @@ public sealed partial class ModerationModule
     public async Task ModNote([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string note)
     {
         await DeferAsync();
-        await CaseUtils.LogAsync(Context, BotLogType.ModNote, OperationType.Create, user.Id, reason: note);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.ModNote, OperationType.Create, user.Id, reason: note);
     }
 }

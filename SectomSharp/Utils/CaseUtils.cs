@@ -4,6 +4,7 @@ using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
@@ -13,16 +14,26 @@ namespace SectomSharp.Utils;
 
 internal static class CaseUtils
 {
+    private static readonly Func<ApplicationDbContext, ulong, BotLogType, Task<ulong?>> GetGuildWithMatchedLogChannels =
+        EF.CompileAsyncQuery((ApplicationDbContext context, ulong guildId, BotLogType logType) => context.Guilds.Where(g => g.Id == guildId)
+                                                                                                         .Select(g => (ulong?)g.BotLogChannels
+                                                                                                             .Where(channel => channel.Type.HasFlag(logType))
+                                                                                                             .Select(channel => channel.Id)
+                                                                                                             .FirstOrDefault()
+                                                                                                          )
+                                                                                                         .FirstOrDefault()
+        );
+
     /// <summary>
     ///     Generates a <see cref="MessageComponent" />.
     /// </summary>
-    /// <param name="case">The case.</param>
-    /// <returns>A component with a log message button if <see cref="Case.LogMessageUrl" /> is not <c>null</c>; otherwise, an empty component.</returns>
-    public static MessageComponent GenerateLogMessageButton(Case @case)
+    /// <param name="logMessageUrl">The logMessageUrl.</param>
+    /// <returns>A component with a log message button if <paramref name="logMessageUrl" /> is not <c>null</c>; otherwise, an empty component.</returns>
+    public static MessageComponent GenerateLogMessageButton(string? logMessageUrl)
     {
         var component = new ComponentBuilder();
 
-        if (@case.LogMessageUrl is { } url)
+        if (logMessageUrl is not null)
         {
             component.AddRow(
                 new ActionRowBuilder().AddComponent(
@@ -30,7 +41,7 @@ internal static class CaseUtils
                     {
                         Style = ButtonStyle.Link,
                         Label = "View Log Message",
-                        Url = url
+                        Url = logMessageUrl
                     }.Build()
                 )
             );
@@ -42,6 +53,7 @@ internal static class CaseUtils
     /// <summary>
     ///     Creates a new case, logs it, and notifies relevant parties.
     /// </summary>
+    /// <param name="dbFactory">The db factory.</param>
     /// <param name="context">The interaction context.</param>
     /// <param name="logType">The log type.</param>
     /// <param name="operationType">The operation type.</param>
@@ -49,20 +61,43 @@ internal static class CaseUtils
     /// <param name="channelId">The targeted channel.</param>
     /// <param name="expiresAt">When the case has expired.</param>
     /// <param name="reason">The reason.</param>
-    /// <param name="includeGuildCases">If <see cref="Guild.Cases" /> should be included.</param>
-    /// <returns>
-    ///     The current <see cref="Guild" /> entity with <see cref="Guild.BotLogChannels" /> included.<br />
-    ///     If <paramref name="includeGuildCases" /> is <c>true</c>, <see cref="Guild.Cases" /> will be included.
-    /// </returns>
-    public static async Task<Guild> LogAsync(
+    /// <returns>The guild log context if the guild exists.</returns>
+    public static async Task LogAsync(
+        IDbContextFactory<ApplicationDbContext> dbFactory,
         SocketInteractionContext context,
         BotLogType logType,
         OperationType operationType,
         ulong? targetId = null,
         ulong? channelId = null,
         DateTime? expiresAt = null,
-        string? reason = null,
-        bool includeGuildCases = false
+        string? reason = null
+    )
+    {
+        await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync();
+        await LogAsync(db, context, logType, operationType, targetId, channelId, expiresAt, reason);
+    }
+
+    /// <summary>
+    ///     Creates a new case, logs it, and notifies relevant parties.
+    /// </summary>
+    /// <param name="db">The db instance.</param>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="logType">The log type.</param>
+    /// <param name="operationType">The operation type.</param>
+    /// <param name="targetId">The id of the targeted user.</param>
+    /// <param name="channelId">The targeted channel.</param>
+    /// <param name="expiresAt">When the case has expired.</param>
+    /// <param name="reason">The reason.</param>
+    /// <returns>The guild log context if the guild exists.</returns>
+    public static async Task LogAsync(
+        ApplicationDbContext db,
+        SocketInteractionContext context,
+        BotLogType logType,
+        OperationType operationType,
+        ulong? targetId = null,
+        ulong? channelId = null,
+        DateTime? expiresAt = null,
+        string? reason = null
     )
     {
         if (!context.Interaction.HasResponded)
@@ -125,7 +160,7 @@ internal static class CaseUtils
                                                                                : Color.Red
                                                                    )
                                                                   .WithFields(commandFields)
-                                                                  .WithTimestamp(DateTime.UtcNow);
+                                                                  .WithCurrentTimestamp();
 
         if (perpetratorId.HasValue)
         {
@@ -140,93 +175,98 @@ internal static class CaseUtils
 
         var @case = new Case
         {
+            GuildId = context.Guild.Id,
             Id = caseId,
             PerpetratorId = perpetratorId,
             TargetId = targetId,
             ChannelId = channelId,
-            GuildId = context.Guild.Id,
             LogType = logType,
             OperationType = operationType,
+            CommandInputEmbedBuilder = commandInputEmbedBuilder,
             ExpiresAt = expiresAt,
-            Reason = reason,
-            CommandInputEmbedBuilder = commandInputEmbedBuilder
+            Reason = reason
         };
 
         Embed commandLogEmbed = commandInputEmbedBuilder.Build();
-        Guild guildEntity;
 
-        await using (var db = new ApplicationDbContext())
+        ulong? botLogChannelId = await GetGuildWithMatchedLogChannels(db, context.Guild.Id, @case.LogType);
+
+        if (botLogChannelId.HasValue
+         && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannelId) is ITextChannel logChannel
+         && context.Guild.CurrentUser.GetPermissions(logChannel).Has(ChannelPermission.SendMessages))
         {
-            List<User> users = [];
-            if (perpetratorId is { } perpetratorIdValue && !await db.Users.AnyAsync(perpetrator => perpetrator.Id == perpetratorIdValue && perpetrator.GuildId == context.Guild.Id))
-            {
-                users.Add(
-                    new User
-                    {
-                        Id = perpetratorIdValue,
-                        GuildId = context.Guild.Id
-                    }
-                );
-            }
-
-            if (targetId is { } targetIdValue && !await db.Users.AnyAsync(target => target.Id == targetIdValue && target.GuildId == context.Guild.Id))
-            {
-                users.Add(
-                    new User
-                    {
-                        Id = targetIdValue,
-                        GuildId = context.Guild.Id
-                    }
-                );
-            }
-
-            if (channelId is { } channelIdValue && !await db.Channels.AnyAsync(channel => channel.Id == channelIdValue))
-            {
-                await db.Channels.AddAsync(
-                    new Channel
-                    {
-                        Id = channelIdValue,
-                        GuildId = context.Guild.Id
-                    }
-                );
-            }
-
-            if (users.Count > 0)
-            {
-                await db.Users.AddRangeAsync(users);
-            }
-
-            IQueryable<Guild> guildQuery = db.Guilds.Where(guild => guild.Id == context.Guild.Id).Include(guild => guild.BotLogChannels);
-
-            if (includeGuildCases)
-            {
-                guildQuery = guildQuery.Include(guild => guild.Cases);
-            }
-
-            Guild? guild = await guildQuery.SingleOrDefaultAsync();
-
-            if (guild is null)
-            {
-                guild = new Guild
-                {
-                    Id = @case.GuildId
-                };
-
-                await db.Guilds.AddAsync(guild);
-            }
-            else if (guild.BotLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(logType)) is { } botLogChannel
-                  && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannel.Id) is ITextChannel logChannel
-                  && context.Guild.CurrentUser.GetPermissions(logChannel).Has(ChannelPermission.SendMessages))
-            {
-                IUserMessage userMessage = await logChannel.SendMessageAsync(embeds: [commandLogEmbed]);
-                @case.LogMessageUrl = userMessage.GetJumpUrl();
-            }
-
-            guildEntity = guild;
-
-            await db.Cases.AddAsync(@case);
-            await db.SaveChangesAsync();
+            IUserMessage userMessage = await logChannel.SendMessageAsync(embeds: [commandLogEmbed]);
+            @case.LogMessageUrl = userMessage.GetJumpUrl();
         }
+
+        // language=SQL
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            WITH
+                guild_upsert AS (
+                    INSERT INTO "Guilds" ("Id")
+                    SELECT @guildId
+                    WHERE @guildNotExists
+                    ON CONFLICT ("Id") DO NOTHING
+                ),
+                channel_upsert AS (
+                    INSERT INTO "Channels" ("GuildId", "Id")
+                    SELECT @guildId, @channelId
+                    WHERE @channelIdHasValue
+                    ON CONFLICT ("Id") DO NOTHING
+                ),
+                users_upsert AS (
+                    INSERT INTO "Users" ("GuildId", "Id")
+                    SELECT users."GuildId", users."Id"
+                    FROM (VALUES
+                        (@guildId, @perpetratorId),
+                        (@guildId, @targetId)
+                    ) AS users("GuildId", "Id")
+                    WHERE users."Id" IS NOT NULL
+                    ON CONFLICT ("GuildId", "Id") DO NOTHING
+                )
+            INSERT INTO "Cases" (
+                "GuildId",
+                "Id", 
+                "PerpetratorId",
+                "TargetId",
+                "ChannelId",
+                "LogType",
+                "OperationType", 
+                "CommandInputEmbedBuilder",
+                "ExpiresAt",
+                "Reason",
+                "LogMessageUrl"
+            )
+            VALUES (
+                @guildId,
+                @caseId,
+                @perpetratorId,
+                @targetId,
+                @caseChannelId,
+                @logType,
+                @operationType,
+                @commandInput,
+                @expiresAt,
+                @reason,
+                @logMessageUrl
+            );
+            """,
+            NpgsqlParameterFactory.FromSnowflakeId("guildId", @case.GuildId),
+            NpgsqlParameterFactory.FromBoolean("guildNotExists", !botLogChannelId.HasValue),
+            NpgsqlParameterFactory.FromSnowflakeId("channelId", channelId),
+            NpgsqlParameterFactory.FromBoolean("channelIdHasValue", channelId.HasValue),
+            NpgsqlParameterFactory.FromSnowflakeId("perpetratorId", perpetratorId),
+            NpgsqlParameterFactory.FromSnowflakeId("targetId", targetId),
+            NpgsqlParameterFactory.FromVarchar("caseId", @case.Id),
+            NpgsqlParameterFactory.FromSnowflakeId("caseChannelId", @case.ChannelId),
+            NpgsqlParameterFactory.FromEnum32("logType", @case.LogType),
+            NpgsqlParameterFactory.FromEnum32("operationType", @case.OperationType),
+            NpgsqlParameterFactory.FromJsonB("commandInput", @case.CommandInputEmbedBuilder.ToJsonString(Formatting.None)),
+            NpgsqlParameterFactory.FromDateTime("expiresAt", @case.ExpiresAt),
+            NpgsqlParameterFactory.FromVarchar("reason", reason),
+            NpgsqlParameterFactory.FromVarchar("logMessageUrl", @case.LogMessageUrl)
+        );
 
         bool? successfulDm = null;
 
@@ -260,8 +300,6 @@ internal static class CaseUtils
             }
         }
 
-        await context.Interaction.FollowupAsync(successfulDm == false ? "Unable to DM user." : null, [commandLogEmbed], components: GenerateLogMessageButton(@case));
-
-        return guildEntity;
+        await context.Interaction.FollowupAsync(successfulDm == false ? "Unable to DM user." : null, [commandLogEmbed], components: GenerateLogMessageButton(@case.LogMessageUrl));
     }
 }

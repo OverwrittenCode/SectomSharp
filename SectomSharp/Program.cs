@@ -3,11 +3,13 @@ using Discord;
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
+using SectomSharp.Events;
 using SectomSharp.Services;
 using Serilog;
 using Serilog.Core;
@@ -21,14 +23,18 @@ builder.Configuration.AddUserSecrets<Program>(true, true).AddEnvironmentVariable
 
 Logger loggerConfig = new LoggerConfiguration().MinimumLevel.Debug()
                                                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
+                                               .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Information)
                                                .Enrich.FromLogContext()
                                                .WriteTo.Console()
                                                .CreateLogger();
 
+string connectionString = builder.Configuration["PostgreSQL:ConnectionString"] ?? throw new InvalidOperationException("Missing PostgreSQL connection string");
+
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(loggerConfig, true);
-
-builder.Services.AddDbContext<ApplicationDbContext>();
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options
+    => options.UseNpgsql(connectionString).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking).EnableSensitiveDataLogging()
+);
 
 builder.Services.AddSingleton(
     new DiscordSocketConfig
@@ -59,6 +65,7 @@ builder.Services.AddSingleton(
     }
 );
 
+builder.Services.AddSingleton<DiscordEvent>();
 builder.Services.AddSingleton<InteractionService>();
 
 builder.Services.AddHostedService<DiscordBotService>();

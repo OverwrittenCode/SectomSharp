@@ -28,7 +28,7 @@ public sealed partial class ModerationModule
         await DeferAsync();
         await user.SetTimeOutAsync(duration, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
 
-        await CaseUtils.LogAsync(Context, BotLogType.Timeout, operationType, user.Id, expiresAt: user.TimedOutUntil?.UtcDateTime, reason: reason);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Timeout, operationType, user.Id, expiresAt: user.TimedOutUntil?.UtcDateTime, reason: reason);
     }
 
     [SlashCmd("Remove a timeout from a user on the server")]
@@ -45,6 +45,6 @@ public sealed partial class ModerationModule
         await DeferAsync();
         await user.RemoveTimeOutAsync(DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
 
-        await CaseUtils.LogAsync(Context, BotLogType.Timeout, OperationType.Delete, user.Id, reason: reason);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Timeout, OperationType.Delete, user.Id, reason: reason);
     }
 }

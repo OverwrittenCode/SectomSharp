@@ -5,9 +5,9 @@ using SectomSharp.Extensions;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
-    public static async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
+    public async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
     {
         if (partialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message }
          || await GetDiscordWebhookClientAsync(guild, AuditLogType.Message) is not { } discordWebhookClient)
@@ -55,7 +55,7 @@ public static partial class DiscordEvent
         );
     }
 
-    public static async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
+    public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
     {
         if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } oldMessage }
          || await GetDiscordWebhookClientAsync(guild, AuditLogType.Message) is not { } discordWebhookClient)

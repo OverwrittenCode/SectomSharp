@@ -25,45 +25,19 @@ public sealed partial class MiscModule
 
     private static readonly Dictionary<UserProperties, string> Badges = new()
     {
-        {
-            UserProperties.Staff, "<:Staff:1301356970850258985>"
-        },
-        {
-            UserProperties.Partner, "<:Partner:1301356982758015056>"
-        },
-        {
-            UserProperties.HypeSquadEvents, "<:HypeSquadEvents:1301356855683059804>"
-        },
-        {
-            UserProperties.BugHunterLevel1, "<:BugHunterLevel1:1301357035601789040>"
-        },
-        {
-            UserProperties.HypeSquadBravery, "<:HypeSquadBravery:1301356944606494772>"
-        },
-        {
-            UserProperties.HypeSquadBrilliance, "<:HypeSquadBrilliance:1301356870526832760>"
-        },
-        {
-            UserProperties.HypeSquadBalance, "<:HypeSquadBalance:1301356957168570448>"
-        },
-        {
-            UserProperties.EarlySupporter, "<:EarlySupporter:1301357010553671680>"
-        },
-        {
-            UserProperties.BugHunterLevel2, "<:BugHunterLevel2:1301357023476322314>"
-        },
-        {
-            UserProperties.VerifiedBot, "<:VerifiedBot:1301356829871444020>"
-        },
-        {
-            UserProperties.EarlyVerifiedBotDeveloper, "<:EarlyVerifiedBotDeveloper:1301356781754384504>"
-        },
-        {
-            UserProperties.DiscordCertifiedModerator, "<:CertifiedModerator:1301356995638722592>"
-        },
-        {
-            UserProperties.ActiveDeveloper, "<:ActiveDeveloper:1301357048205934623>"
-        }
+        { UserProperties.Staff, "<:Staff:1301356970850258985>" },
+        { UserProperties.Partner, "<:Partner:1301356982758015056>" },
+        { UserProperties.HypeSquadEvents, "<:HypeSquadEvents:1301356855683059804>" },
+        { UserProperties.BugHunterLevel1, "<:BugHunterLevel1:1301357035601789040>" },
+        { UserProperties.HypeSquadBravery, "<:HypeSquadBravery:1301356944606494772>" },
+        { UserProperties.HypeSquadBrilliance, "<:HypeSquadBrilliance:1301356870526832760>" },
+        { UserProperties.HypeSquadBalance, "<:HypeSquadBalance:1301356957168570448>" },
+        { UserProperties.EarlySupporter, "<:EarlySupporter:1301357010553671680>" },
+        { UserProperties.BugHunterLevel2, "<:BugHunterLevel2:1301357023476322314>" },
+        { UserProperties.VerifiedBot, "<:VerifiedBot:1301356829871444020>" },
+        { UserProperties.EarlyVerifiedBotDeveloper, "<:EarlyVerifiedBotDeveloper:1301356781754384504>" },
+        { UserProperties.DiscordCertifiedModerator, "<:CertifiedModerator:1301356995638722592>" },
+        { UserProperties.ActiveDeveloper, "<:ActiveDeveloper:1301357048205934623>" }
     };
 
     [SlashCmd("Get information about a user in the server")]

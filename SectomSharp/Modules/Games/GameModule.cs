@@ -1,7 +1,9 @@
 using Discord;
 using Discord.Interactions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
+using SectomSharp.Data;
 
 namespace SectomSharp.Modules.Games;
 
@@ -11,5 +13,5 @@ namespace SectomSharp.Modules.Games;
 public sealed partial class GameModule : BaseModule<GameModule>
 {
     /// <inheritdoc />
-    public GameModule(ILogger<GameModule> logger) : base(logger) { }
+    public GameModule(ILogger<GameModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 }

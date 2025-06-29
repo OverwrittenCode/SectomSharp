@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Runtime.CompilerServices;
 using Discord;
 using Discord.Interactions;
@@ -20,11 +21,11 @@ public sealed partial class AdminModule
         private const string NotConfiguredMessage = "You cannot remove this configuration as it has not been configured.";
         private const string NothingToView = "Nothing to view yet.";
 
-        private static async Task LogAsync(SocketInteractionContext context, string? reason = null, ulong? channelId = null)
-            => await CaseUtils.LogAsync(context, BotLogType.Configuration, OperationType.Update, channelId: channelId, reason: reason);
+        private static async Task LogAsync(ApplicationDbContext db, SocketInteractionContext context, string? reason = null, ulong? channelId = null)
+            => await CaseUtils.LogAsync(db, context, BotLogType.Configuration, OperationType.Update, channelId: channelId, reason: reason);
 
         /// <inheritdoc />
-        public ConfigModule(ILogger<ConfigModule> logger) : base(logger) { }
+        public ConfigModule(ILogger<ConfigModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
         /// <summary>
         ///     Provides a base class for a disableable config command module to inherit from.
@@ -58,119 +59,90 @@ public sealed partial class AdminModule
                 }
             }
 
-            private static TConfig GetConfig(Guild guild)
+            /// <inheritdoc />
+            protected DisableableModule(ILogger<BaseModule<TThis>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+
+            private async Task WarningSetIsDisabledAsync(bool isDisabled, string? reason)
             {
-                if (typeof(TConfig) == typeof(WarningConfiguration))
+                await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                await db.Database.OpenConnectionAsync();
+                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+
+                cmd.CommandText = """
+                                  INSERT INTO "Guilds" ("Id", "Configuration_Warning_IsDisabled")
+                                  VALUES (@guildId, @isDisabled)
+                                  ON CONFLICT ("Id") DO UPDATE
+                                      SET "Configuration_Warning_IsDisabled" = @isDisabled
+                                      WHERE "Guilds"."Configuration_Warning_IsDisabled" IS DISTINCT FROM @isDisabled
+                                  RETURNING 1
+                                  """;
+
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
+
+                if (await cmd.ExecuteScalarAsync() is null)
                 {
-                    WarningConfiguration configuration = guild.Configuration.Warning;
-                    return Unsafe.As<WarningConfiguration, TConfig>(ref configuration);
+                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    return;
                 }
 
-                if (typeof(TConfig) == typeof(LevelingConfiguration))
-                {
-                    LevelingConfiguration configuration = guild.Configuration.Leveling;
-                    return Unsafe.As<LevelingConfiguration, TConfig>(ref configuration);
-                }
-
-                throw new NotSupportedException();
+                await LogAsync(db, Context, reason);
             }
 
-            /// <inheritdoc />
-            protected DisableableModule(ILogger<BaseModule<TThis>> logger) : base(logger) { }
+            private async Task LevelingSetIsDisabledAsync(bool isDisabled, string? reason)
+            {
+                await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                await db.Database.OpenConnectionAsync();
+                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+
+                cmd.CommandText = """
+                                  INSERT INTO "Guilds" ("Id", "Configuration_Leveling_IsDisabled")
+                                  VALUES (@guildId, @isDisabled)
+                                  ON CONFLICT ("Id") DO UPDATE
+                                      SET "Configuration_Leveling_IsDisabled" = @isDisabled
+                                      WHERE "Guilds"."Configuration_Leveling_IsDisabled" IS DISTINCT FROM @isDisabled
+                                  RETURNING 1
+                                  """;
+
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
+
+                if (await cmd.ExecuteScalarAsync() is null)
+                {
+                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    return;
+                }
+
+                await LogAsync(db, Context, reason);
+            }
 
             private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
             {
-                await DeferAsync();
-                await using (var db = new ApplicationDbContext())
+                if (typeof(TConfig) == typeof(WarningConfiguration))
                 {
-                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                    if (guild is null)
-                    {
-                        Configuration configuration;
-                        if (typeof(TConfig) == typeof(WarningConfiguration))
-                        {
-                            configuration = new Configuration
-                            {
-                                Warning = new WarningConfiguration
-                                {
-                                    IsDisabled = isDisabled
-                                }
-                            };
-                        }
-                        else if (typeof(TConfig) == typeof(LevelingConfiguration))
-                        {
-                            configuration = new Configuration
-                            {
-                                Leveling = new LevelingConfiguration
-                                {
-                                    IsDisabled = isDisabled
-                                }
-                            };
-                        }
-                        else
-                        {
-                            throw new NotSupportedException();
-                        }
-
-                        await db.Guilds.AddAsync(
-                            new Guild
-                            {
-                                Id = Context.Guild.Id,
-                                Configuration = configuration
-                            }
-                        );
-
-                        await db.SaveChangesAsync();
-                        await LogAsync(Context, reason);
-                        return;
-                    }
-
-                    TConfig config = GetConfig(guild);
-                    if (config.IsDisabled == isDisabled)
-                    {
-                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
-                        return;
-                    }
-
-                    config.IsDisabled = isDisabled;
-                    await db.SaveChangesAsync();
+                    await WarningSetIsDisabledAsync(isDisabled, reason);
                 }
-
-                await LogAsync(Context, reason);
+                else if (typeof(TConfig) == typeof(LevelingConfiguration))
+                {
+                    await LevelingSetIsDisabledAsync(isDisabled, reason);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
             }
 
-            protected async Task<(TConfig Config, EmbedBuilder EmbedBuilder)?> TryGetConfigurationViewAsync()
+            protected EmbedBuilder GetConfigurationEmbedBuilder(bool isDisabled)
             {
-                await DeferAsync();
-
-                await using var db = new ApplicationDbContext();
-
-                Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                if (guild is null)
-                {
-                    await db.Guilds.AddAsync(
-                        new Guild
-                        {
-                            Id = Context.Guild.Id
-                        }
-                    );
-                    await db.SaveChangesAsync();
-                    await RespondOrFollowupAsync(NothingToView);
-                    return null;
-                }
-
-                db.Entry(guild).State = EntityState.Detached;
-
-                TConfig config = GetConfig(guild);
                 EmbedBuilder embedBuilder = new EmbedBuilder().WithColor(Storage.LightGold);
-                if (config.IsDisabled)
+                if (isDisabled)
                 {
                     embedBuilder.WithFooter(ModuleIsCurrentlyDisabledMessage);
                 }
 
-                return (config, embedBuilder);
+                return embedBuilder;
             }
 
             [SlashCmd("Disable this configuration")]

@@ -1,28 +1,29 @@
-using System.Text;
-using Discord;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SectomSharp.Data.Extensions;
 
 namespace SectomSharp.Data.Entities;
 
-public sealed class LevelingRole
+public sealed class LevelingRole : Snowflake
 {
-    public required ulong Id { get; init; }
     public required uint Level { get; init; }
     public double? Multiplier { get; init; }
     public uint? Cooldown { get; init; }
+}
 
-    public string Display()
+public sealed class LevelingRoleConfiguration : SnowflakeConfiguration<LevelingRole>
+{
+    /// <inheritdoc />
+    public override void Configure(EntityTypeBuilder<LevelingRole> builder)
     {
-        var builder = new StringBuilder($"- Level {Level}: {MentionUtils.MentionRole(Id)}", 50);
-        if (Multiplier.HasValue)
-        {
-            builder.Append($" (x{Multiplier.Value:F2})");
-        }
-
-        if (Cooldown.HasValue)
-        {
-            builder.Append($" ({Cooldown.Value:D2}s)");
-        }
-
-        return builder.ToString();
+        builder.HasOne(role => role.Guild).WithMany(guild => guild.LevelingRoles).HasForeignKey(role => role.GuildId).IsRequired();
+        builder.Property(role => role.Level).IsRequiredNonNegativeInt();
+        builder.Property(role => role.Cooldown).IsNonNegativeInt();
+        builder.HasIndex(role => new
+            {
+                role.GuildId,
+                role.Level
+            }
+        );
+        base.Configure(builder);
     }
 }

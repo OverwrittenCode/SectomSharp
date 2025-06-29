@@ -1,9 +1,9 @@
 using Discord;
 using Discord.Interactions;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
-using SectomSharp.Data.Entities;
 using SectomSharp.Extensions;
 
 namespace SectomSharp.Modules;
@@ -19,10 +19,20 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     private string _source = null!;
 
     /// <summary>
+    ///     Gets the db factory.
+    /// </summary>
+    protected IDbContextFactory<ApplicationDbContext> DbContextFactory { get; }
+
+    /// <summary>
     ///     Creates a new instance of the class.
     /// </summary>
     /// <param name="logger">The logger.</param>
-    protected BaseModule(ILogger<BaseModule<TThis>> logger) => _logger = logger;
+    /// <param name="dbContextFactory">The factory for creating <see cref="ApplicationDbContext" /> instances.</param>
+    protected BaseModule(ILogger<BaseModule<TThis>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory)
+    {
+        _logger = logger;
+        DbContextFactory = dbContextFactory;
+    }
 
     /// <inheritdoc cref="DiscordExtensions.RespondOrFollowupAsync" />
     protected async Task RespondOrFollowupAsync(
@@ -35,23 +45,6 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
         PollProperties? poll = null
     )
         => await Context.Interaction.RespondOrFollowupAsync(text, embeds, ephemeral, allowedMentions, components, options, poll);
-
-    protected async Task<Guild> EnsureGuildAsync(ApplicationDbContext db)
-    {
-        Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-        if (guild is not null)
-        {
-            return guild;
-        }
-
-        guild = new Guild
-        {
-            Id = Context.Guild.Id
-        };
-
-        await db.Guilds.AddAsync(guild);
-        return guild;
-    }
 
     public override void BeforeExecute(ICommandInfo command)
     {

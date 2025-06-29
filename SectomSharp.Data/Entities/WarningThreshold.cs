@@ -1,39 +1,32 @@
-using Discord;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SectomSharp.Data.Enums;
+using SectomSharp.Data.Extensions;
 
 namespace SectomSharp.Data.Entities;
 
-public sealed class WarningThreshold
+public sealed class WarningThreshold : BaseOneToManyGuildRelation
 {
+    public required uint Value { get; init; }
     public required BotLogType LogType { get; init; }
-    public required int Value { get; init; }
 
     public TimeSpan? Span { get; init; }
+}
 
-    public string Display()
+public sealed class WarningThresholdConfiguration : BaseOneToManyGuildRelationConfiguration<WarningThreshold>
+{
+    /// <inheritdoc />
+    public override void Configure(EntityTypeBuilder<WarningThreshold> builder)
     {
-        string ordinalSuffix = Value % 100 is >= 11 and <= 13
-            ? "th"
-            : (Value % 10) switch
+        builder.HasOne(threshold => threshold.Guild).WithMany(guild => guild.WarningThresholds).HasForeignKey(threshold => threshold.GuildId).IsRequired();
+        builder.Property(threshold => threshold.Value).IsRequiredNonNegativeInt();
+        builder.Property(threshold => threshold.LogType).IsRequired();
+        builder.HasKey(threshold => new
             {
-                1 => "st",
-                2 => "nd",
-                3 => "rd",
-                _ => "th"
-            };
+                threshold.GuildId,
+                threshold.Value
+            }
+        );
 
-        string strikePosition = Value + ordinalSuffix;
-
-        string durationText = Span is not { } timeSpan
-            ? ""
-            : timeSpan switch
-            {
-                { Days: var d and > 0 } => $"{d} day",
-                { Hours: var h and > 0 } => $"{h} hour",
-                { Minutes: var m and > 0 } => $"{m} minute",
-                _ => $"{timeSpan.Seconds} second"
-            };
-
-        return $"- {strikePosition} Strike: {Format.Bold($"{durationText} {LogType}")}";
+        base.Configure(builder);
     }
 }

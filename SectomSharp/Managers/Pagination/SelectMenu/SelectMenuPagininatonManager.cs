@@ -23,10 +23,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
             SelectMenuPaginationManager instance = AllInstances[id];
             SelectMenuPaginatorPage page = instance._optionKvp.First(pair => pair.Key == values[0]).Value;
 
-            MessageComponent? components = new ComponentBuilder
-            {
-                ActionRows = [.. page.ActionRows]
-            }.Build();
+            MessageComponent? components = new ComponentBuilder { ActionRows = [.. page.ActionRows] }.Build();
 
             if (instance._responseType == SelectMenuResponse.Reply)
             {
@@ -81,10 +78,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
         _responseType = replyType;
         _firstPage = _optionKvp.First().Value;
 
-        var actionRow = new ActionRowBuilder
-        {
-            Components = [selectMenuBuilder1.Build()]
-        };
+        var actionRow = new ActionRowBuilder { Components = [selectMenuBuilder1.Build()] };
 
         if (isStickySelectMenu)
         {
@@ -103,10 +97,7 @@ internal sealed class SelectMenuPaginationManager : BasePagination<SelectMenuPag
     protected override async Task RespondOrFollowupAsync(SocketInteractionContext context)
         => await context.Interaction.RespondOrFollowupAsync(
             embeds: _firstPage.Embeds,
-            components: new ComponentBuilder
-            {
-                ActionRows = _firstPage.ActionRows
-            }.Build(),
+            components: new ComponentBuilder { ActionRows = _firstPage.ActionRows }.Build(),
             ephemeral: IsEphemeral
         );
 }

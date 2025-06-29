@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Newtonsoft.Json;
 using SectomSharp.Data.Enums;
+using SectomSharp.Data.Extensions;
 
 namespace SectomSharp.Data.Entities;
 
@@ -30,7 +31,7 @@ public sealed class Case : BaseOneToManyGuildRelation
     public string? LogMessageUrl { get; set; }
 }
 
-public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
+public sealed class CaseConfiguration : BaseOneToManyGuildRelationConfiguration<Case>
 {
     private const int LogMessageUrlMaxLength = 128;
 
@@ -40,9 +41,29 @@ public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
     /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<Case> builder)
     {
+        builder.Property(c => c.PerpetratorId).IsSnowflakeId();
+        builder.Property(c => c.TargetId).IsSnowflakeId();
+        builder.Property(c => c.ChannelId).IsSnowflakeId();
+
         builder.HasOne(@case => @case.Guild).WithMany(guild => guild.Cases).HasForeignKey(@case => @case.GuildId).IsRequired();
-        builder.HasOne(@case => @case.Perpetrator).WithMany(user => user.PerpetratorCases).HasForeignKey(@case => @case.PerpetratorId);
-        builder.HasOne(@case => @case.Target).WithMany(user => user.TargetCases).HasForeignKey(@case => @case.TargetId);
+
+        builder.HasOne(@case => @case.Perpetrator)
+       .WithMany(user => user.PerpetratorCases)
+       .HasForeignKey(@case => new
+            {
+                @case.GuildId,
+                @case.PerpetratorId
+            }
+        );
+        builder.HasOne(@case => @case.Target)
+       .WithMany(user => user.TargetCases)
+       .HasForeignKey(@case => new
+            {
+                @case.GuildId,
+                @case.TargetId
+            }
+        );
+
         builder.HasOne(@case => @case.Channel).WithMany(channel => channel.Cases).HasForeignKey(@case => @case.ChannelId);
 
         builder.Property(@case => @case.Reason).HasMaxLength(ReasonMaxLength);
@@ -53,24 +74,23 @@ public sealed class CaseConfiguration : BaseEntityConfiguration<Case>
         builder.Property(@case => @case.LogType).IsRequired();
         builder.Property(@case => @case.OperationType).IsRequired();
         builder.Property(@case => @case.CommandInputEmbedBuilder)
-               .HasConversion(embedBuilder => embedBuilder.ToJsonString(Formatting.Indented), json => EmbedBuilderUtils.Parse(json))
+               .HasConversion(embedBuilder => embedBuilder.ToJsonString(Formatting.None), json => EmbedBuilderUtils.Parse(json))
                .HasColumnType(Constants.PostgreSql.JsonB)
                .IsRequired();
 
-        builder.HasIndex(@case => @case.Id).IsUnique();
         builder.HasIndex(@case => new
-            {
-                @case.GuildId,
-                @case.TargetId,
-                @case.LogType,
-                @case.OperationType
-            }
-        );
+                    {
+                        @case.GuildId,
+                        @case.TargetId
+                    }
+                )
+               .HasFilter($"""    "{nameof(Case.LogType)}" = {(int)BotLogType.Warn} AND "{nameof(Case.OperationType)}" = {(int)OperationType.Create}""")
+               .HasDatabaseName("IX_Cases_GuildId_TargetId_Warn_Create");
 
         builder.HasKey(@case => new
             {
-                @case.Id,
-                @case.GuildId
+                @case.GuildId,
+                @case.Id
             }
         );
 

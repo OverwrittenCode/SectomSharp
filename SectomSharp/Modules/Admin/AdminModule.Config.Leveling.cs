@@ -1,9 +1,14 @@
+using System.Data.Common;
+using System.Text;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
 
@@ -14,40 +19,55 @@ public sealed partial class AdminModule
         [Group("leveling", "Leveling configuration")]
         public sealed class LevelingModule : DisableableModule<LevelingModule, LevelingConfiguration>
         {
+            private static readonly Func<ApplicationDbContext, ulong, Task<GuildAutoRolesView?>> TryGetAutoRoles = EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId)
+                => db.Guilds.Where(guild => guild.Id == guildId)
+                     .Select(guild => new GuildAutoRolesView(
+                              guild.Configuration.Leveling.IsDisabled,
+                              guild.LevelingRoles.OrderBy(role => role.Level).Select(role => new AutoRoleView(role.Id, role.Level, role.Multiplier, role.Cooldown))
+                          )
+                      )
+                     .FirstOrDefault()
+            );
+
             /// <inheritdoc />
-            public LevelingModule(ILogger<BaseModule<LevelingModule>> logger) : base(logger) { }
+            public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
             private async Task ModifySettingsAsync(string? reason, bool? accumulateMultipliers = null, double? globalMultiplier = null, uint? globalCooldown = null)
             {
                 await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                await db.Database.OpenConnectionAsync();
+                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
 
-                await using (var db = new ApplicationDbContext())
+                cmd.CommandText = """
+                                  UPDATE "Guilds"
+                                  SET
+                                      "Configuration_Leveling_AccumulateMultipliers" = COALESCE(@accumulateMultipliers, "Configuration_Leveling_AccumulateMultipliers"),
+                                      "Configuration_Leveling_GlobalMultiplier" = COALESCE(@globalMultiplier, "Configuration_Leveling_GlobalMultiplier"),
+                                      "Configuration_Leveling_GlobalCooldown" = COALESCE(@globalCooldown, "Configuration_Leveling_GlobalCooldown")
+                                  WHERE "Id" = @guildId
+                                  AND (
+                                      (@accumulateMultipliers IS NOT NULL AND @accumulateMultipliers != "Configuration_Leveling_AccumulateMultipliers")
+                                      OR (@globalMultiplier IS NOT NULL AND @globalMultiplier != "Configuration_Leveling_GlobalMultiplier")
+                                      OR (@globalCooldown IS NOT NULL AND @globalCooldown != "Configuration_Leveling_GlobalCooldown")
+                                  )
+                                  RETURNING 1
+                                  """;
+
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
+
+                bool success = await cmd.ExecuteScalarAsync() is not null;
+
+                if (!success)
                 {
-                    Guild guild = await EnsureGuildAsync(db);
-
-                    LevelingConfiguration config = guild.Configuration.Leveling;
-                    if (accumulateMultipliers.HasValue && accumulateMultipliers.Value != config.AccumulateMultipliers)
-                    {
-                        config.AccumulateMultipliers = accumulateMultipliers.Value;
-                    }
-                    else if (globalMultiplier.HasValue && Math.Abs(globalMultiplier.Value - config.GlobalMultiplier) > Double.Epsilon)
-                    {
-                        config.GlobalMultiplier = globalMultiplier.Value;
-                    }
-                    else if (globalCooldown.HasValue && globalCooldown.Value != config.GlobalCooldown)
-                    {
-                        config.GlobalCooldown = globalCooldown.Value;
-                    }
-                    else
-                    {
-                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
-                        return;
-                    }
-
-                    await db.SaveChangesAsync();
+                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    return;
                 }
 
-                await LogAsync(Context, reason);
+                await LogAsync(db, Context, reason);
             }
 
             [SlashCmd("Set if multipliers should accumulate")]
@@ -72,89 +92,100 @@ public sealed partial class AdminModule
             )
             {
                 await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                await db.Database.OpenConnectionAsync();
+                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
 
-                await using (var db = new ApplicationDbContext())
+                cmd.CommandText = """
+                                  WITH
+                                      guild_upsert AS (
+                                          INSERT INTO "Guilds" ("Id")
+                                          VALUES (@guildId)
+                                          ON CONFLICT ("Id") DO NOTHING
+                                      ),
+                                      inserted AS (
+                                          INSERT INTO "LevelingRoles" ("Id", "GuildId", "Level", "Multiplier", "Cooldown")
+                                          VALUES (@roleId, @guildId, @level, @multiplier, @cooldown)
+                                          ON CONFLICT DO NOTHING
+                                          RETURNING 1
+                                      )
+                                      SELECT 1 FROM inserted;
+                                  """;
+
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("roleId", role.Id));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("level", level));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
+
+                if (await cmd.ExecuteScalarAsync() is null)
                 {
-                    Guild guild = await EnsureGuildAsync(db);
-
-                    if (guild.Configuration.Leveling.AutoRoles.Exists(x => x.Level == level || x.Id == role.Id))
-                    {
-                        await RespondOrFollowupAsync(AlreadyConfiguredMessage);
-                        return;
-                    }
-
-                    guild.Configuration.Leveling.AutoRoles.Add(
-                        new LevelingRole
-                        {
-                            Id = role.Id,
-                            Level = level,
-                            Multiplier = multiplier,
-                            Cooldown = cooldown
-                        }
-                    );
-                    await db.SaveChangesAsync();
+                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    return;
                 }
 
-                await LogAsync(Context, reason);
+                await LogAsync(db, Context, reason);
             }
 
             [SlashCmd("Removes an auto role for a certain level")]
             public async Task RemoveAutoRole([Summary(description: "The level to remove")] [MinValue(1)] uint level, [ReasonMaxLength] string? reason = null)
             {
                 await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                int affectedRows = await db.LevelingRoles.Where(role => role.GuildId == Context.Guild.Id && role.Level == level).ExecuteDeleteAsync();
 
-                await using (var db = new ApplicationDbContext())
+                if (affectedRows == 0)
                 {
-                    Guild? guild = await db.Guilds.FindAsync(Context.Guild.Id);
-
-                    if (guild is null)
-                    {
-                        await db.Guilds.AddAsync(
-                            new Guild
-                            {
-                                Id = Context.Guild.Id
-                            }
-                        );
-
-                        await db.SaveChangesAsync();
-                        await RespondOrFollowupAsync(NotConfiguredMessage);
-                        return;
-                    }
-
-                    LevelingRole? match = guild.Configuration.Leveling.AutoRoles.Find(x => x.Level == level);
-
-                    if (match is null)
-                    {
-                        await RespondOrFollowupAsync(NotConfiguredMessage);
-                        return;
-                    }
-
-                    guild.Configuration.Leveling.AutoRoles.Remove(match);
-                    await db.SaveChangesAsync();
+                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    return;
                 }
 
-                await LogAsync(Context, reason);
+                await LogAsync(db, Context, reason);
             }
 
             [SlashCmd("View the configured auto roles")]
             public async Task ViewAutoRoles()
             {
-                if (await TryGetConfigurationViewAsync() is not var (levelingConfiguration, embedBuilder))
-                {
-                    return;
-                }
+                await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                GuildAutoRolesView? result = await TryGetAutoRoles(db, Context.Guild.Id);
 
-                if (levelingConfiguration.AutoRoles.Count == 0)
+                if (result?.AutoRoles.Any() != true)
                 {
                     await RespondOrFollowupAsync(NothingToView);
                     return;
                 }
 
+                EmbedBuilder embedBuilder = GetConfigurationEmbedBuilder(result.IsDisabled);
+
                 embedBuilder.WithTitle($"{Context.Guild.Name} Leveling Auto Roles")
-                            .WithDescription(String.Join('\n', levelingConfiguration.AutoRoles.OrderBy(autoRole => autoRole.Level).Select(autoRole => autoRole.Display())));
+                            .WithDescription(
+                                 String.Join(
+                                     '\n',
+                                     result.AutoRoles.Select(autoRole =>
+                                         {
+                                             var builder = new StringBuilder($"- Level {autoRole.Level}: {MentionUtils.MentionRole(autoRole.Id)}", 50);
+                                             if (autoRole.Multiplier.HasValue)
+                                             {
+                                                 builder.Append($" (x{autoRole.Multiplier.Value:0.##})");
+                                             }
+
+                                             if (autoRole.Cooldown.HasValue)
+                                             {
+                                                 builder.Append($" ({autoRole.Cooldown.Value}s)");
+                                             }
+
+                                             return builder.ToString();
+                                         }
+                                     )
+                                 )
+                             );
 
                 await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
             }
+
+            private sealed record AutoRoleView(ulong Id, uint Level, double? Multiplier, uint? Cooldown);
+            private sealed record GuildAutoRolesView(bool IsDisabled, IEnumerable<AutoRoleView> AutoRoles);
         }
     }
 }

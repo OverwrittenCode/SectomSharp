@@ -206,10 +206,7 @@ public sealed partial class GameModule
         await ModifyOriginalResponseAsync(properties =>
             {
                 properties.Components = components.Components.FromComponentsWithAllDisabled().Build();
-                properties.Embeds = new[]
-                {
-                    embedBuilder.WithColor(Color.Red).WithDescription("Request declined.").Build()
-                };
+                properties.Embeds = new[] { embedBuilder.WithColor(Color.Red).WithDescription("Request declined.").Build() };
             }
         );
 

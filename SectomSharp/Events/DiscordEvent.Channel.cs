@@ -5,7 +5,7 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
     private static bool TryGetGuildChannel(SocketChannel socketChannel, [MaybeNullWhen(false)] out IGuildChannel guildChannel)
     {
@@ -82,7 +82,7 @@ public static partial class DiscordEvent
         return String.Join('\n', parts);
     }
 
-    private static async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)
+    private async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)
     {
         if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel)
          || await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel) is not { } discordWebhookClient)
@@ -148,11 +148,11 @@ public static partial class DiscordEvent
         await LogAsync(guildChannel.Guild, discordWebhookClient, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
-    public static async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
+    public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
 
-    public static async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
+    public async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
 
-    public static async Task HandleChannelUpdatedAsync(SocketChannel oldSocketChannel, SocketChannel newSocketChannel)
+    public async Task HandleChannelUpdatedAsync(SocketChannel oldSocketChannel, SocketChannel newSocketChannel)
     {
         if (!(TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel) && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel))
          || oldChannel.Position != newChannel.Position

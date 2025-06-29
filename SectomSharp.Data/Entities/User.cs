@@ -12,12 +12,18 @@ public sealed class User : Snowflake
     public ICollection<Case> PerpetratorCases { get; private set; } = [];
 }
 
-public sealed class UserConfiguration : BaseEntityConfiguration<User>
+public sealed class UserConfiguration : SnowflakeConfiguration<User>
 {
     /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<User> builder)
     {
         builder.HasOne(user => user.Guild).WithMany(guild => guild.Users).HasForeignKey(user => user.GuildId).IsRequired();
+        builder.HasKey(user => new
+            {
+                user.GuildId,
+                user.Id
+            }
+        );
         base.Configure(builder);
     }
 }

@@ -21,6 +21,6 @@ public sealed partial class ModerationModule
 
         await DeferAsync();
         await user.ModifyAsync(properties => properties.Mute = true, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseUtils.LogAsync(Context, BotLogType.Mute, OperationType.Create, user.Id, reason: reason);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Mute, OperationType.Create, user.Id, reason: reason);
     }
 }

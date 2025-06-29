@@ -26,7 +26,7 @@ public sealed partial class ModerationModule
 
         await DeferAsync();
         await Context.Guild.BanUserAsync(user, GetPruneSeconds(pruneDays), DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseUtils.LogAsync(Context, BotLogType.Ban, OperationType.Create, user.Id, reason: reason);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Ban, OperationType.Create, user.Id, reason: reason);
     }
 
     [SlashCmd("Ban a user to prune their messages and then immediately unban them from the server")]
@@ -45,7 +45,7 @@ public sealed partial class ModerationModule
         await DeferAsync();
         await Context.Guild.BanUserAsync(user, pruneDays, requestOptions);
         await Context.Guild.RemoveBanAsync(user, requestOptions);
-        await CaseUtils.LogAsync(Context, BotLogType.Softban, OperationType.Create, user.Id, reason: reason);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Softban, OperationType.Create, user.Id, reason: reason);
     }
 
     [SlashCmd("Unban a user from the server")]
@@ -61,6 +61,6 @@ public sealed partial class ModerationModule
 
         await DeferAsync();
         await Context.Guild.RemoveBanAsync(user, DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-        await CaseUtils.LogAsync(Context, BotLogType.Ban, OperationType.Delete, user.Id, reason: reason);
+        await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Ban, OperationType.Delete, user.Id, reason: reason);
     }
 }

@@ -6,7 +6,7 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
     private static async Task HandleGuildEmoteAsync(
         SocketGuild newGuild,

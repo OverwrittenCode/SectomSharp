@@ -4,9 +4,9 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
-    private static async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
+    private async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
     {
         if (await GetDiscordWebhookClientAsync(thread.Guild, AuditLogType.Thread) is not { } discordWebhookClient)
         {
@@ -25,12 +25,12 @@ public static partial class DiscordEvent
         await LogAsync(thread.Guild, discordWebhookClient, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
     }
 
-    public static async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
+    public async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
 
-    public static async Task HandleThreadDeleteAsync(Cacheable<SocketThreadChannel, ulong> partialThread)
+    public async Task HandleThreadDeleteAsync(Cacheable<SocketThreadChannel, ulong> partialThread)
         => await HandleThreadAlteredAsync(await partialThread.GetOrDownloadAsync(), OperationType.Delete);
 
-    public static async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
+    public async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
     {
         if (await GetDiscordWebhookClientAsync(newThread.Guild, AuditLogType.Thread) is not { } discordWebhookClient)
         {

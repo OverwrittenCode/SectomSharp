@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -5,8 +6,11 @@ namespace SectomSharp.Data.Entities;
 
 public abstract class BaseEntity
 {
-    public DateTime CreatedAt { get; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; internal set; }
+    public DateTime CreatedAt
+    {
+        get;
+        [UsedImplicitly(Reason = Constants.ValueGeneratedOnAdd)] private set;
+    }
 }
 
 public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
@@ -14,8 +18,5 @@ public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
 {
     /// <inheritdoc />
     public virtual void Configure(EntityTypeBuilder<T> builder)
-    {
-        builder.Property(entity => entity.CreatedAt).HasColumnType(Constants.PostgreSql.Timestamptz).IsRequired();
-        builder.Property(entity => entity.UpdatedAt).HasColumnType(Constants.PostgreSql.Timestamptz);
-    }
+        => builder.Property(e => e.CreatedAt).HasColumnType(Constants.PostgreSql.Timestamptz).HasDefaultValueSql(Constants.PostgreSql.Now).ValueGeneratedOnAdd().IsRequired();
 }

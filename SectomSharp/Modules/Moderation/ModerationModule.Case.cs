@@ -20,26 +20,30 @@ public sealed partial class ModerationModule
     public sealed class CaseModule : BaseModule<CaseModule>
     {
         /// <inheritdoc />
-        public CaseModule(ILogger<CaseModule> logger) : base(logger) { }
+        public CaseModule(ILogger<CaseModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
         [SlashCmd("View a specific case on the server")]
         public async Task View([MinLength(CaseConfiguration.IdLength)] [MaxLength(CaseConfiguration.IdLength)] string id)
         {
             await DeferAsync();
 
-            await using var dbContext = new ApplicationDbContext();
+            await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+            var result = await db.Cases.Where(c => c.GuildId == Context.Guild.Id && c.Id == id)
+                                 .Select(c => new
+                                      {
+                                          c.CommandInputEmbedBuilder,
+                                          c.LogMessageUrl
+                                      }
+                                  )
+                                 .FirstOrDefaultAsync();
 
-            Case? @case = await dbContext.Cases.FindAsync(id, Context.Guild.Id);
-
-            if (@case is null)
+            if (result is null)
             {
                 await RespondOrFollowupAsync("Invalid case id provided.");
                 return;
             }
 
-            dbContext.Entry(@case).State = EntityState.Detached;
-
-            await RespondOrFollowupAsync(embeds: [@case.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(@case));
+            await RespondOrFollowupAsync(embeds: [result.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(result.LogMessageUrl));
         }
 
         [SlashCmd("List and filter all cases on the server")]
@@ -47,8 +51,8 @@ public sealed partial class ModerationModule
         {
             await DeferAsync();
 
-            await using var dbContext = new ApplicationDbContext();
-            IQueryable<Case> query = dbContext.Cases.Where(@case => @case.GuildId == Context.Guild.Id).AsNoTracking();
+            await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+            IQueryable<Case> query = db.Cases.Where(@case => @case.GuildId == Context.Guild.Id);
 
             if (target?.Id is { } targetId)
             {
@@ -100,10 +104,7 @@ public sealed partial class ModerationModule
 
             Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Cases ({cases.Count})");
 
-            var pagination = new ButtonPaginationBuilder
-            {
-                Embeds = [.. embeds]
-            };
+            var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
 
             await pagination.Build().Init(Context);
         }

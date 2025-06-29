@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SectomSharp.Data;
@@ -11,9 +12,11 @@ using SectomSharp.Data;
 namespace SectomSharp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250625011404_Performance-Improvements")]
+    partial class PerformanceImprovements
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,19 +27,21 @@ namespace SectomSharp.Data.Migrations
 
             modelBuilder.Entity("SectomSharp.Data.Entities.AuditLogChannel", b =>
                 {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
 
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("GuildId")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.Property<string>("WebhookUrl")
                         .IsRequired()
@@ -52,19 +57,21 @@ namespace SectomSharp.Data.Migrations
 
             modelBuilder.Entity("SectomSharp.Data.Entities.BotLogChannel", b =>
                 {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
 
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("GuildId")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("Id");
 
@@ -75,24 +82,22 @@ namespace SectomSharp.Data.Migrations
 
             modelBuilder.Entity("SectomSharp.Data.Entities.Case", b =>
                 {
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("GuildId")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<string>("Id")
                         .HasMaxLength(6)
                         .HasColumnType("character varying(6)");
 
-                    b.Property<long?>("ChannelId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal?>("ChannelId")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<string>("CommandInputEmbedBuilder")
                         .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
 
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamptz");
@@ -107,15 +112,18 @@ namespace SectomSharp.Data.Migrations
                     b.Property<int>("OperationType")
                         .HasColumnType("integer");
 
-                    b.Property<long?>("PerpetratorId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal?>("PerpetratorId")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<long?>("TargetId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal?>("TargetId")
+                        .HasColumnType("numeric(20,0)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("GuildId", "Id");
 
@@ -132,16 +140,18 @@ namespace SectomSharp.Data.Migrations
 
             modelBuilder.Entity("SectomSharp.Data.Entities.Channel", b =>
                 {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
 
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("GuildId")
+                        .HasColumnType("numeric(20,0)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("Id");
 
@@ -152,88 +162,60 @@ namespace SectomSharp.Data.Migrations
 
             modelBuilder.Entity("SectomSharp.Data.Entities.Guild", b =>
                 {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("Id");
 
                     b.ToTable("Guilds");
                 });
 
-            modelBuilder.Entity("SectomSharp.Data.Entities.LevelingRole", b =>
+            modelBuilder.Entity("SectomSharp.Data.Entities.Role", b =>
                 {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("Cooldown")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
 
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("GuildId")
+                        .HasColumnType("numeric(20,0)");
 
-                    b.Property<int>("Level")
-                        .HasColumnType("integer");
-
-                    b.Property<double?>("Multiplier")
-                        .HasColumnType("double precision");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GuildId", "Level");
+                    b.HasIndex("GuildId", "Id");
 
-                    b.ToTable("LevelingRoles");
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.User", b =>
                 {
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("GuildId")
+                        .HasColumnType("numeric(20,0)");
 
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("Id")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("GuildId", "Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("SectomSharp.Data.Entities.WarningThreshold", b =>
-                {
-                    b.Property<long>("GuildId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Value")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<int>("LogType")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan?>("Span")
-                        .HasColumnType("interval");
-
-                    b.HasKey("GuildId", "Value");
-
-                    b.ToTable("WarningThresholds");
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.AuditLogChannel", b =>
@@ -302,38 +284,34 @@ namespace SectomSharp.Data.Migrations
                 {
                     b.OwnsOne("SectomSharp.Data.Entities.Configuration", "Configuration", b1 =>
                         {
-                            b1.Property<long>("GuildId")
-                                .HasColumnType("bigint");
+                            b1.Property<decimal>("GuildId")
+                                .HasColumnType("numeric(20,0)");
 
                             b1.HasKey("GuildId");
 
                             b1.ToTable("Guilds");
+
+                            b1.ToJson("Configuration");
 
                             b1.WithOwner()
                                 .HasForeignKey("GuildId");
 
                             b1.OwnsOne("SectomSharp.Data.Entities.LevelingConfiguration", "Leveling", b2 =>
                                 {
-                                    b2.Property<long>("ConfigurationGuildId")
-                                        .HasColumnType("bigint");
+                                    b2.Property<decimal>("ConfigurationGuildId")
+                                        .HasColumnType("numeric(20,0)");
 
                                     b2.Property<bool>("AccumulateMultipliers")
                                         .HasColumnType("boolean");
 
-                                    b2.Property<int>("GlobalCooldown")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("integer")
-                                        .HasDefaultValue(3);
+                                    b2.Property<long>("GlobalCooldown")
+                                        .HasColumnType("bigint");
 
                                     b2.Property<double>("GlobalMultiplier")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("double precision")
-                                        .HasDefaultValue(1.0);
+                                        .HasColumnType("double precision");
 
                                     b2.Property<bool>("IsDisabled")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("boolean")
-                                        .HasDefaultValue(false);
+                                        .HasColumnType("boolean");
 
                                     b2.HasKey("ConfigurationGuildId");
 
@@ -341,17 +319,46 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.WithOwner()
                                         .HasForeignKey("ConfigurationGuildId");
+
+                                    b2.OwnsMany("SectomSharp.Data.Entities.LevelingRole", "AutoRoles", b3 =>
+                                        {
+                                            b3.Property<decimal>("LevelingConfigurationConfigurationGuildId")
+                                                .HasColumnType("numeric(20,0)");
+
+                                            b3.Property<int>("__synthesizedOrdinal")
+                                                .ValueGeneratedOnAdd()
+                                                .HasColumnType("integer");
+
+                                            b3.Property<long?>("Cooldown")
+                                                .HasColumnType("bigint");
+
+                                            b3.Property<decimal>("Id")
+                                                .HasColumnType("numeric(20,0)");
+
+                                            b3.Property<long>("Level")
+                                                .HasColumnType("bigint");
+
+                                            b3.Property<double?>("Multiplier")
+                                                .HasColumnType("double precision");
+
+                                            b3.HasKey("LevelingConfigurationConfigurationGuildId", "__synthesizedOrdinal");
+
+                                            b3.ToTable("Guilds");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("LevelingConfigurationConfigurationGuildId");
+                                        });
+
+                                    b2.Navigation("AutoRoles");
                                 });
 
                             b1.OwnsOne("SectomSharp.Data.Entities.WarningConfiguration", "Warning", b2 =>
                                 {
-                                    b2.Property<long>("ConfigurationGuildId")
-                                        .HasColumnType("bigint");
+                                    b2.Property<decimal>("ConfigurationGuildId")
+                                        .HasColumnType("numeric(20,0)");
 
                                     b2.Property<bool>("IsDisabled")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("boolean")
-                                        .HasDefaultValue(false);
+                                        .HasColumnType("boolean");
 
                                     b2.HasKey("ConfigurationGuildId");
 
@@ -359,6 +366,34 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.WithOwner()
                                         .HasForeignKey("ConfigurationGuildId");
+
+                                    b2.OwnsMany("SectomSharp.Data.Entities.WarningThreshold", "Thresholds", b3 =>
+                                        {
+                                            b3.Property<decimal>("WarningConfigurationConfigurationGuildId")
+                                                .HasColumnType("numeric(20,0)");
+
+                                            b3.Property<int>("__synthesizedOrdinal")
+                                                .ValueGeneratedOnAdd()
+                                                .HasColumnType("integer");
+
+                                            b3.Property<int>("LogType")
+                                                .HasColumnType("integer");
+
+                                            b3.Property<TimeSpan?>("Span")
+                                                .HasColumnType("interval");
+
+                                            b3.Property<int>("Value")
+                                                .HasColumnType("integer");
+
+                                            b3.HasKey("WarningConfigurationConfigurationGuildId", "__synthesizedOrdinal");
+
+                                            b3.ToTable("Guilds");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("WarningConfigurationConfigurationGuildId");
+                                        });
+
+                                    b2.Navigation("Thresholds");
                                 });
 
                             b1.Navigation("Leveling")
@@ -372,10 +407,10 @@ namespace SectomSharp.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SectomSharp.Data.Entities.LevelingRole", b =>
+            modelBuilder.Entity("SectomSharp.Data.Entities.Role", b =>
                 {
                     b.HasOne("SectomSharp.Data.Entities.Guild", "Guild")
-                        .WithMany("LevelingRoles")
+                        .WithMany("Roles")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -387,17 +422,6 @@ namespace SectomSharp.Data.Migrations
                 {
                     b.HasOne("SectomSharp.Data.Entities.Guild", "Guild")
                         .WithMany("Users")
-                        .HasForeignKey("GuildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Guild");
-                });
-
-            modelBuilder.Entity("SectomSharp.Data.Entities.WarningThreshold", b =>
-                {
-                    b.HasOne("SectomSharp.Data.Entities.Guild", "Guild")
-                        .WithMany("WarningThresholds")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -420,11 +444,9 @@ namespace SectomSharp.Data.Migrations
 
                     b.Navigation("Channels");
 
-                    b.Navigation("LevelingRoles");
+                    b.Navigation("Roles");
 
                     b.Navigation("Users");
-
-                    b.Navigation("WarningThresholds");
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.User", b =>

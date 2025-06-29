@@ -4,9 +4,9 @@ using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
-    public static async Task HandleGuildMemberUpdatedAsync(Cacheable<SocketGuildUser, ulong> oldPartialUser, SocketGuildUser newUser)
+    public async Task HandleGuildMemberUpdatedAsync(Cacheable<SocketGuildUser, ulong> oldPartialUser, SocketGuildUser newUser)
     {
         if (await GetDiscordWebhookClientAsync(newUser.Guild, AuditLogType.Member) is not { } discordWebhookClient)
         {

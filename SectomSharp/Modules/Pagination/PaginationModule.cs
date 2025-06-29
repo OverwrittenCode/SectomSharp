@@ -1,6 +1,8 @@
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
+using SectomSharp.Data;
 using SectomSharp.Managers.Pagination.Button;
 using SectomSharp.Managers.Pagination.SelectMenu;
 
@@ -9,7 +11,7 @@ namespace SectomSharp.Modules.Pagination;
 public sealed class PaginationModule : BaseModule<PaginationModule>
 {
     /// <inheritdoc />
-    public PaginationModule(ILogger<PaginationModule> logger) : base(logger) { }
+    public PaginationModule(ILogger<PaginationModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
     /// <inheritdoc cref="ButtonPaginationManager.OnHit(SocketMessageComponent, String, PageNavigationButton)" />
     [RegexComponentInteraction<ButtonPaginationManager>(nameof(id), nameof(position))]

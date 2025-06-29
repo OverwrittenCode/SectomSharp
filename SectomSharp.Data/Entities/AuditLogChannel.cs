@@ -7,10 +7,10 @@ public sealed class AuditLogChannel : Snowflake
 {
     public required string WebhookUrl { get; init; }
 
-    public required AuditLogType Type { get; set; }
+    public required AuditLogType Type { get; init; }
 }
 
-public sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<AuditLogChannel>
+public sealed class AuditLogChannelConfiguration : SnowflakeConfiguration<AuditLogChannel>
 {
     private const int WebhookUrlLength = 255;
 
@@ -20,6 +20,12 @@ public sealed class AuditLogChannelConfiguration : BaseEntityConfiguration<Audit
         builder.HasOne(channel => channel.Guild).WithMany(guild => guild.AuditLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();
         builder.Property(channel => channel.Type).IsRequired();
         builder.Property(channel => channel.WebhookUrl).IsRequired().HasMaxLength(WebhookUrlLength);
+        builder.HasIndex(c => new
+            {
+                c.GuildId,
+                c.Id
+            }
+        );
         base.Configure(builder);
     }
 }

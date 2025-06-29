@@ -1,28 +1,48 @@
 ﻿using System.Collections.Immutable;
 using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
+using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
 
-public static partial class DiscordEvent
+public sealed partial class DiscordEvent
 {
-    public static async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
+    public async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
     {
-        if (await GetAuditLogChannelsAsync(newGuild) is not { } auditLogChannels)
+        await using ApplicationDbContext db = await _dbFactory.CreateDbContextAsync();
+
+        if (await db.AuditLogChannels.Where(channel => channel.GuildId == newGuild.Id && ((int)channel.Type & (int)(AuditLogType.Emoji | AuditLogType.Server)) != 0)
+                    .Select(channel => new
+                         {
+                             channel.Type,
+                             channel.WebhookUrl
+                         }
+                     )
+                    .Take(2)
+                    .ToArrayAsync() is not { } auditLogChannels)
         {
             return;
         }
 
-        if (GetDiscordWebhookClient(auditLogChannels, AuditLogType.Emoji) is { } emojiDiscordWebhookClient)
+        if (auditLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(AuditLogType.Emoji))?.WebhookUrl is { } emojiChannelWebhookUrl)
         {
-            await HandleGuildEmoteAsync(newGuild, emojiDiscordWebhookClient, (ImmutableArray<GuildEmote>)oldGuild.Emotes, (ImmutableArray<GuildEmote>)newGuild.Emotes);
+            await HandleGuildEmoteAsync(
+                newGuild,
+                new DiscordWebhookClient(emojiChannelWebhookUrl),
+                (ImmutableArray<GuildEmote>)oldGuild.Emotes,
+                (ImmutableArray<GuildEmote>)newGuild.Emotes
+            );
         }
 
-        if (GetDiscordWebhookClient(auditLogChannels, AuditLogType.Server) is not { } serverDiscordWebhookClient)
+        if (auditLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(AuditLogType.Server))?.WebhookUrl is not { } serverChannelWebhookUrl)
         {
             return;
         }
+
+        var serverDiscordWebhookClient = new DiscordWebhookClient(serverChannelWebhookUrl);
 
         List<AuditLogEntry> entries =
         [
