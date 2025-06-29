@@ -21,6 +21,22 @@ public sealed partial class AdminModule
             private const int MinThreshold = 1;
             private const int MaxThreshold = 20;
 
+            private static readonly Func<ApplicationDbContext, ulong, Task<ResultSet<WarningThresholdEntry>?>> TryGetWarningThresholds =
+                EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId) => db.Guilds.Where(guild => guild.Id == guildId)
+                                                                                   .Select(guild => new ResultSet<WarningThresholdEntry>(
+                                                                                            guild.Configuration.Warning.IsDisabled,
+                                                                                            guild.WarningThresholds.OrderBy(threshold => threshold.Value)
+                                                                                                 .Select(threshold => new WarningThresholdEntry(
+                                                                                                          threshold.Value,
+                                                                                                          threshold.LogType,
+                                                                                                          threshold.Span
+                                                                                                      )
+                                                                                                  )
+                                                                                        )
+                                                                                    )
+                                                                                   .FirstOrDefault()
+                );
+
             /// <inheritdoc />
             public WarnModule(ILogger<WarnModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
@@ -96,23 +112,9 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
 
-                var result = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id)
-                                     .Select(guild => new
-                                          {
-                                              guild.Configuration.Warning.IsDisabled,
-                                              Thresholds = guild.WarningThresholds.OrderBy(threshold => threshold.Value)
-                                             .Select(threshold => new
-                                                  {
-                                                      threshold.Value,
-                                                      threshold.LogType,
-                                                      threshold.Span
-                                                  }
-                                              )
-                                          }
-                                      )
-                                     .FirstOrDefaultAsync();
+                ResultSet<WarningThresholdEntry>? result = await TryGetWarningThresholds(db, Context.Guild.Id);
 
-                if (result?.Thresholds.Any() != true)
+                if (result?.Items.Any() != true)
                 {
                     await RespondOrFollowupAsync(NothingToView);
                     return;
@@ -124,7 +126,7 @@ public sealed partial class AdminModule
                             .WithDescription(
                                  String.Join(
                                      '\n',
-                                     result.Thresholds.Select(threshold =>
+                                     result.Items.Select(threshold =>
                                          {
                                              string ordinalSuffix = threshold.Value % 100 is >= 11 and <= 13
                                                  ? "th"
@@ -156,6 +158,8 @@ public sealed partial class AdminModule
 
                 await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
             }
+
+            private sealed record WarningThresholdEntry(uint Value, BotLogType LogType, TimeSpan? Span);
         }
     }
 }

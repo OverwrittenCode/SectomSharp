@@ -149,6 +149,8 @@ public sealed partial class AdminModule
 
             [SlashCmd("Enable this configuration")]
             public async Task Enable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(false, reason);
+
+            protected sealed record ResultSet<T>(bool IsDisabled, IEnumerable<T> Items);
         }
     }
 }

@@ -19,15 +19,22 @@ public sealed partial class AdminModule
         [Group("leveling", "Leveling configuration")]
         public sealed class LevelingModule : DisableableModule<LevelingModule, LevelingConfiguration>
         {
-            private static readonly Func<ApplicationDbContext, ulong, Task<GuildAutoRolesView?>> TryGetAutoRoles = EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId)
-                => db.Guilds.Where(guild => guild.Id == guildId)
-                     .Select(guild => new GuildAutoRolesView(
-                              guild.Configuration.Leveling.IsDisabled,
-                              guild.LevelingRoles.OrderBy(role => role.Level).Select(role => new AutoRoleView(role.Id, role.Level, role.Multiplier, role.Cooldown))
-                          )
-                      )
-                     .FirstOrDefault()
-            );
+            private static readonly Func<ApplicationDbContext, ulong, Task<ResultSet<AutoRoleEntry>?>> TryGetAutoRoles =
+                EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId) => db.Guilds.Where(guild => guild.Id == guildId)
+                                                                                   .Select(guild => new ResultSet<AutoRoleEntry>(
+                                                                                            guild.Configuration.Leveling.IsDisabled,
+                                                                                            guild.LevelingRoles.OrderBy(role => role.Level)
+                                                                                                 .Select(role => new AutoRoleEntry(
+                                                                                                      role.Id,
+                                                                                                      role.Level,
+                                                                                                      role.Multiplier,
+                                                                                                      role.Cooldown
+                                                                                                  )
+                                                                                                  )
+                                                                                        )
+                                                                                    )
+                                                                                   .FirstOrDefault()
+                );
 
             /// <inheritdoc />
             public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
@@ -146,9 +153,9 @@ public sealed partial class AdminModule
             {
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                GuildAutoRolesView? result = await TryGetAutoRoles(db, Context.Guild.Id);
+                ResultSet<AutoRoleEntry>? result = await TryGetAutoRoles(db, Context.Guild.Id);
 
-                if (result?.AutoRoles.Any() != true)
+                if (result?.Items.Any() != true)
                 {
                     await RespondOrFollowupAsync(NothingToView);
                     return;
@@ -160,7 +167,7 @@ public sealed partial class AdminModule
                             .WithDescription(
                                  String.Join(
                                      '\n',
-                                     result.AutoRoles.Select(autoRole =>
+                                     result.Items.Select(autoRole =>
                                          {
                                              var builder = new StringBuilder($"- Level {autoRole.Level}: {MentionUtils.MentionRole(autoRole.Id)}", 50);
                                              if (autoRole.Multiplier.HasValue)
@@ -182,8 +189,7 @@ public sealed partial class AdminModule
                 await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
             }
 
-            private sealed record AutoRoleView(ulong Id, uint Level, double? Multiplier, uint? Cooldown);
-            private sealed record GuildAutoRolesView(bool IsDisabled, IEnumerable<AutoRoleView> AutoRoles);
+            private sealed record AutoRoleEntry(ulong Id, uint Level, double? Multiplier, uint? Cooldown);
         }
     }
 }
