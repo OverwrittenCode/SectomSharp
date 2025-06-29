@@ -59,9 +59,7 @@ public sealed partial class AdminModule
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
 
-                bool success = await cmd.ExecuteScalarAsync() is not null;
-
-                if (!success)
+                if (await cmd.ExecuteScalarAsync() is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;

@@ -218,9 +218,7 @@ public sealed partial class AdminModule
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                bool isSuccess = await cmd.ExecuteScalarAsync() is true;
-
-                if (!isSuccess)
+                if (await cmd.ExecuteScalarAsync() is not true)
                 {
                     await RespondOrFollowupAsync(NotConfiguredMessage);
                     return;
@@ -269,9 +267,7 @@ public sealed partial class AdminModule
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                bool isSuccess = await cmd.ExecuteScalarAsync() is true;
-
-                if (!isSuccess)
+                if (await cmd.ExecuteScalarAsync() is not true)
                 {
                     await RespondOrFollowupAsync(NotConfiguredMessage);
                     return;
