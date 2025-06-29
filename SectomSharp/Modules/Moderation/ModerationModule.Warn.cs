@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Data;
 using System.Data.Common;
 using Discord;
 using Discord.Interactions;
@@ -69,7 +70,7 @@ public sealed partial class ModerationModule
 
         var thresholds = new List<(BotLogType LogType, uint Value, TimeSpan? Span)>(2);
         int currentWarnings = -1;
-        await using (DbDataReader reader = await cmd.ExecuteReaderAsync())
+        await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
         {
             while (await reader.ReadAsync())
             {
