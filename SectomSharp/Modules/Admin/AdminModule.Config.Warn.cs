@@ -18,8 +18,8 @@ public sealed partial class AdminModule
         [Group("warn", "Warning configuration")]
         public sealed class WarnModule : DisableableModule<WarnModule, WarningConfiguration>
         {
-            private const int MinThreshold = 1;
-            private const int MaxThreshold = 20;
+            private const uint MinThreshold = 1;
+            private const uint MaxThreshold = 20;
 
             private static readonly Func<ApplicationDbContext, ulong, Task<ResultSet<WarningThresholdEntry>?>> TryGetWarningThresholds =
                 EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId) => db.Guilds.Where(guild => guild.Id == guildId)
@@ -40,7 +40,7 @@ public sealed partial class AdminModule
             /// <inheritdoc />
             public WarnModule(ILogger<WarnModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
-            private async Task AddPunishment(int threshold, TimeSpan? duration, string? reason, BotLogType punishment)
+            private async Task AddPunishment(uint threshold, TimeSpan? duration, string? reason, BotLogType punishment)
             {
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -64,7 +64,7 @@ public sealed partial class AdminModule
                                   """;
 
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromInt32("threshold", threshold));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("threshold", threshold));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
 
@@ -79,18 +79,18 @@ public sealed partial class AdminModule
 
             [SlashCmd("Add a timeout punishment on reaching a number of warnings")]
             public async Task AddTimeoutPunishment(
-                [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold,
+                [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold,
                 [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
                 [ReasonMaxLength] string? reason = null
             )
                 => await AddPunishment(threshold, duration, reason, BotLogType.Timeout);
 
             [SlashCmd("Add a ban punishment on reaching a number of warnings")]
-            public async Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [ReasonMaxLength] string? reason = null)
+            public async Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold, [ReasonMaxLength] string? reason = null)
                 => await AddPunishment(threshold, null, reason, BotLogType.Ban);
 
             [SlashCmd("Remove a current punishment configuration")]
-            public async Task RemovePunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] int threshold, [ReasonMaxLength] string? reason = null)
+            public async Task RemovePunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold, [ReasonMaxLength] string? reason = null)
             {
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
