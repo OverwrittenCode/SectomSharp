@@ -1,4 +1,5 @@
 using Discord;
+using Discord.Interactions;
 using SectomSharp.Extensions;
 using SectomSharp.Managers.Pagination.Models;
 using SectomSharp.Managers.Pagination.SelectMenu;
@@ -174,12 +175,14 @@ internal sealed class SelectMenuPaginationBuilder
         return this;
     }
 
+    /// <param name="context"></param>
     /// <exception cref="InvalidOperationException">Empty list of options.</exception>
-    public SelectMenuPaginationManager Build()
+    public async Task BuildAndInit(SocketInteractionContext context)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(Timeout);
         ArgumentOutOfRangeException.ThrowIfZero(Options.Count);
 
-        return new SelectMenuPaginationManager(SelectMenuBuilder, OptionKvp, ResponseType, Timeout, IsEphemeral, IsStickyFirstRow, _instanceId);
+        var manager = new SelectMenuPaginationManager(SelectMenuBuilder, OptionKvp, ResponseType, Timeout, IsEphemeral, IsStickyFirstRow, _instanceId);
+        await manager.InitAsync(context);
     }
 }

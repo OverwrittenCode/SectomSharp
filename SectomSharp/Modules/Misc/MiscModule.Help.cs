@@ -44,8 +44,7 @@ public sealed partial class MiscModule
         await new SelectMenuPaginationBuilder("Select a category").WithEphemeral()
                                                                   .WithResponseType(SelectMenuResponse.Update)
                                                                   .AddNestedMenu(groupedItems, categoryConfig, pageConfig, menuConfig)
-                                                                  .Build()
-                                                                  .Init(Context);
+                                                                  .BuildAndInit(Context);
     }
 
     [RegexComponentInteraction(nameof(HelpSelectMenu), nameof(id), nameof(category))]

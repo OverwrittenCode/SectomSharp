@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 
@@ -8,7 +9,8 @@ public sealed partial class DiscordEvent
 {
     private async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
     {
-        if (await GetDiscordWebhookClientAsync(thread.Guild, AuditLogType.Thread) is not { } discordWebhookClient)
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(thread.Guild, AuditLogType.Thread);
+        if (webhookClient is null)
         {
             return;
         }
@@ -22,7 +24,7 @@ public sealed partial class DiscordEvent
             new("Topic", thread.Topic)
         ];
 
-        await LogAsync(thread.Guild, discordWebhookClient, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
+        await LogAsync(thread.Guild, webhookClient, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
     }
 
     public async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
@@ -32,7 +34,8 @@ public sealed partial class DiscordEvent
 
     public async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
     {
-        if (await GetDiscordWebhookClientAsync(newThread.Guild, AuditLogType.Thread) is not { } discordWebhookClient)
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newThread.Guild, AuditLogType.Thread);
+        if (webhookClient is null)
         {
             return;
         }
@@ -51,6 +54,6 @@ public sealed partial class DiscordEvent
             new("Topic", GetChangeEntry(oldThread.Topic, newThread.Topic), oldThread.Topic != newThread.Topic)
         ];
 
-        await LogAsync(newThread.Guild, discordWebhookClient, AuditLogType.Thread, OperationType.Update, entries, newThread.Id.ToString(), newThread.Name);
+        await LogAsync(newThread.Guild, webhookClient, AuditLogType.Thread, OperationType.Update, entries, newThread.Id.ToString(), newThread.Name);
     }
 }

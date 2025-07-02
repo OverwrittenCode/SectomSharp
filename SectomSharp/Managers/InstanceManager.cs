@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using JetBrains.Annotations;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Managers;
@@ -6,13 +8,14 @@ namespace SectomSharp.Managers;
 ///     Provides base functionality for managing instances of a specific type with unique identifiers.
 /// </summary>
 /// <typeparam name="T">The type of instance being managed. Must inherit from <see cref="InstanceManager{T}" />.</typeparam>
+[MustDisposeResource]
 internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     where T : InstanceManager<T>
 {
     /// <summary>
     ///     A dictionary storing all active instances of <typeparamref name="T" /> keyed by <see cref="Id" />.
     /// </summary>
-    private static readonly Dictionary<string, T> Instances = [];
+    private static readonly ConcurrentDictionary<string, T> Instances = [];
 
     /// <summary>
     ///     Gets a read-only collection of all active instances of <typeparamref name="T" /> keyed by <see cref="Id" />.
@@ -83,7 +86,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     private void RemoveInstance()
     {
         ThrowIfDisposed();
-        Instances.Remove(Id);
+        Instances.TryRemove(Id, out _);
     }
 
     /// <summary>
@@ -148,6 +151,7 @@ internal abstract class InstanceManager<T> : IDisposable, IAsyncDisposable
     /// <returns>A task representing the timer initialization.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="seconds" /> is less than 0.</exception>
     /// <inheritdoc cref="ThrowIfDisposed" path="/exception" />
+    [HandlesResourceDisposal]
     protected Task StartExpirationTimer(int seconds)
     {
         ThrowIfDisposed();

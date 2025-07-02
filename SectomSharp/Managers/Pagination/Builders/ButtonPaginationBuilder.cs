@@ -1,4 +1,5 @@
 using Discord;
+using Discord.Interactions;
 using SectomSharp.Managers.Pagination.Button;
 
 namespace SectomSharp.Managers.Pagination.Builders;
@@ -26,11 +27,12 @@ internal sealed class ButtonPaginationBuilder
     /// <returns>The new instance.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><see cref="Timeout" /> is less than or equal to 0.</exception>
     /// <exception cref="InvalidOperationException">Empty list of <see cref="Embeds" />.</exception>
-    public ButtonPaginationManager Build()
+    public async Task BuildAndInit(SocketInteractionContext context)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(Timeout);
         ArgumentOutOfRangeException.ThrowIfZero(Embeds.Count);
 
-        return new ButtonPaginationManager([.. Embeds], [.. ExtraActionRows]);
+        var manager = new ButtonPaginationManager([.. Embeds], [.. ExtraActionRows]);
+        await manager.InitAsync(context);
     }
 }

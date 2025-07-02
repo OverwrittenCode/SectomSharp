@@ -1,4 +1,5 @@
 using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
@@ -11,7 +12,8 @@ public sealed partial class DiscordEvent
 
     private async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
     {
-        if (await GetDiscordWebhookClientAsync(role.Guild, AuditLogType.Role) is not { } discordWebhookClient)
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(role.Guild, AuditLogType.Role);
+        if (webhookClient is null)
         {
             return;
         }
@@ -30,7 +32,7 @@ public sealed partial class DiscordEvent
             entries.Add(new AuditLogEntry("Icon", iconUrl));
         }
 
-        await LogAsync(role.Guild, discordWebhookClient, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
+        await LogAsync(role.Guild, webhookClient, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 
     public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
@@ -39,7 +41,13 @@ public sealed partial class DiscordEvent
 
     public async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
     {
-        if (oldRole.Position != newRole.Position || await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role) is not { } discordWebhookClient)
+        if (oldRole.Position != newRole.Position)
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role);
+        if (webhookClient is null)
         {
             return;
         }
@@ -72,7 +80,7 @@ public sealed partial class DiscordEvent
 
         await LogAsync(
             newRole.Guild,
-            discordWebhookClient,
+            webhookClient,
             AuditLogType.Role,
             OperationType.Update,
             entries,

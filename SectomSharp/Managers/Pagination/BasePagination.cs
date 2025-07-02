@@ -3,6 +3,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.Net;
 using Discord.Rest;
+using JetBrains.Annotations;
 using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
@@ -84,7 +85,7 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     /// <summary>
     ///     Gets the original message structure from <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)" />.
     /// </summary>
-    /// <value><c>null</c> if <see cref="Init(SocketInteractionContext)" /> has not been called yet.</value>
+    /// <value><c>null</c> if <see cref="InitAsync" /> has not been called yet.</value>
     public RestInteractionMessage? Message { get; protected set; }
 
     /// <summary>
@@ -139,7 +140,8 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     ///     Starts the pagination.
     /// </summary>
     /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)" />
-    public async Task Init(SocketInteractionContext context)
+    [HandlesResourceDisposal]
+    public async Task InitAsync(SocketInteractionContext context)
     {
         await RespondOrFollowupAsync(context);
 
@@ -152,5 +154,6 @@ internal abstract class BasePagination<T> : InstanceManager<T>
     ///     Restarts the expiration timer for this instance.
     /// </summary>
     /// <inheritdoc cref="InstanceManager{T}.ThrowIfDisposed" path="/exception" />
+    [HandlesResourceDisposal]
     public async Task RestartTimer() => await StartExpirationTimer(Timeout);
 }

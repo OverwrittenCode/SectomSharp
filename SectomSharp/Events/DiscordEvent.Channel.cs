@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 
@@ -84,8 +85,13 @@ public sealed partial class DiscordEvent
 
     private async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)
     {
-        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel)
-         || await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel) is not { } discordWebhookClient)
+        if (!TryGetGuildChannel(socketChannel, out IGuildChannel? guildChannel))
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel);
+        if (webhookClient is null)
         {
             return;
         }
@@ -145,7 +151,7 @@ public sealed partial class DiscordEvent
             );
         }
 
-        await LogAsync(guildChannel.Guild, discordWebhookClient, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
+        await LogAsync(guildChannel.Guild, webhookClient, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
     }
 
     public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
@@ -155,8 +161,13 @@ public sealed partial class DiscordEvent
     public async Task HandleChannelUpdatedAsync(SocketChannel oldSocketChannel, SocketChannel newSocketChannel)
     {
         if (!(TryGetGuildChannel(oldSocketChannel, out IGuildChannel? oldChannel) && TryGetGuildChannel(newSocketChannel, out IGuildChannel? newChannel))
-         || oldChannel.Position != newChannel.Position
-         || await GetDiscordWebhookClientAsync(newChannel.Guild, AuditLogType.Channel) is not { } discordWebhookClient)
+         || oldChannel.Position != newChannel.Position)
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newChannel.Guild, AuditLogType.Channel);
+        if (webhookClient is null)
         {
             return;
         }
@@ -241,7 +252,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        await LogAsync(newChannel.Guild, discordWebhookClient, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
+        await LogAsync(newChannel.Guild, webhookClient, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
     }
 
     private readonly record struct ChannelDetails

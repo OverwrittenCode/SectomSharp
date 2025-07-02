@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord.Webhook;
+using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 
 namespace SectomSharp.Events;
@@ -7,7 +8,8 @@ public sealed partial class DiscordEvent
 {
     private async Task HandleGuildStickerAlteredAsync(SocketCustomSticker sticker, OperationType operationType)
     {
-        if (await GetDiscordWebhookClientAsync(sticker.Guild, AuditLogType.Sticker) is not { } webhookClient)
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(sticker.Guild, AuditLogType.Sticker);
+        if (webhookClient is null)
         {
             return;
         }
@@ -29,7 +31,8 @@ public sealed partial class DiscordEvent
 
     public async Task HandleGuildStickerUpdatedAsync(SocketCustomSticker oldSticker, SocketCustomSticker newSticker)
     {
-        if (await GetDiscordWebhookClientAsync(newSticker.Guild, AuditLogType.Sticker) is not { } webhookClient)
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newSticker.Guild, AuditLogType.Sticker);
+        if (webhookClient is null)
         {
             return;
         }

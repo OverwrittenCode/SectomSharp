@@ -29,20 +29,14 @@ public sealed partial class DiscordEvent
 
         if (auditLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(AuditLogType.Emoji))?.WebhookUrl is { } emojiChannelWebhookUrl)
         {
-            await HandleGuildEmoteAsync(
-                newGuild,
-                new DiscordWebhookClient(emojiChannelWebhookUrl),
-                (ImmutableArray<GuildEmote>)oldGuild.Emotes,
-                (ImmutableArray<GuildEmote>)newGuild.Emotes
-            );
+            using var webhookClient = new DiscordWebhookClient(emojiChannelWebhookUrl);
+            await HandleGuildEmoteAsync(newGuild, webhookClient, (ImmutableArray<GuildEmote>)oldGuild.Emotes, (ImmutableArray<GuildEmote>)newGuild.Emotes);
         }
 
         if (auditLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(AuditLogType.Server))?.WebhookUrl is not { } serverChannelWebhookUrl)
         {
             return;
         }
-
-        var serverDiscordWebhookClient = new DiscordWebhookClient(serverChannelWebhookUrl);
 
         List<AuditLogEntry> entries =
         [
@@ -83,6 +77,8 @@ public sealed partial class DiscordEvent
             )
         ];
 
-        await LogAsync(newGuild, serverDiscordWebhookClient, AuditLogType.Server, OperationType.Update, entries, newGuild.Name, newGuild.Name, newGuild.IconUrl);
+        using var serverChannelWebhookClient = new DiscordWebhookClient(serverChannelWebhookUrl);
+
+        await LogAsync(newGuild, serverChannelWebhookClient, AuditLogType.Server, OperationType.Update, entries, newGuild.Name, newGuild.Name, newGuild.IconUrl);
     }
 }

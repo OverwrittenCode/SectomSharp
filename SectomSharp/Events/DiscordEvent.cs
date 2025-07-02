@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Discord;
 using Discord.Webhook;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -69,15 +70,16 @@ public sealed partial class DiscordEvent
 
     public DiscordEvent(IDbContextFactory<ApplicationDbContext> dbFactory) => _dbFactory = dbFactory;
 
+    [MustDisposeResource]
     private async Task<DiscordWebhookClient?> GetDiscordWebhookClientAsync(IGuild guild, AuditLogType auditLogType)
     {
         await using ApplicationDbContext db = await _dbFactory.CreateDbContextAsync();
 
-        var result = await db.AuditLogChannels.Where(channel => channel.GuildId == guild.Id && channel.Type.HasFlag(auditLogType))
-                             .Select(channel => new { channel.WebhookUrl })
-                             .FirstOrDefaultAsync();
+        string? webhookUrl = await db.AuditLogChannels.Where(channel => channel.GuildId == guild.Id && channel.Type.HasFlag(auditLogType))
+                                     .Select(channel => channel.WebhookUrl)
+                                     .FirstOrDefaultAsync();
 
-        return result is null ? null : new DiscordWebhookClient(result.WebhookUrl);
+        return webhookUrl is null ? null : new DiscordWebhookClient(webhookUrl);
     }
 
     private record struct AuditLogEntry(string Key, object? Value, bool ShouldInclude = true);

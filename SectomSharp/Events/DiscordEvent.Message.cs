@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
@@ -9,8 +10,13 @@ public sealed partial class DiscordEvent
 {
     public async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
     {
-        if (partialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message }
-         || await GetDiscordWebhookClientAsync(guild, AuditLogType.Message) is not { } discordWebhookClient)
+        if (partialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message })
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild, AuditLogType.Message);
+        if (webhookClient is null)
         {
             return;
         }
@@ -45,7 +51,7 @@ public sealed partial class DiscordEvent
 
         await LogAsync(
             guild,
-            discordWebhookClient,
+            webhookClient,
             AuditLogType.Message,
             OperationType.Delete,
             entries,
@@ -57,8 +63,13 @@ public sealed partial class DiscordEvent
 
     public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
     {
-        if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } oldMessage }
-         || await GetDiscordWebhookClientAsync(guild, AuditLogType.Message) is not { } discordWebhookClient)
+        if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } oldMessage })
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild, AuditLogType.Message);
+        if (webhookClient is null)
         {
             return;
         }
@@ -70,7 +81,7 @@ public sealed partial class DiscordEvent
 
         await LogAsync(
             guild,
-            discordWebhookClient,
+            webhookClient,
             AuditLogType.Message,
             OperationType.Update,
             entries,

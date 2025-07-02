@@ -306,7 +306,7 @@ public sealed partial class AdminModule
                 }
 
                 var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
-                await pagination.Build().Init(Context);
+                await pagination.BuildAndInit(Context);
             }
 
             [SlashCmd("View the audit log channel configuration")]
@@ -339,7 +339,7 @@ public sealed partial class AdminModule
                 }
 
                 var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
-                await pagination.Build().Init(Context);
+                await pagination.BuildAndInit(Context);
             }
 
             public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)

@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 
@@ -8,7 +9,8 @@ public sealed partial class DiscordEvent
 {
     public async Task HandleGuildMemberUpdatedAsync(Cacheable<SocketGuildUser, ulong> oldPartialUser, SocketGuildUser newUser)
     {
-        if (await GetDiscordWebhookClientAsync(newUser.Guild, AuditLogType.Member) is not { } discordWebhookClient)
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newUser.Guild, AuditLogType.Member);
+        if (webhookClient is null)
         {
             return;
         }
@@ -25,6 +27,6 @@ public sealed partial class DiscordEvent
             new("Server Avatar", GetChangeEntry(oldUser.GetGuildAvatarUrl(), newUser.GetGuildAvatarUrl()), oldUser.GuildAvatarId != newUser.GuildAvatarId)
         ];
 
-        await LogAsync(newUser.Guild, discordWebhookClient, AuditLogType.Member, OperationType.Update, entries, newUser.Id.ToString(), newUser.DisplayName, newUser.GetAvatarUrl());
+        await LogAsync(newUser.Guild, webhookClient, AuditLogType.Member, OperationType.Update, entries, newUser.Id.ToString(), newUser.DisplayName, newUser.GetAvatarUrl());
     }
 }

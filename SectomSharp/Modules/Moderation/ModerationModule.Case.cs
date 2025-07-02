@@ -111,7 +111,7 @@ public sealed partial class ModerationModule
             }
 
             var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
-            await pagination.Build().Init(Context);
+            await pagination.BuildAndInit(Context);
         }
     }
 }
