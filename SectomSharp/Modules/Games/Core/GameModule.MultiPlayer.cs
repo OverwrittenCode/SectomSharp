@@ -61,27 +61,27 @@ public sealed partial class GameModule
             {
                 if (playerOne != null)
                 {
-                    await component.FollowupAsync(ChoiceAlreadyLockedMessage);
+                    await component.FollowupAsync(ChoiceAlreadyLockedMessage, ephemeral: true);
                     return;
                 }
 
                 playerOne = processPlayerChoice(component);
-                await component.FollowupAsync(ChoiceLockedMessage);
+                await component.FollowupAsync(ChoiceLockedMessage, ephemeral: true);
             }
             else if (component.User.Id == playerTwoId)
             {
                 if (playerTwo != null)
                 {
-                    await component.FollowupAsync(ChoiceAlreadyLockedMessage);
+                    await component.FollowupAsync(ChoiceAlreadyLockedMessage, ephemeral: true);
                     return;
                 }
 
                 playerTwo = processPlayerChoice(component);
-                await component.FollowupAsync(ChoiceLockedMessage);
+                await component.FollowupAsync(ChoiceLockedMessage, ephemeral: true);
             }
             else
             {
-                await component.FollowupAsync(ComponentNotForYou);
+                await component.FollowupAsync(ComponentNotForYou, ephemeral: true);
                 return;
             }
 
