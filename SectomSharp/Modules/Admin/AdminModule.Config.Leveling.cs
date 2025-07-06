@@ -80,7 +80,7 @@ public sealed partial class AdminModule
                 => await ModifySettingsAsync(reason, accumulateMultipliers);
 
             [SlashCmd("Set the global multiplier")]
-            public async Task SetGlobalMultiplier([MinValue(1)] double globalMultiplier, [ReasonMaxLength] string? reason = null)
+            public async Task SetGlobalMultiplier([MinValue(1)] [MaxValue(10)] double globalMultiplier, [ReasonMaxLength] string? reason = null)
                 => await ModifySettingsAsync(reason, globalMultiplier: globalMultiplier);
 
             [SlashCmd("Set the global cooldown in seconds")]
