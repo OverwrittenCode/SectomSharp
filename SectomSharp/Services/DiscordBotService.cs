@@ -48,6 +48,8 @@ public sealed class DiscordBotService : BackgroundService
         await _client.SetGameAsync("Dev Mode", type: ActivityType.Watching);
         await _client.SetStatusAsync(UserStatus.Online);
         await _interactionService.RegisterCommandsToGuildAsync(Storage.ServerId);
+
+        _client.Ready -= HandleClientReady;
     }
 
     /// <inheritdoc />
