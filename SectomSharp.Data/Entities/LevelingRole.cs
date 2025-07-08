@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SectomSharp.Data.Extensions;
 
@@ -24,6 +25,18 @@ public sealed class LevelingRoleConfiguration : SnowflakeConfiguration<LevelingR
                 role.Level
             }
         );
+        builder.HasIndex(role => new
+                    {
+                        role.GuildId,
+                        role.Id
+                    }
+                )
+               .IncludeProperties(role => new
+                    {
+                        role.Cooldown,
+                        role.Multiplier
+                    }
+                );
         base.Configure(builder);
     }
 }

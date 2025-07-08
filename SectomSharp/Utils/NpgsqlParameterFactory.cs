@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Npgsql;
 using NpgsqlTypes;
 
 namespace SectomSharp.Utils;
 
+[SuppressMessage("ReSharper", "BitwiseOperatorOnEnumWithoutFlags")]
 public static class NpgsqlParameterFactory
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,4 +64,9 @@ public static class NpgsqlParameterFactory
     public static NpgsqlParameter<int> FromEnum32<T>(string name, T value)
         where T : struct, Enum
         => new(name, Unsafe.As<T, int>(ref value)) { NpgsqlDbType = NpgsqlDbType.Integer };
+
+    public static NpgsqlParameter<int[]> FromInt32Array(string name, int[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Integer };
+    public static NpgsqlParameter<int?[]> FromInt32Array(string name, int?[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Integer };
+    public static NpgsqlParameter<long[]> FromInt64Array(string name, long[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Bigint };
+    public static NpgsqlParameter<long?[]> FromInt64Array(string name, long?[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Bigint };
 }

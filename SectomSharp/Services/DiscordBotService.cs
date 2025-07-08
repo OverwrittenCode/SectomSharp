@@ -79,7 +79,7 @@ public sealed class DiscordBotService : BackgroundService
 
         _client.GuildMemberUpdated += _discord.HandleGuildMemberUpdatedAsync;
 
-        // _client.MessageReceived += DiscordEvent.HandleMessageReceivedAsync;
+        _client.MessageReceived += _discord.HandleMessageReceivedAsync;
         _client.MessageDeleted += _discord.HandleMessageDeletedAsync;
         _client.MessageUpdated += _discord.HandleMessageUpdatedAsync;
 

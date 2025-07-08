@@ -3,6 +3,7 @@ using Discord;
 using Discord.Webhook;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
@@ -67,8 +68,13 @@ public sealed partial class DiscordEvent
         => $"{Format.Bold("Before:")} {(before is null ? "N/A" : before)}\n{Format.Bold("After:")} {(after is null ? "N/A" : after)}";
 
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+    private readonly ILogger<DiscordEvent> _logger;
 
-    public DiscordEvent(IDbContextFactory<ApplicationDbContext> dbFactory) => _dbFactory = dbFactory;
+    public DiscordEvent(IDbContextFactory<ApplicationDbContext> dbFactory, ILogger<DiscordEvent> logger)
+    {
+        _dbFactory = dbFactory;
+        _logger = logger;
+    }
 
     [MustDisposeResource]
     private async Task<DiscordWebhookClient?> GetDiscordWebhookClientAsync(IGuild guild, AuditLogType auditLogType)

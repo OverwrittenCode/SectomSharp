@@ -84,7 +84,11 @@ public sealed class CaseConfiguration : BaseOneToManyGuildRelationConfiguration<
                         @case.TargetId
                     }
                 )
-               .HasFilter($"""    "{nameof(Case.LogType)}" = {(int)BotLogType.Warn} AND "{nameof(Case.OperationType)}" = {(int)OperationType.Create}""")
+               .HasFilter(
+                    $"""
+                     "{nameof(Case.LogType)}" = {(int)BotLogType.Warn} AND "{nameof(Case.OperationType)}" = {(int)OperationType.Create} 
+                     """
+                )
                .HasDatabaseName("IX_Cases_GuildId_TargetId_Warn_Create");
 
         builder.HasKey(@case => new
