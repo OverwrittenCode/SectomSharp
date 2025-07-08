@@ -74,10 +74,7 @@ public sealed partial class ModerationModule
         {
             while (await reader.ReadAsync())
             {
-                if (currentWarnings == -1)
-                {
-                    currentWarnings = reader.GetInt32(0);
-                }
+                currentWarnings = reader.GetInt32(0);
 
                 var logType = (BotLogType)reader.GetInt32(1);
                 uint value = (uint)reader.GetInt32(2);
