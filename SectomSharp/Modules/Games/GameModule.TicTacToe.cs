@@ -6,7 +6,7 @@ namespace SectomSharp.Modules.Games;
 
 public sealed partial class GameModule
 {
-    [SlashCmd("Play tic-tac-toe")]
+    [SlashCmd("ttt", "Play tic-tac-toe")]
     public async Task TicTacToe(IGuildUser? opponent = null)
     {
         await HandleTurnInputGameSession<int>(
