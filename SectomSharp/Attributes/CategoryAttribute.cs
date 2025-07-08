@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Discord;
 
 namespace SectomSharp.Attributes;
@@ -6,6 +7,7 @@ namespace SectomSharp.Attributes;
 ///     Categorise commands under a module.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
+[DebuggerDisplay("{Name} ({Emoji.Name})")]
 internal sealed class CategoryAttribute : Attribute
 {
     /// <summary>
