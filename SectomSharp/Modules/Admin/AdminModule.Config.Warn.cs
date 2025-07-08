@@ -7,6 +7,7 @@ using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
+using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
@@ -45,30 +46,34 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      WITH
+                                          guild_upsert AS (
+                                              INSERT INTO "Guilds" ("Id")
+                                              VALUES (@guildId)
+                                              ON CONFLICT ("Id") DO NOTHING
+                                          ),
+                                          inserted AS (
+                                              INSERT INTO "WarningThresholds" ("GuildId", "Value", "LogType", "Span")
+                                              VALUES (@guildId, @threshold, @logType, @duration)
+                                              ON CONFLICT DO NOTHING
+                                              RETURNING 1
+                                          )
+                                          SELECT 1 FROM inserted;
+                                      """;
 
-                cmd.CommandText = """
-                                  WITH
-                                      guild_upsert AS (
-                                          INSERT INTO "Guilds" ("Id")
-                                          VALUES (@guildId)
-                                          ON CONFLICT ("Id") DO NOTHING
-                                      ),
-                                      inserted AS (
-                                          INSERT INTO "WarningThresholds" ("GuildId", "Value", "LogType", "Span")
-                                          VALUES (@guildId, @threshold, @logType, @duration)
-                                          ON CONFLICT DO NOTHING
-                                          RETURNING 1
-                                      )
-                                      SELECT 1 FROM inserted;
-                                  """;
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("threshold", threshold));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("threshold", threshold));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
 
-                if (await cmd.ExecuteScalarAsync() is null)
+                if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;

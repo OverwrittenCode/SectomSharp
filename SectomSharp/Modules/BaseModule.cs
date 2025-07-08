@@ -25,9 +25,9 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     private static readonly Func<ILogger, string, string, string, IDisposable?> CommandScopeCallback =
         LoggerMessage.DefineScope<string, string, string>("Command={CommandName}, User={Username}, Channel={ChannelName}");
 
-    private readonly ILogger<BaseModule<TThis>> _logger;
-
     private IDisposable? _logScope;
+
+    protected readonly ILogger<BaseModule<TThis>> Logger;
 
     /// <summary>
     ///     Gets the db factory.
@@ -41,7 +41,7 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     /// <param name="dbContextFactory">The factory for creating <see cref="ApplicationDbContext" /> instances.</param>
     protected BaseModule(ILogger<BaseModule<TThis>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory)
     {
-        _logger = logger;
+        Logger = logger;
         DbContextFactory = dbContextFactory;
     }
 
@@ -61,8 +61,8 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     {
         string fullName = Storage.CommandInfoFullNameMap[command];
         _logScope = Context.Guild == null
-            ? CommandScopeCallback(_logger, fullName, Context.User.Username, Context.Channel.Name)
-            : GuildCommandScopeCallback(_logger, fullName, Context.User.Username, Context.Guild.Name, Context.Channel.Name);
+            ? CommandScopeCallback(Logger, fullName, Context.User.Username, Context.Channel.Name)
+            : GuildCommandScopeCallback(Logger, fullName, Context.User.Username, Context.Guild.Name, Context.Channel.Name);
 
         base.BeforeExecute(command);
     }

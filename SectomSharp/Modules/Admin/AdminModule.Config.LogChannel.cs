@@ -62,34 +62,39 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
 
-                cmd.CommandText = """
-                                  WITH
-                                      guild_upsert AS (
-                                          INSERT INTO "Guilds" ("Id")
-                                          VALUES (@guildId)
-                                          ON CONFLICT ("Id") DO NOTHING
-                                          RETURNING 1
-                                      ),
-                                      channel_upsert AS (
-                                          INSERT INTO "BotLogChannels" ("Id", "GuildId", "Type")
-                                          VALUES (@channelId, @guildId, @action)
-                                          ON CONFLICT ("Id") DO UPDATE SET
-                                              "Type" = EXCLUDED."Type" | "BotLogChannels"."Type"
-                                          WHERE 
-                                              EXISTS (SELECT 1 FROM guild_upsert)
-                                              OR ("BotLogChannels"."Type" & @action) = 0
-                                          RETURNING 1
-                                      )
-                                  SELECT 1 FROM channel_upsert;
-                                  """;
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      WITH
+                                          guild_upsert AS (
+                                              INSERT INTO "Guilds" ("Id")
+                                              VALUES (@guildId)
+                                              ON CONFLICT ("Id") DO NOTHING
+                                              RETURNING 1
+                                          ),
+                                          channel_upsert AS (
+                                              INSERT INTO "BotLogChannels" ("Id", "GuildId", "Type")
+                                              VALUES (@channelId, @guildId, @action)
+                                              ON CONFLICT ("Id") DO UPDATE SET
+                                                  "Type" = EXCLUDED."Type" | "BotLogChannels"."Type"
+                                              WHERE 
+                                                  EXISTS (SELECT 1 FROM guild_upsert)
+                                                  OR ("BotLogChannels"."Type" & @action) = 0
+                                              RETURNING 1
+                                          )
+                                      SELECT 1 FROM channel_upsert;
+                                      """;
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                if (await cmd.ExecuteScalarAsync() is null)
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
+
+                if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;
@@ -122,36 +127,38 @@ public sealed partial class AdminModule
                 await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
                 try
                 {
-                    await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-                    cmd.Transaction = transaction.GetDbTransaction();
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.Transaction = transaction.GetDbTransaction();
 
-                    cmd.CommandText = """
-                                      WITH
-                                          guild_upsert AS (
-                                              INSERT INTO "Guilds" ("Id")
-                                              VALUES (@guildId)
-                                              ON CONFLICT ("Id") DO NOTHING
-                                          ),
-                                          channel_upsert AS (
-                                              INSERT INTO "AuditLogChannels" ("Id", "GuildId", "Type", "WebhookUrl")
-                                              VALUES (@channelId, @guildId, @action, '')
-                                              ON CONFLICT ("Id") DO UPDATE
-                                                    SET "Type" = "AuditLogChannels"."Type" | EXCLUDED."Type"
-                                              WHERE ("AuditLogChannels"."Type" & @action) = 0
-                                              RETURNING
-                                                  CASE
-                                                      WHEN xmax = 0 THEN 2
-                                                      WHEN "WebhookUrl" <> '' THEN 1
-                                                      ELSE 0
-                                                  END AS result_tag
-                                          )
-                                      SELECT * FROM channel_upsert;
-                                      """;
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                        cmd.CommandText = """
+                                          WITH
+                                              guild_upsert AS (
+                                                  INSERT INTO "Guilds" ("Id")
+                                                  VALUES (@guildId)
+                                                  ON CONFLICT ("Id") DO NOTHING
+                                              ),
+                                              channel_upsert AS (
+                                                  INSERT INTO "AuditLogChannels" ("Id", "GuildId", "Type", "WebhookUrl")
+                                                  VALUES (@channelId, @guildId, @action, '')
+                                                  ON CONFLICT ("Id") DO UPDATE
+                                                        SET "Type" = "AuditLogChannels"."Type" | EXCLUDED."Type"
+                                                  WHERE ("AuditLogChannels"."Type" & @action) = 0
+                                                  RETURNING
+                                                      CASE
+                                                          WHEN xmax = 0 THEN 2
+                                                          WHEN "WebhookUrl" <> '' THEN 1
+                                                          ELSE 0
+                                                      END AS result_tag
+                                              )
+                                          SELECT * FROM channel_upsert;
+                                          """;
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                    result = (AuditLogUpsertResult)await cmd.ExecuteScalarAsync<int>();
+                        result = (AuditLogUpsertResult)await cmd.ExecuteScalarTimedAsync<int>(Logger);
+                    }
 
                     if (result is AuditLogUpsertResult.InsertedAndNeedsWebhookUrl)
                     {
@@ -190,39 +197,44 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
 
-                cmd.CommandText = """
-                                  WITH
-                                      deleted AS (
-                                          DELETE FROM "BotLogChannels"
-                                              WHERE "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" = @action
-                                              RETURNING 1
-                                      ),
-                                      updated AS (
-                                          UPDATE "BotLogChannels"
-                                              SET "Type" = "Type" & ~@action
-                                              WHERE
-                                                  NOT EXISTS (SELECT 1 FROM deleted)
-                                                  AND "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" & @action <> 0
-                                              RETURNING 1
-                                      )
-                                  SELECT EXISTS (
-                                      SELECT 1 FROM deleted
-                                      UNION ALL
-                                      SELECT 1 FROM updated
-                                  );
-                                  """;
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      WITH
+                                          deleted AS (
+                                              DELETE FROM "BotLogChannels"
+                                                  WHERE "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" = @action
+                                                  RETURNING 1
+                                          ),
+                                          updated AS (
+                                              UPDATE "BotLogChannels"
+                                                  SET "Type" = "Type" & ~@action
+                                                  WHERE
+                                                      NOT EXISTS (SELECT 1 FROM deleted)
+                                                      AND "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" & @action <> 0
+                                                  RETURNING 1
+                                          )
+                                      SELECT EXISTS (
+                                          SELECT 1 FROM deleted
+                                          UNION ALL
+                                          SELECT 1 FROM updated
+                                      );
+                                      """;
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                if (await cmd.ExecuteScalarAsync() is not true)
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
+
+                if (scalarResult is not true)
                 {
                     await RespondOrFollowupAsync(NotConfiguredMessage);
                     return;
@@ -239,39 +251,44 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
 
-                cmd.CommandText = """
-                                  WITH
-                                      deleted AS (
-                                          DELETE FROM "BotLogChannels"
-                                              WHERE "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" = @action
-                                              RETURNING 1
-                                      ),
-                                      updated AS (
-                                          UPDATE "BotLogChannels"
-                                              SET "Type" = "Type" & ~@action
-                                              WHERE
-                                                  NOT EXISTS (SELECT 1 FROM deleted)
-                                                  AND "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" & @action <> 0
-                                              RETURNING 1
-                                      )
-                                  SELECT EXISTS (
-                                      SELECT 1 FROM deleted
-                                      UNION ALL
-                                      SELECT 1 FROM updated
-                                  );
-                                  """;
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      WITH
+                                          deleted AS (
+                                              DELETE FROM "BotLogChannels"
+                                                  WHERE "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" = @action
+                                                  RETURNING 1
+                                          ),
+                                          updated AS (
+                                              UPDATE "BotLogChannels"
+                                                  SET "Type" = "Type" & ~@action
+                                                  WHERE
+                                                      NOT EXISTS (SELECT 1 FROM deleted)
+                                                      AND "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" & @action <> 0
+                                                  RETURNING 1
+                                          )
+                                      SELECT EXISTS (
+                                          SELECT 1 FROM deleted
+                                          UNION ALL
+                                          SELECT 1 FROM updated
+                                      );
+                                      """;
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                if (await cmd.ExecuteScalarAsync() is not true)
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
+
+                if (scalarResult is not true)
                 {
                     await RespondOrFollowupAsync(NotConfiguredMessage);
                     return;

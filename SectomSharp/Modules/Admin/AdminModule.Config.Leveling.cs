@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
+using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
@@ -44,29 +45,33 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      UPDATE "Guilds"
+                                      SET
+                                          "Configuration_Leveling_AccumulateMultipliers" = COALESCE(@accumulateMultipliers, "Configuration_Leveling_AccumulateMultipliers"),
+                                          "Configuration_Leveling_GlobalMultiplier" = COALESCE(@globalMultiplier, "Configuration_Leveling_GlobalMultiplier"),
+                                          "Configuration_Leveling_GlobalCooldown" = COALESCE(@globalCooldown, "Configuration_Leveling_GlobalCooldown")
+                                      WHERE "Id" = @guildId
+                                      AND (
+                                          (@accumulateMultipliers IS NOT NULL AND @accumulateMultipliers != "Configuration_Leveling_AccumulateMultipliers")
+                                          OR (@globalMultiplier IS NOT NULL AND @globalMultiplier != "Configuration_Leveling_GlobalMultiplier")
+                                          OR (@globalCooldown IS NOT NULL AND @globalCooldown != "Configuration_Leveling_GlobalCooldown")
+                                      )
+                                      RETURNING 1
+                                      """;
 
-                cmd.CommandText = """
-                                  UPDATE "Guilds"
-                                  SET
-                                      "Configuration_Leveling_AccumulateMultipliers" = COALESCE(@accumulateMultipliers, "Configuration_Leveling_AccumulateMultipliers"),
-                                      "Configuration_Leveling_GlobalMultiplier" = COALESCE(@globalMultiplier, "Configuration_Leveling_GlobalMultiplier"),
-                                      "Configuration_Leveling_GlobalCooldown" = COALESCE(@globalCooldown, "Configuration_Leveling_GlobalCooldown")
-                                  WHERE "Id" = @guildId
-                                  AND (
-                                      (@accumulateMultipliers IS NOT NULL AND @accumulateMultipliers != "Configuration_Leveling_AccumulateMultipliers")
-                                      OR (@globalMultiplier IS NOT NULL AND @globalMultiplier != "Configuration_Leveling_GlobalMultiplier")
-                                      OR (@globalCooldown IS NOT NULL AND @globalCooldown != "Configuration_Leveling_GlobalCooldown")
-                                  )
-                                  RETURNING 1
-                                  """;
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
 
-                if (await cmd.ExecuteScalarAsync() is null)
+                if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;
@@ -99,31 +104,35 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      WITH
+                                          guild_upsert AS (
+                                              INSERT INTO "Guilds" ("Id")
+                                              VALUES (@guildId)
+                                              ON CONFLICT ("Id") DO NOTHING
+                                          ),
+                                          inserted AS (
+                                              INSERT INTO "LevelingRoles" ("Id", "GuildId", "Level", "Multiplier", "Cooldown")
+                                              VALUES (@roleId, @guildId, @level, @multiplier, @cooldown)
+                                              ON CONFLICT DO NOTHING
+                                              RETURNING 1
+                                          )
+                                          SELECT 1 FROM inserted;
+                                      """;
 
-                cmd.CommandText = """
-                                  WITH
-                                      guild_upsert AS (
-                                          INSERT INTO "Guilds" ("Id")
-                                          VALUES (@guildId)
-                                          ON CONFLICT ("Id") DO NOTHING
-                                      ),
-                                      inserted AS (
-                                          INSERT INTO "LevelingRoles" ("Id", "GuildId", "Level", "Multiplier", "Cooldown")
-                                          VALUES (@roleId, @guildId, @level, @multiplier, @cooldown)
-                                          ON CONFLICT DO NOTHING
-                                          RETURNING 1
-                                      )
-                                      SELECT 1 FROM inserted;
-                                  """;
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("roleId", role.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("level", level));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("roleId", role.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("level", level));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
 
-                if (await cmd.ExecuteScalarAsync() is null)
+                if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;

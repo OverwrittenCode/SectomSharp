@@ -1,12 +1,14 @@
 using System.ComponentModel;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
+using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Moderation;
@@ -70,6 +72,7 @@ public sealed partial class ModerationModule
 
         var thresholds = new List<(BotLogType LogType, uint Value, TimeSpan? Span)>(2);
         int currentWarnings = -1;
+        var stopwatch = Stopwatch.StartNew();
         await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
         {
             while (await reader.ReadAsync())
@@ -88,6 +91,9 @@ public sealed partial class ModerationModule
                 thresholds.Add((logType, value, span));
             }
         }
+
+        stopwatch.Stop();
+        Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
         if (thresholds.Count == 0)
         {

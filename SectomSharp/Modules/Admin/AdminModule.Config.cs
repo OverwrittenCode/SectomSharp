@@ -8,6 +8,7 @@ using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
+using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Modules.Admin;
@@ -66,21 +67,25 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      INSERT INTO "Guilds" ("Id", "Configuration_Warning_IsDisabled")
+                                      VALUES (@guildId, @isDisabled)
+                                      ON CONFLICT ("Id") DO UPDATE
+                                          SET "Configuration_Warning_IsDisabled" = @isDisabled
+                                          WHERE "Guilds"."Configuration_Warning_IsDisabled" IS DISTINCT FROM @isDisabled
+                                      RETURNING 1
+                                      """;
 
-                cmd.CommandText = """
-                                  INSERT INTO "Guilds" ("Id", "Configuration_Warning_IsDisabled")
-                                  VALUES (@guildId, @isDisabled)
-                                  ON CONFLICT ("Id") DO UPDATE
-                                      SET "Configuration_Warning_IsDisabled" = @isDisabled
-                                      WHERE "Guilds"."Configuration_Warning_IsDisabled" IS DISTINCT FROM @isDisabled
-                                  RETURNING 1
-                                  """;
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
 
-                if (await cmd.ExecuteScalarAsync() is null)
+                if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;
@@ -94,21 +99,25 @@ public sealed partial class AdminModule
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
-                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+                object? scalarResult;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      INSERT INTO "Guilds" ("Id", "Configuration_Leveling_IsDisabled")
+                                      VALUES (@guildId, @isDisabled)
+                                      ON CONFLICT ("Id") DO UPDATE
+                                          SET "Configuration_Leveling_IsDisabled" = @isDisabled
+                                          WHERE "Guilds"."Configuration_Leveling_IsDisabled" IS DISTINCT FROM @isDisabled
+                                      RETURNING 1
+                                      """;
 
-                cmd.CommandText = """
-                                  INSERT INTO "Guilds" ("Id", "Configuration_Leveling_IsDisabled")
-                                  VALUES (@guildId, @isDisabled)
-                                  ON CONFLICT ("Id") DO UPDATE
-                                      SET "Configuration_Leveling_IsDisabled" = @isDisabled
-                                      WHERE "Guilds"."Configuration_Leveling_IsDisabled" IS DISTINCT FROM @isDisabled
-                                  RETURNING 1
-                                  """;
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
 
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
+                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                }
 
-                if (await cmd.ExecuteScalarAsync() is null)
+                if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
                     return;

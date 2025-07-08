@@ -199,7 +199,6 @@ internal static class CaseUtils
             @case.LogMessageUrl = userMessage.GetJumpUrl();
         }
 
-        // language=SQL
         await db.Database.ExecuteSqlRawAsync(
             """
             WITH
