@@ -103,6 +103,7 @@ public sealed partial class GameModule
                 await ModifyOriginalResponseAsync(properties =>
                     {
                         properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]);
+                        properties.Components = components;
                     }
                 );
 
