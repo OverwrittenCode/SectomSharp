@@ -1,10 +1,7 @@
 using System.Runtime.InteropServices;
 using Discord;
 using Discord.Interactions;
-using Discord.Net;
-using Discord.Rest;
-using JetBrains.Annotations;
-using SectomSharp.Extensions;
+using Microsoft.Extensions.Logging;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Managers.Pagination;
@@ -15,15 +12,13 @@ namespace SectomSharp.Managers.Pagination;
 /// </summary>
 /// <typeparam name="T">The type of the implementing pagination manager. Must inherit from <see cref="InstanceManager{T}" />.</typeparam>
 internal abstract class BasePagination<T> : InstanceManager<T>
-    where T : InstanceManager<T>
+    where T : BasePagination<T>
 {
     /// <summary>
     ///     The maximum number of items to include in each chunk when splitting content.
     ///     Used when content exceeds Discord's maximum embed description length.
     /// </summary>
     private const int ChunkSize = 10;
-
-    public const string PaginationExpiredMessage = "The pagination for this message has expired.";
 
     /// <summary>
     ///     Creates an embed builder with standard formatting.
@@ -38,8 +33,6 @@ internal abstract class BasePagination<T> : InstanceManager<T>
             Title = title,
             Color = Storage.LightGold
         };
-
-    protected static async Task SendExpiredMessageAsync(IDiscordInteraction interaction) => await interaction.RespondOrFollowupAsync(PaginationExpiredMessage, ephemeral: true);
 
     /// <summary>
     ///     Creates an array of embeds by splitting <paramref name="strings" /> into chunks of <see cref="ChunkSize" />.
@@ -72,88 +65,6 @@ internal abstract class BasePagination<T> : InstanceManager<T>
         return [.. embeds];
     }
 
-    /// <summary>
-    ///     Gets the time in seconds to wait before invoking <see cref="CleanupAsync" />.
-    /// </summary>
-    protected int Timeout { get; }
-
-    /// <summary>
-    ///     Gets whether the pagination response should be ephemeral.
-    /// </summary>
-    protected bool IsEphemeral { get; }
-
-    /// <summary>
-    ///     Gets the original message structure from <see cref="Discord.WebSocket.SocketInteraction.GetOriginalResponseAsync(RequestOptions)" />.
-    /// </summary>
-    /// <value><c>null</c> if <see cref="InitAsync" /> has not been called yet.</value>
-    public RestInteractionMessage? Message { get; protected set; }
-
-    /// <summary>
-    ///     Initialises a new instance of the <typeparamref name="T" /> class with specified visibility settings.
-    /// </summary>
-    /// <param name="isEphemeral">Whether the pagination response should be ephemeral.</param>
-    /// <param name="timeout">The time in seconds to wait before invoking <see cref="CleanupAsync" />.</param>
-    /// <inheritdoc cref="InstanceManager{T}(global::System.String?)" path="/param" />
-    /// <exception cref="ArgumentOutOfRangeException">Timeout is less than 0.</exception>
-    protected BasePagination(int timeout, bool isEphemeral = false, string? id = null) : base(id)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeout);
-
-        Timeout = timeout;
-        IsEphemeral = isEphemeral;
-    }
-
-    /// <summary>
-    ///     Responds or follows up a Discord interaction with the initial pagination state.
-    /// </summary>
-    /// <param name="context">The interaction context containing information about the Discord interaction that triggered the pagination.</param>
-    /// <returns>A task representing the asynchronous operation of responding or following up the interaction.</returns>
-    protected abstract Task RespondOrFollowupAsync(SocketInteractionContext context);
-
-    /// <summary>
-    ///     Removes all the components in <see cref="Message" />.
-    /// </summary>
     /// <inheritdoc />
-    /// <inheritdoc cref="RestInteractionMessage.ModifyAsync(Action{MessageProperties}, RequestOptions)" path="/exception" />
-    /// <exception cref="InvalidOperationException"><see cref="Message" /> is <c>null</c>.</exception>
-    protected sealed override async Task CleanupAsync()
-    {
-        if (Message is null)
-        {
-            throw new InvalidOperationException($"{nameof(Message)} is null as it has not been called yet with {nameof(RespondOrFollowupAsync)}");
-        }
-
-        try
-        {
-            MessageComponent components = Message.Components.FromComponentsWithAllDisabled().Build();
-
-            await Message.ModifyAsync(props =>
-                {
-                    props.Components = components;
-                }
-            );
-        }
-        catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMessage) { }
-    }
-
-    /// <summary>
-    ///     Starts the pagination.
-    /// </summary>
-    /// <inheritdoc cref="RespondOrFollowupAsync(SocketInteractionContext)" />
-    [HandlesResourceDisposal]
-    public async Task InitAsync(SocketInteractionContext context)
-    {
-        await RespondOrFollowupAsync(context);
-
-        Message = await context.Interaction.GetOriginalResponseAsync();
-
-        await RestartTimer();
-    }
-
-    /// <summary>
-    ///     Restarts the expiration timer for this instance.
-    /// </summary>
-    /// <inheritdoc cref="InstanceManager{T}.ThrowIfDisposed" path="/exception" />
-    [HandlesResourceDisposal]
-    public async Task RestartTimer() => await StartExpirationTimer(Timeout);
+    protected BasePagination(ILoggerFactory loggerFactory, SocketInteractionContext context) : base(loggerFactory, context) { }
 }

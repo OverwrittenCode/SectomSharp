@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
 using JetBrains.Annotations;
@@ -5,19 +6,28 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
 using SectomSharp.Extensions;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Modules;
 
 /// <inheritdoc />
 [UsedImplicitly(ImplicitUseKindFlags.Access, ImplicitUseTargetFlags.WithInheritors)]
+[SuppressMessage("ReSharper", "StaticMemberInGenericType")]
 public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractionContext>
     where TThis : BaseModule<TThis>
 {
     protected const string TimespanDescription = "Allowed formats: 4d3h2m1s, 4d3h, 3h2m1s, 3h1s, 2m, 20s (d=days, h=hours, m=minutes, s=seconds)";
     protected const string NothingToView = "Nothing to view yet.";
 
+    private static readonly Func<ILogger, string, string, string, string, IDisposable?> GuildCommandScopeCallback =
+        LoggerMessage.DefineScope<string, string, string, string>("Command={CommandName}, User={Username}, Guild={GuildName}, Channel={ChannelName}");
+
+    private static readonly Func<ILogger, string, string, string, IDisposable?> CommandScopeCallback =
+        LoggerMessage.DefineScope<string, string, string>("Command={CommandName}, User={Username}, Channel={ChannelName}");
+
     private readonly ILogger<BaseModule<TThis>> _logger;
-    private string _source = null!;
+
+    private IDisposable? _logScope;
 
     /// <summary>
     ///     Gets the db factory.
@@ -49,17 +59,22 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
 
     public override void BeforeExecute(ICommandInfo command)
     {
-        _source = command.MethodName;
+        string fullName = Storage.CommandInfoFullNameMap[command];
+        _logScope = Context.Guild == null
+            ? CommandScopeCallback(_logger, fullName, Context.User.Username, Context.Channel.Name)
+            : GuildCommandScopeCallback(_logger, fullName, Context.User.Username, Context.Guild.Name, Context.Channel.Name);
+
         base.BeforeExecute(command);
     }
 
-    public void LogError(string message, Exception? ex = null) => _logger.LogError(ex, "[{Source}] {Message}", _source, message);
+    public override void AfterExecute(ICommandInfo command)
+    {
+        if (_logScope is not null)
+        {
+            _logScope.Dispose();
+            _logScope = null;
+        }
 
-    public void LogWarning(string message, Exception? ex = null) => _logger.LogWarning(ex, "[{Source}] {Message}", _source, message);
-
-    public void LogInfo(string message, Exception? ex = null) => _logger.LogInformation(ex, "[{Source}] {Message}", _source, message);
-
-    public void LogVerbose(string message, Exception? ex = null) => _logger.LogTrace(ex, "[{Source}] {Message}", _source, message);
-
-    public void LogDebug(string message, Exception? ex = null) => _logger.LogDebug(ex, "[{Source}] {Message}", _source, message);
+        base.AfterExecute(command);
+    }
 }

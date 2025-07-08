@@ -9,7 +9,6 @@ using SectomSharp.Attributes;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
-using SectomSharp.Managers.Pagination.Builders;
 using SectomSharp.Managers.Pagination.Button;
 using SectomSharp.Utils;
 
@@ -24,9 +23,14 @@ public sealed partial class AdminModule
         {
             private static readonly BotLogType[] BotLogTypes = Enum.GetValues<BotLogType>();
             private static readonly AuditLogType[] AuditLogTypes = Enum.GetValues<AuditLogType>();
+            private readonly ILoggerFactory _loggerFactory;
 
             /// <inheritdoc />
-            public LogChannelModule(ILogger<LogChannelModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+            public LogChannelModule(ILogger<LogChannelModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, ILoggerFactory loggerFactory) : base(
+                logger,
+                dbContextFactory
+            )
+                => _loggerFactory = loggerFactory;
 
             /// <summary>
             ///     Represents the result of an audit log upsert.
@@ -305,8 +309,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
-                await pagination.BuildAndInit(Context);
+                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
             }
 
             [SlashCmd("View the audit log channel configuration")]
@@ -338,8 +341,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
-                await pagination.BuildAndInit(Context);
+                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
             }
 
             public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)

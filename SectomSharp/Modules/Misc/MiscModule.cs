@@ -12,8 +12,8 @@ namespace SectomSharp.Modules.Misc;
 [CommandContextType(InteractionContextType.Guild)]
 public sealed partial class MiscModule : BaseModule<MiscModule>
 {
-    private readonly InteractionService _commands;
+    private readonly ILoggerFactory _loggerFactory;
 
-    public MiscModule(ILogger<MiscModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, InteractionService commands) : base(logger, dbContextFactory)
-        => _commands = commands;
+    public MiscModule(ILogger<MiscModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, ILoggerFactory loggerFactory) : base(logger, dbContextFactory)
+        => _loggerFactory = loggerFactory;
 }

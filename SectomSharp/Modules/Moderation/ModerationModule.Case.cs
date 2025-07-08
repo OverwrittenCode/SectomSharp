@@ -7,7 +7,6 @@ using SectomSharp.Data;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
-using SectomSharp.Managers.Pagination.Builders;
 using SectomSharp.Managers.Pagination.Button;
 using SectomSharp.Utils;
 
@@ -19,8 +18,11 @@ public sealed partial class ModerationModule
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     public sealed class CaseModule : BaseModule<CaseModule>
     {
+        private readonly ILoggerFactory _loggerFactory;
+
         /// <inheritdoc />
-        public CaseModule(ILogger<CaseModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+        public CaseModule(ILogger<CaseModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, ILoggerFactory loggerFactory) : base(logger, dbContextFactory)
+            => _loggerFactory = loggerFactory;
 
         [SlashCmd("View a specific case on the server")]
         public async Task View([MinLength(CaseConfiguration.IdLength)] [MaxLength(CaseConfiguration.IdLength)] string id)
@@ -110,8 +112,7 @@ public sealed partial class ModerationModule
                 return;
             }
 
-            var pagination = new ButtonPaginationBuilder { Embeds = [.. embeds] };
-            await pagination.BuildAndInit(Context);
+            await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
         }
     }
 }

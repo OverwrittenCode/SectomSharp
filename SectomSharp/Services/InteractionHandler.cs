@@ -5,6 +5,8 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Extensions;
+using SectomSharp.Managers.Pagination.SelectMenu;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Services;
 
@@ -38,7 +40,7 @@ public sealed class InteractionHandler : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", ex.Message);
+            _logger.DiscordNetUnhandledException(ex.Message, ex);
         }
     }
 
@@ -52,20 +54,45 @@ public sealed class InteractionHandler : BackgroundService
 
     private async Task HandleInteractionExecutionResult(IDiscordInteraction interaction, IResult result)
     {
-        if (result.Error == InteractionCommandError.UnknownCommand && interaction.Type == InteractionType.MessageComponent)
+        switch (result.Error)
         {
-            return;
+            case null:
+            case InteractionCommandError.UnknownCommand when interaction.Type == InteractionType.MessageComponent:
+                return;
+            case InteractionCommandError.UnmetPrecondition or InteractionCommandError.ConvertFailed:
+                await interaction.RespondOrFollowupAsync(result.ErrorReason, ephemeral: true);
+                return;
+            default:
+                _logger.DiscordNetInteractionCommandFailed(result.Error.Value, result.ErrorReason);
+                await interaction.RespondOrFollowupAsync($"{result.Error.Value} {result.ErrorReason}", ephemeral: true);
+                return;
         }
-
-        string message = result.Error == InteractionCommandError.UnmetPrecondition ? result.ErrorReason : $"{result.Error}: {result.ErrorReason}";
-        _logger.LogInformation("{Message}", message);
-        await interaction.RespondOrFollowupAsync(message, ephemeral: true);
     }
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+        IEnumerable<ICommandInfo> commandInfos = _interactionService.Modules.SelectMany(module
+            => module.SlashCommands.Cast<ICommandInfo>()
+                     .Concat(module.ContextCommands)
+                     .Concat(module.ComponentCommands)
+                     .Concat(module.AutocompleteCommands)
+                     .Concat(module.ModalCommands)
+        );
+        foreach (ICommandInfo cmd in commandInfos)
+        {
+            Storage.CommandInfoFullNameMap.Add(
+                cmd,
+                cmd.Module.IsSlashGroup
+                    ? cmd.Module.Parent.IsSubModule
+                        ? String.Join(' ', cmd.Module.Parent.SlashGroupName, cmd.Module.SlashGroupName, cmd.Name)
+                        : String.Join(' ', cmd.Module.SlashGroupName, cmd.Name)
+                    : cmd.Name
+            );
+        }
+
+        HelpSelectMenuPaginationManager.Initialize(_interactionService);
 
         _client.InteractionCreated += HandleInteractionCreated;
         _interactionService.InteractionExecuted += HandleInteractionExecuted;

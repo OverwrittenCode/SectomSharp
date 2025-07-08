@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Events;
+using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Services;
@@ -28,18 +29,31 @@ public sealed class DiscordBotService : BackgroundService
 
     private Task LogAsync(LogMessage message)
     {
-        LogLevel level = message.Severity switch
+        switch (message.Severity)
         {
-            LogSeverity.Critical => LogLevel.Critical,
-            LogSeverity.Error => LogLevel.Error,
-            LogSeverity.Warning => LogLevel.Warning,
-            LogSeverity.Info => LogLevel.Information,
-            LogSeverity.Verbose => LogLevel.Trace,
-            LogSeverity.Debug => LogLevel.Debug,
-            _ => LogLevel.Information
-        };
+            case LogSeverity.Critical:
+                _logger.DiscordNetCritical(message.Source, message.Message, message.Exception);
+                break;
+            case LogSeverity.Error:
+                _logger.DiscordNetError(message.Source, message.Message, message.Exception);
+                break;
+            case LogSeverity.Warning:
+                _logger.DiscordNetWarning(message.Source, message.Message, message.Exception);
+                break;
+            case LogSeverity.Info:
+                _logger.DiscordNetInformation(message.Source, message.Message, message.Exception);
+                break;
+            case LogSeverity.Verbose:
+                _logger.DiscordNetVerbose(message.Source, message.Message, message.Exception);
+                break;
+            case LogSeverity.Debug:
+                _logger.DiscordNetDebug(message.Source, message.Message, message.Exception);
+                break;
+            default:
+                _logger.DiscordNetInformation(message.Source, message.Message, message.Exception);
+                break;
+        }
 
-        _logger.Log(level, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
         return Task.CompletedTask;
     }
 

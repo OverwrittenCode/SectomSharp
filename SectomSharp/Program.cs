@@ -11,27 +11,17 @@ using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
 using SectomSharp.Events;
 using SectomSharp.Services;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 
 Console.OutputEncoding = Encoding.UTF8;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-builder.Configuration.AddUserSecrets<Program>(true, true).AddEnvironmentVariables();
-
-Logger loggerConfig = new LoggerConfiguration().MinimumLevel.Debug()
-                                               .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
-                                               .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Information)
-                                               .Enrich.FromLogContext()
-                                               .WriteTo.Console()
-                                               .CreateLogger();
+builder.Configuration.AddJsonFile("appsettings.json", false, false).AddUserSecrets<Program>(true, true).AddEnvironmentVariables();
 
 string connectionString = builder.Configuration["PostgreSQL:ConnectionString"] ?? throw new InvalidOperationException("Missing PostgreSQL connection string");
 
 builder.Logging.ClearProviders();
-builder.Logging.AddSerilog(loggerConfig, true);
+builder.Logging.AddSimpleConsole();
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
 builder.Services.AddSingleton(
