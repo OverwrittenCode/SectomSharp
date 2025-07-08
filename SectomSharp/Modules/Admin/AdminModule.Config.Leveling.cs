@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Diagnostics;
 using System.Text;
 using Discord;
 using Discord.Interactions;
@@ -46,6 +47,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 object? scalarResult;
+                var stopwatch = Stopwatch.StartNew();
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -67,10 +69,11 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
-
-                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
                 }
 
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
@@ -105,6 +108,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 object? scalarResult;
+                var stopwatch = Stopwatch.StartNew();
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -129,9 +133,11 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
 
-                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
                 }
 
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);

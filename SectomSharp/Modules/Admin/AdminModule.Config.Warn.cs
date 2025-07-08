@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 object? scalarResult;
+                var stopwatch = Stopwatch.StartNew();
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -70,9 +72,11 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
 
-                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
                 }
 
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);

@@ -71,7 +71,7 @@ public sealed partial class ModerationModule
         cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("operationType", OperationType.Create));
 
         var thresholds = new List<(BotLogType LogType, uint Value, TimeSpan? Span)>(2);
-        int currentWarnings = -1;
+        int currentWarnings = 0;
         var stopwatch = Stopwatch.StartNew();
         await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
         {
@@ -90,11 +90,11 @@ public sealed partial class ModerationModule
 
                 thresholds.Add((logType, value, span));
             }
+
+            stopwatch.Stop();
         }
 
-        stopwatch.Stop();
         Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-
         if (thresholds.Count == 0)
         {
             return;

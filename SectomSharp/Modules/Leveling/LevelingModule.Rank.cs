@@ -27,50 +27,56 @@ public sealed partial class LevelingModule
         }
 
         await DeferAsync();
-        await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-        await db.Database.OpenConnectionAsync();
-        await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-
-        cmd.CommandText = """
-                          SELECT
-                              get_level(u."Level_CurrentXp") AS "CurrentLevel",
-                              u."Level_CurrentXp" AS "CurrentXp",
-                              get_required_xp(get_level(u."Level_CurrentXp")) AS "RequiredXp",
-                              (
-                                  SELECT COUNT(*) + 1
-                                  FROM "Users" u2
-                                  WHERE u2."GuildId" = @guildId
-                                    AND u2."Level_CurrentXp" > u."Level_CurrentXp"
-                              ) AS "Rank"
-                          FROM "Users" u
-                          WHERE u."GuildId" = @guildId AND u."Id" = @userId;
-                          """;
-
-        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("userId", user.Id));
-
-        uint level;
-        uint currentXp;
-        uint requiredXp;
-        uint rank;
-        var stopwatch = Stopwatch.StartNew();
-        await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.SingleRow))
+        uint level = 0;
+        uint currentXp = 0;
+        uint requiredXp = 0;
+        uint rank = 0;
+        bool hasRows;
+        Stopwatch stopwatch;
+        await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
         {
-            if (!await reader.ReadAsync())
+            await db.Database.OpenConnectionAsync();
+            await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+
+            cmd.CommandText = """
+                              SELECT
+                                  get_level(u."Level_CurrentXp") AS "CurrentLevel",
+                                  u."Level_CurrentXp" AS "CurrentXp",
+                                  get_required_xp(get_level(u."Level_CurrentXp")) AS "RequiredXp",
+                                  (
+                                      SELECT COUNT(*) + 1
+                                      FROM "Users" u2
+                                      WHERE u2."GuildId" = @guildId
+                                        AND u2."Level_CurrentXp" > u."Level_CurrentXp"
+                                  ) AS "Rank"
+                              FROM "Users" u
+                              WHERE u."GuildId" = @guildId AND u."Id" = @userId;
+                              """;
+
+            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("userId", user.Id));
+
+            stopwatch = Stopwatch.StartNew();
+            await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.SingleRow | CommandBehavior.CloseConnection))
             {
+                hasRows = await reader.ReadAsync();
+                if (hasRows)
+                {
+                    level = (uint)reader.GetInt32(0);
+                    currentXp = (uint)reader.GetInt32(1);
+                    requiredXp = (uint)reader.GetInt32(2);
+                    rank = (uint)reader.GetInt32(3);
+                }
+
                 stopwatch.Stop();
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                await RespondOrFollowupAsync(NothingToView, ephemeral: true);
-                return;
             }
+        }
 
-            level = (uint)reader.GetInt32(0);
-            currentXp = (uint)reader.GetInt32(1);
-            requiredXp = (uint)reader.GetInt32(2);
-            rank = (uint)reader.GetInt32(3);
-
-            stopwatch.Stop();
-            Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+        Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+        if (!hasRows)
+        {
+            await RespondOrFollowupAsync(NothingToView, ephemeral: true);
+            return;
         }
 
         var rankCardBuilder = new RankCardBuilder
@@ -81,10 +87,8 @@ public sealed partial class LevelingModule
             CurrentXp = currentXp,
             RequiredXp = requiredXp
         };
-
         byte[] imageBytes = await rankCardBuilder.BuildAsync();
         using var stream = new MemoryStream(imageBytes);
-
         await FollowupWithFileAsync(stream, "RankCard.png");
     }
 }

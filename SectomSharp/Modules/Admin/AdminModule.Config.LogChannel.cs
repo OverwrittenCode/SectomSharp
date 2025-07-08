@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
 using JetBrains.Annotations;
@@ -64,6 +65,7 @@ public sealed partial class AdminModule
                 await db.Database.OpenConnectionAsync();
 
                 object? scalarResult;
+                var stopwatch = Stopwatch.StartNew();
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -91,9 +93,11 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
                 }
 
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
                     await RespondOrFollowupAsync(AlreadyConfiguredMessage);
@@ -125,6 +129,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
+                var stopwatch = Stopwatch.StartNew();
                 try
                 {
                     await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
@@ -157,7 +162,11 @@ public sealed partial class AdminModule
                         cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                         cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                        result = (AuditLogUpsertResult)await cmd.ExecuteScalarTimedAsync<int>(Logger);
+                        object? rawValue = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                        Debug.Assert(rawValue is not null);
+
+                        result = (AuditLogUpsertResult)(int)rawValue;
                     }
 
                     if (result is AuditLogUpsertResult.InsertedAndNeedsWebhookUrl)
@@ -174,10 +183,10 @@ public sealed partial class AdminModule
 
                     await transaction.CommitAsync();
                 }
-                catch (Exception)
+                finally
                 {
-                    await RespondOrFollowupAsync("An error occurred while configuring the audit log. Please try again.", ephemeral: true);
-                    throw;
+                    stopwatch.Stop();
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 }
 
                 if (result is AuditLogUpsertResult.NoChange)
@@ -199,6 +208,7 @@ public sealed partial class AdminModule
                 await db.Database.OpenConnectionAsync();
 
                 object? scalarResult;
+                var stopwatch = Stopwatch.StartNew();
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -231,9 +241,11 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
                 }
 
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is not true)
                 {
                     await RespondOrFollowupAsync(NotConfiguredMessage);
@@ -253,6 +265,7 @@ public sealed partial class AdminModule
                 await db.Database.OpenConnectionAsync();
 
                 object? scalarResult;
+                var stopwatch = Stopwatch.StartNew();
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -285,9 +298,11 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                    scalarResult = await cmd.ExecuteScalarTimedAsync(Logger);
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
                 }
 
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is not true)
                 {
                     await RespondOrFollowupAsync(NotConfiguredMessage);

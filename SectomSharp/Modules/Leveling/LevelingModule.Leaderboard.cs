@@ -18,51 +18,55 @@ public sealed partial class LevelingModule
     public async Task Leaderboard()
     {
         await DeferAsync();
-        await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-        await db.Database.OpenConnectionAsync();
-        await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-
-        cmd.CommandText = """
-                          SELECT
-                              u."Id" AS "UserId",
-                              get_level(u."Level_CurrentXp") AS "CurrentLevel",
-                              u."Level_CurrentXp" AS "CurrentXp"
-                          FROM "Users" u
-                          WHERE u."GuildId" = @guildId
-                            AND u."Level_CurrentXp" > 0
-                          ORDER BY u."Level_CurrentXp" DESC
-                          LIMIT 5;
-                          """;
-
-        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-
-        Task<LeaderboardPlayer>[] tasks;
-        int i;
-        var stopwatch = Stopwatch.StartNew();
-        await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
+        Task<LeaderboardPlayer>[] tasks = [];
+        int i = 0;
+        bool hasRows;
+        Stopwatch stopwatch;
+        await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
         {
-            if (!await reader.ReadAsync())
+            await db.Database.OpenConnectionAsync();
+            await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+
+            cmd.CommandText = """
+                              SELECT
+                                  u."Id" AS "UserId",
+                                  get_level(u."Level_CurrentXp") AS "CurrentLevel",
+                                  u."Level_CurrentXp" AS "CurrentXp"
+                              FROM "Users" u
+                              WHERE u."GuildId" = @guildId
+                                AND u."Level_CurrentXp" > 0
+                              ORDER BY u."Level_CurrentXp" DESC
+                              LIMIT 5;
+                              """;
+
+            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+
+            stopwatch = Stopwatch.StartNew();
+            await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.CloseConnection))
             {
+                hasRows = await reader.ReadAsync();
+                if (hasRows)
+                {
+                    tasks = new Task<LeaderboardPlayer>[LeaderboardPlayers.Length];
+                    do
+                    {
+                        ulong userId = (ulong)reader.GetInt64(0);
+                        uint level = (uint)reader.GetInt32(1);
+                        uint xp = (uint)reader.GetInt32(2);
+
+                        tasks[i++] = GetLeaderboardPlayerAsync(Context, userId, level, xp);
+                    } while (await reader.ReadAsync());
+                }
+
                 stopwatch.Stop();
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                await FollowupAsync(NothingToView, ephemeral: true);
-                return;
             }
+        }
 
-            tasks = new Task<LeaderboardPlayer>[LeaderboardPlayers.Length];
-            i = 0;
-
-            do
-            {
-                ulong userId = (ulong)reader.GetInt64(0);
-                uint level = (uint)reader.GetInt32(1);
-                uint xp = (uint)reader.GetInt32(2);
-
-                tasks[i++] = GetLeaderboardPlayerAsync(Context, userId, level, xp);
-            } while (await reader.ReadAsync());
-
-            stopwatch.Stop();
-            Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+        Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+        if (!hasRows)
+        {
+            await FollowupAsync(NothingToView, ephemeral: true);
+            return;
         }
 
         for (; i < tasks.Length; i++)
