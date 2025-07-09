@@ -150,6 +150,7 @@ public sealed partial class DiscordEvent
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("userId", author.Id));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromInt64Array("roleIds", roleIds));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromDateTime("now", message.CreatedAt.UtcDateTime));
+                await cmd.PrepareAsync();
 
                 stopwatch = Stopwatch.StartNew();
                 await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.SingleRow | CommandBehavior.CloseConnection))
