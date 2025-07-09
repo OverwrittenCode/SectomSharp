@@ -65,8 +65,15 @@ public static class NpgsqlParameterFactory
         where T : struct, Enum
         => new(name, Unsafe.As<T, int>(ref value)) { NpgsqlDbType = NpgsqlDbType.Integer };
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static NpgsqlParameter<int[]> FromInt32Array(string name, int[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Integer };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static NpgsqlParameter<int?[]> FromInt32Array(string name, int?[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Integer };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static NpgsqlParameter<long[]> FromInt64Array(string name, long[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Bigint };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static NpgsqlParameter<long?[]> FromInt64Array(string name, long?[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Bigint };
 }
