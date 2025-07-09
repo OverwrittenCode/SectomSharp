@@ -99,7 +99,7 @@ namespace SectomSharp.Data.Migrations
                                   CREATE OR REPLACE FUNCTION get_xp_gain(multiplier float)
                                   RETURNS integer
                                   LANGUAGE sql
-                                  IMMUTABLE
+                                  VOLATILE
                                   AS $$
                                       SELECT (FLOOR(RANDOM() * ({baseMultiplier} - {minXpGain} + 1) * multiplier) + {minXpGain})::INTEGER;
                                   $$;
