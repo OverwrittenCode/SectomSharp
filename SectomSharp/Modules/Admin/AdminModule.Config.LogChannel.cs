@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using Discord;
@@ -22,8 +23,6 @@ public sealed partial class AdminModule
         [Group("log-channel", "Log Channel configuration")]
         public sealed class LogChannelModule : BaseModule<LogChannelModule>
         {
-            private static readonly BotLogType[] BotLogTypes = Enum.GetValues<BotLogType>();
-            private static readonly AuditLogType[] AuditLogTypes = Enum.GetValues<AuditLogType>();
             private readonly ILoggerFactory _loggerFactory;
 
             /// <inheritdoc />
@@ -100,7 +99,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -115,10 +114,7 @@ public sealed partial class AdminModule
 
                 if (!Context.Guild.CurrentUser.GetPermissions(channel).ManageWebhooks)
                 {
-                    await RespondOrFollowupAsync(
-                        $"Bot requires channel permission {nameof(ChannelPermission.ManageWebhooks)} in {MentionUtils.MentionChannel(channel.Id)}",
-                        ephemeral: true
-                    );
+                    await RespondAsync($"Bot requires channel permission {nameof(ChannelPermission.ManageWebhooks)} in {MentionUtils.MentionChannel(channel.Id)}", ephemeral: true);
 
                     return;
                 }
@@ -191,7 +187,7 @@ public sealed partial class AdminModule
 
                 if (result is AuditLogUpsertResult.NoChange)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -248,7 +244,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is not true)
                 {
-                    await RespondOrFollowupAsync(NotConfiguredMessage);
+                    await FollowupAsync(NotConfiguredMessage);
                     return;
                 }
 
@@ -305,7 +301,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is not true)
                 {
-                    await RespondOrFollowupAsync(NotConfiguredMessage);
+                    await FollowupAsync(NotConfiguredMessage);
                     return;
                 }
 
@@ -316,64 +312,213 @@ public sealed partial class AdminModule
             public async Task ViewBotLog()
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                List<string> embedDescriptions = await db.BotLogChannels.Where(channel => channel.GuildId == Context.Guild.Id)
-                                                         .Select(channel => new
-                                                              {
-                                                                  channel.Id,
-                                                                  channel.Type
-                                                              }
-                                                          )
-                                                         .AsAsyncEnumerable()
-                                                         .SelectManyAwait(result => ValueTask.FromResult(
-                                                                  BotLogTypes.Where(flag => result.Type.HasFlag(flag))
-                                                                             .Select(log => $"{MentionUtils.MentionChannel(result.Id)} {Format.Bold($"[{log}]")}")
-                                                                             .ToAsyncEnumerable()
-                                                              )
-                                                          )
-                                                         .ToListAsync();
 
-                Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Bot Log Channels");
+                Embed[] embeds = [];
+
+                Stopwatch stopwatch;
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
+                {
+                    await db.Database.OpenConnectionAsync();
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = $"""
+                                           WITH flag_values AS (
+                                               SELECT * FROM (VALUES
+                                                   (1,  '{nameof(BotLogType.Warn)}'),
+                                                   (2,  '{nameof(BotLogType.Ban)}'),
+                                                   (4,  '{nameof(BotLogType.Softban)}'),
+                                                   (8,  '{nameof(BotLogType.Timeout)}'),
+                                                   (16, '{nameof(BotLogType.Configuration)}'),
+                                                   (32, '{nameof(BotLogType.Kick)}'),
+                                                   (64, '{nameof(BotLogType.Deafen)}'),
+                                                   (128,'{nameof(BotLogType.Mute)}'),
+                                                   (256,'{nameof(BotLogType.Nick)}'),
+                                                   (512,'{nameof(BotLogType.Purge)}'),
+                                                   (1024,'{nameof(BotLogType.ModNote)}')
+                                               ) AS flags(value, name)
+                                           ),
+                                           flattened AS (
+                                               SELECT 
+                                                   c."Id",
+                                                   flags.value AS flag_value,
+                                                   flags.name AS flag_name,
+                                                   row_number() OVER (ORDER BY c."Id") AS entry_rn
+                                               FROM "BotLogChannels" c
+                                               JOIN flag_values flags ON (c."Type" & flags.value) = flags.value
+                                               WHERE c."GuildId" = @guildId
+                                           ),
+                                           paged AS (
+                                               SELECT 
+                                                   '<#' || f."Id" || '> **[' || f.flag_name || ']**' AS entry,
+                                                   (f.entry_rn - 1) / @batchSize AS batch_index,
+                                                   f.entry_rn
+                                               FROM flattened f
+                                               ORDER BY f.entry_rn
+                                               LIMIT 1000
+                                           )
+                                           SELECT 
+                                               string_agg(p.entry, E'\n') AS "Batch",
+                                               count(*) OVER () AS "TotalPages"
+                                           FROM paged p
+                                           GROUP BY p.batch_index
+                                           ORDER BY MIN(p.entry_rn)
+                                           LIMIT 100;
+                                           """;
+
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromInt32("batchSize", ButtonPaginationManager.ChunkSize));
+
+                        int page = 0;
+                        var embedBuilder = new EmbedBuilder
+                        {
+                            Title = $"{Context.Guild.Name} Bot Log Channels",
+                            Color = Storage.LightGold
+                        };
+                        stopwatch = Stopwatch.StartNew();
+                        await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.CloseConnection))
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                string batch = reader.GetString(0);
+                                int totalPages = reader.GetInt32(1);
+
+                                embeds = new Embed[totalPages];
+
+                                embedBuilder.Description = batch;
+                                if (totalPages > 1)
+                                {
+                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page 1/{totalPages}");
+                                }
+
+                                embeds[page++] = embedBuilder.Build();
+
+                                while (await reader.ReadAsync())
+                                {
+                                    batch = reader.GetString(0);
+
+                                    embedBuilder.Description = batch;
+                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page {page + 1}/{totalPages}");
+                                    embeds[page++] = embedBuilder.Build();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
                 if (embeds.Length == 0)
                 {
-                    await RespondOrFollowupAsync(NothingToView);
+                    await FollowupAsync(NothingToView, ephemeral: true);
                     return;
                 }
 
-                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
+                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
             }
 
             [SlashCmd("View the audit log channel configuration")]
             public async Task ViewAuditLog()
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                List<string> embedDescriptions = await db.AuditLogChannels.Where(channel => channel.GuildId == Context.Guild.Id)
-                                                         .Select(channel => new
-                                                              {
-                                                                  channel.Id,
-                                                                  channel.Type
-                                                              }
-                                                          )
-                                                         .AsAsyncEnumerable()
-                                                         .SelectManyAwait(result => ValueTask.FromResult(
-                                                                  AuditLogTypes.Where(flag => result.Type.HasFlag(flag))
-                                                                               .Select(log => $"{MentionUtils.MentionChannel(result.Id)} {Format.Bold($"[{log}]")}")
-                                                                               .ToAsyncEnumerable()
-                                                              )
-                                                          )
-                                                         .ToListAsync();
 
-                Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Audit Log Channels");
+                Embed[] embeds = [];
+
+                Stopwatch stopwatch;
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
+                {
+                    await db.Database.OpenConnectionAsync();
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = $"""
+                                           WITH flag_values AS (
+                                               SELECT * FROM (VALUES
+                                                   (1,   '{nameof(AuditLogType.Server)}'),
+                                                   (2,   '{nameof(AuditLogType.Member)}'),
+                                                   (4,   '{nameof(AuditLogType.Message)}'),
+                                                   (8,   '{nameof(AuditLogType.Emoji)}'),
+                                                   (16,  '{nameof(AuditLogType.Sticker)}'),
+                                                   (32,  '{nameof(AuditLogType.Channel)}'),
+                                                   (64,  '{nameof(AuditLogType.Thread)}'),
+                                                   (128, '{nameof(AuditLogType.Role)}')
+                                               ) AS flags(value, name)
+                                           ),
+                                           flattened AS (
+                                               SELECT 
+                                                   c."Id",
+                                                   flags.value AS flag_value,
+                                                   flags.name AS flag_name,
+                                                   row_number() OVER (ORDER BY c."Id") AS entry_rn
+                                               FROM "AuditLogChannels" c
+                                               JOIN flag_values flags ON (c."Type" & flags.value) = flags.value
+                                               WHERE c."GuildId" = @guildId
+                                           ),
+                                           paged AS (
+                                               SELECT 
+                                                   '<#' || f."Id" || '> **[' || f.flag_name || ']**' AS entry,
+                                                   (f.entry_rn - 1) / @batchSize AS batch_index,
+                                                   f.entry_rn
+                                               FROM flattened f
+                                               ORDER BY f.entry_rn
+                                               LIMIT 1000
+                                           )
+                                           SELECT 
+                                               string_agg(p.entry, E'\n') AS "Batch",
+                                               count(*) OVER () AS "TotalPages"
+                                           FROM paged p
+                                           GROUP BY p.batch_index
+                                           ORDER BY MIN(p.entry_rn)
+                                           LIMIT 100;
+                                           """;
+
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromInt32("batchSize", ButtonPaginationManager.ChunkSize));
+
+                        int page = 0;
+                        var embedBuilder = new EmbedBuilder
+                        {
+                            Title = $"{Context.Guild.Name} Audit Log Channels",
+                            Color = Storage.LightGold
+                        };
+                        stopwatch = Stopwatch.StartNew();
+                        await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.CloseConnection))
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                string batch = reader.GetString(0);
+                                int totalPages = reader.GetInt32(1);
+
+                                embeds = new Embed[totalPages];
+
+                                embedBuilder.Description = batch;
+                                if (totalPages > 1)
+                                {
+                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page 1/{totalPages}");
+                                }
+
+                                embeds[page++] = embedBuilder.Build();
+
+                                while (await reader.ReadAsync())
+                                {
+                                    batch = reader.GetString(0);
+
+                                    embedBuilder.Description = batch;
+                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page {page + 1}/{totalPages}");
+                                    embeds[page++] = embedBuilder.Build();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
                 if (embeds.Length == 0)
                 {
-                    await RespondOrFollowupAsync(NothingToView);
+                    await FollowupAsync(NothingToView, ephemeral: true);
                     return;
                 }
 
-                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
+                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
             }
 
             public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)

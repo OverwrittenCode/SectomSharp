@@ -11,7 +11,7 @@ namespace SectomSharp.Managers.Pagination.SelectMenu;
 /// <summary>
 ///     Manages select menu-based pagination for the help menu.
 /// </summary>
-internal sealed class HelpSelectMenuPaginationManager : BasePagination<HelpSelectMenuPaginationManager>
+internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSelectMenuPaginationManager>
 {
     private static HelpCommandData _helpData;
 

@@ -13,7 +13,7 @@ public sealed partial class MiscModule
 
         if (restUser is null)
         {
-            await RespondOrFollowupAsync("Unknown user", ephemeral: true);
+            await RespondAsync("Unknown user", ephemeral: true);
             return;
         }
 
@@ -21,6 +21,6 @@ public sealed partial class MiscModule
 
         EmbedBuilder embed = new EmbedBuilder().WithColor(restUser.AccentColor ?? Color.Purple).WithAuthor(restUser.GlobalName).WithImageUrl(avatarUrl);
 
-        await RespondOrFollowupAsync(embeds: [embed.Build()]);
+        await RespondAsync(embeds: [embed.Build()]);
     }
 }

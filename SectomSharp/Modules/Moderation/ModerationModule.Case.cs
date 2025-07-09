@@ -1,3 +1,6 @@
+using System.Data;
+using System.Data.Common;
+using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
@@ -28,24 +31,21 @@ public sealed partial class ModerationModule
         public async Task View([MinLength(CaseConfiguration.IdLength)] [MaxLength(CaseConfiguration.IdLength)] string id)
         {
             await DeferAsync();
-
-            await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-            var result = await db.Cases.Where(c => c.GuildId == Context.Guild.Id && c.Id == id)
-                                 .Select(c => new
-                                      {
-                                          c.CommandInputEmbedBuilder,
-                                          c.LogMessageUrl
-                                      }
-                                  )
-                                 .FirstOrDefaultAsync();
-
-            if (result is null)
+            ViewResult? result;
+            await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
             {
-                await RespondOrFollowupAsync("Invalid case id provided.");
+                result = await db.Cases.Where(c => c.GuildId == Context.Guild.Id && c.Id == id)
+                                 .Select(c => (ViewResult?)new ViewResult(c.CommandInputEmbedBuilder, c.LogMessageUrl))
+                                 .FirstOrDefaultAsync();
+            }
+
+            if (!result.HasValue)
+            {
+                await FollowupAsync("Invalid case id provided.");
                 return;
             }
 
-            await RespondOrFollowupAsync(embeds: [result.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(result.LogMessageUrl));
+            await FollowupAsync(embeds: [result.Value.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(result.Value.LogMessageUrl));
         }
 
         [SlashCmd("List and filter all cases on the server")]
@@ -53,66 +53,131 @@ public sealed partial class ModerationModule
         {
             await DeferAsync();
 
-            await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-            IQueryable<Case> query = db.Cases.Where(@case => @case.GuildId == Context.Guild.Id);
+            Embed[] embeds = [];
 
-            if (target?.Id is { } targetId)
+            Stopwatch stopwatch;
+            await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
             {
-                query = query.Where(@case => @case.TargetId == targetId);
+                await db.Database.OpenConnectionAsync();
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = $"""
+                                       WITH log_type_names AS (
+                                           SELECT * FROM (VALUES
+                                               (1,    '{nameof(BotLogType.Warn)}'),
+                                               (2,    '{nameof(BotLogType.Ban)}'),
+                                               (4,    '{nameof(BotLogType.Softban)}'),
+                                               (8,    '{nameof(BotLogType.Timeout)}'),
+                                               (16,   '{nameof(BotLogType.Configuration)}'),
+                                               (32,   '{nameof(BotLogType.Kick)}'),
+                                               (64,   '{nameof(BotLogType.Deafen)}'),
+                                               (128,  '{nameof(BotLogType.Mute)}'),
+                                               (256,  '{nameof(BotLogType.Nick)}'),
+                                               (512,  '{nameof(BotLogType.Purge)}'),
+                                               (1024, '{nameof(BotLogType.ModNote)}')
+                                           ) AS l(type, name)
+                                       ),
+                                       operation_type_names AS (
+                                           SELECT * FROM (VALUES
+                                               (0, '{nameof(OperationType.Create)}'),
+                                               (1, '{nameof(OperationType.Update)}'),
+                                               (2, '{nameof(OperationType.Delete)}')
+                                           ) AS o(type, name)
+                                       ),
+                                       filtered_cases AS (
+                                           SELECT
+                                               c."Id",
+                                               c."LogType",
+                                               c."OperationType",
+                                               c."CreatedAt",
+                                               row_number() OVER (ORDER BY c."CreatedAt" DESC) AS rn
+                                           FROM "Cases" c
+                                           WHERE c."GuildId" = @guildId
+                                             AND (@targetId IS NULL OR c."TargetId" = @targetId)
+                                             AND (@perpetratorId IS NULL OR c."PerpetratorId" = @perpetratorId)
+                                             AND (@channelId IS NULL OR c."ChannelId" = @channelId)
+                                             AND (@logType IS NULL OR c."LogType" = @logType)
+                                             AND (@operationType IS NULL OR c."OperationType" = @operationType)
+                                           ORDER BY c."CreatedAt" DESC
+                                           LIMIT 1000
+                                       ),
+                                       batched AS (
+                                           SELECT
+                                               '`' || fc."Id" || '` **[' ||
+                                               COALESCE(lt.name, fc."LogType"::text) ||
+                                               COALESCE(ot.name, fc."OperationType"::text) || ']** ' || '<t:' ||
+                                               floor(extract(epoch from fc."CreatedAt" AT TIME ZONE 'UTC'))::bigint || ':R>' AS entry,
+                                               (fc.rn - 1) / @batchSize AS batch_index,
+                                               fc.rn
+                                           FROM filtered_cases fc
+                                           LEFT JOIN log_type_names lt ON fc."LogType" = lt.type
+                                           LEFT JOIN operation_type_names ot ON fc."OperationType" = ot.type
+                                       )
+                                       SELECT
+                                           string_agg(b.entry, E'\n') AS "Batch",
+                                           count(*) OVER () AS "TotalPages"
+                                       FROM batched b
+                                       GROUP BY b.batch_index
+                                       ORDER BY MIN(b.rn)
+                                       LIMIT 100;
+                                       """;
+
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("targetId", target?.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("perpetratorId", perpetrator?.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel?.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", logType));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("operationType", operationType));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromInt32("batchSize", ButtonPaginationManager.ChunkSize));
+
+                    int page = 0;
+                    var embedBuilder = new EmbedBuilder
+                    {
+                        Title = $"{Context.Guild.Name} Cases",
+                        Color = Storage.LightGold
+                    };
+                    stopwatch = Stopwatch.StartNew();
+                    await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.CloseConnection))
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            string batch = reader.GetString(0);
+                            int totalPages = reader.GetInt32(1);
+
+                            embeds = new Embed[totalPages];
+
+                            embedBuilder.Description = batch;
+                            if (totalPages > 1)
+                            {
+                                embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page 1/{totalPages}");
+                            }
+
+                            embeds[page++] = embedBuilder.Build();
+
+                            while (await reader.ReadAsync())
+                            {
+                                batch = reader.GetString(0);
+
+                                embedBuilder.Description = batch;
+                                embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page {page + 1}/{totalPages}");
+                                embeds[page++] = embedBuilder.Build();
+                            }
+                        }
+                    }
+                }
             }
 
-            if (perpetrator?.Id is { } perpetratorId)
-            {
-                query = query.Where(@case => @case.PerpetratorId == perpetratorId);
-            }
-
-            if (channel?.Id is { } channelId)
-            {
-                query = query.Where(@case => @case.ChannelId == channelId);
-            }
-
-            if (logType is not null)
-            {
-                query = query.Where(@case => @case.LogType == logType);
-            }
-
-            if (operationType is not null)
-            {
-                query = query.Where(@case => @case.OperationType == operationType);
-            }
-
-            query = query.OrderByDescending(@case => @case.CreatedAt);
-
-            var cases = await query.Select(@case => new
-                                        {
-                                            @case.Id,
-                                            @case.LogType,
-                                            @case.OperationType,
-                                            @case.CreatedAt
-                                        }
-                                    )
-                                   .ToListAsync();
-
-            if (cases.Count == 0)
-            {
-                await RespondOrFollowupAsync("No cases found.");
-                return;
-            }
-
-            List<string> embedDescriptions = cases.Select(@case
-                                                       => $"{Format.Code(@case.Id)} {Format.Bold($"[{@case.LogType}{@case.OperationType}]")} {@case.CreatedAt.GetRelativeTimestamp()}"
-                                                   )
-                                                  .ToList();
-
-            Embed[] embeds = ButtonPaginationManager.GetEmbeds(embedDescriptions, $"{Context.Guild.Name} Cases ({cases.Count})");
+            Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
             if (embeds.Length == 0)
             {
-                await RespondOrFollowupAsync(NothingToView);
+                await FollowupAsync(NothingToView, ephemeral: true);
                 return;
             }
 
-            await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
+            await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
         }
+
+        private readonly record struct ViewResult(EmbedBuilder CommandInputEmbedBuilder, string? LogMessageUrl);
     }
 }

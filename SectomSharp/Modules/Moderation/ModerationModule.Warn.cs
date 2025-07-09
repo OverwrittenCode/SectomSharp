@@ -168,7 +168,7 @@ public sealed partial class ModerationModule
             );
 
         async Task SendFailureMessageAsync()
-            => await RespondOrFollowupAsync(
+            => await FollowupAsync(
                 $"Warning configuration is setup to {punishmentThreshold.LogType} a user on reaching {warningDisplayText} but I lack permission to do so. Please contact a server administrator to fix this."
             );
     }

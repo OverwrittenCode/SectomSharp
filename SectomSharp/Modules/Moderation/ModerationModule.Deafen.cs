@@ -15,7 +15,7 @@ public sealed partial class ModerationModule
     {
         if (user.IsDeafened)
         {
-            await RespondOrFollowupAsync("User is already deafened.", ephemeral: true);
+            await RespondAsync("User is already deafened.", ephemeral: true);
             return;
         }
 

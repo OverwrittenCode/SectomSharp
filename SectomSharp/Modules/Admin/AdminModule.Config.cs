@@ -91,7 +91,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -126,7 +126,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 

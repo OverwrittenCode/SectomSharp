@@ -75,7 +75,7 @@ public sealed partial class LevelingModule
         Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
         if (!hasRows)
         {
-            await RespondOrFollowupAsync(NothingToView, ephemeral: true);
+            await FollowupAsync(NothingToView, ephemeral: true);
             return;
         }
 

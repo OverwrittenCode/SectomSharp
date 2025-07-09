@@ -15,7 +15,7 @@ public sealed partial class ModerationModule
     {
         if (user.IsMuted)
         {
-            await RespondOrFollowupAsync("User is already muted.", ephemeral: true);
+            await RespondAsync("User is already muted.", ephemeral: true);
             return;
         }
 

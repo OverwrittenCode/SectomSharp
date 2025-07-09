@@ -69,6 +69,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
+
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }
@@ -76,7 +77,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -140,7 +141,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -156,7 +157,7 @@ public sealed partial class AdminModule
 
                 if (affectedRows == 0)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -172,7 +173,7 @@ public sealed partial class AdminModule
 
                 if (result?.Items.Any() != true)
                 {
-                    await RespondOrFollowupAsync(NothingToView);
+                    await FollowupAsync(NothingToView);
                     return;
                 }
 
@@ -201,7 +202,7 @@ public sealed partial class AdminModule
                                  )
                              );
 
-                await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
+                await FollowupAsync(embeds: [embedBuilder.Build()]);
             }
 
             private sealed record AutoRoleEntry(ulong Id, uint Level, double? Multiplier, uint? Cooldown);

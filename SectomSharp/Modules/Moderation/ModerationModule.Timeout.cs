@@ -19,7 +19,7 @@ public sealed partial class ModerationModule
     {
         if (user.IsBot)
         {
-            await RespondOrFollowupAsync("Bot users cannot be timed out.", ephemeral: true);
+            await RespondAsync("Bot users cannot be timed out.", ephemeral: true);
             return;
         }
 
@@ -38,7 +38,7 @@ public sealed partial class ModerationModule
     {
         if (user.TimedOutUntil is null)
         {
-            await RespondOrFollowupAsync("This user is not timed out on the server.", ephemeral: true);
+            await RespondAsync("This user is not timed out on the server.", ephemeral: true);
             return;
         }
 

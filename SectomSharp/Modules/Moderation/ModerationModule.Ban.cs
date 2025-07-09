@@ -20,7 +20,7 @@ public sealed partial class ModerationModule
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
-            await RespondOrFollowupAsync("This user is already banned on the server.", ephemeral: true);
+            await RespondAsync("This user is already banned on the server.", ephemeral: true);
             return;
         }
 
@@ -36,7 +36,7 @@ public sealed partial class ModerationModule
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
-            await RespondOrFollowupAsync("This user is already banned on the server.", ephemeral: true);
+            await RespondAsync("This user is already banned on the server.", ephemeral: true);
             return;
         }
 
@@ -55,7 +55,7 @@ public sealed partial class ModerationModule
     {
         if (await Context.Guild.GetBanAsync(user) is null)
         {
-            await RespondOrFollowupAsync("This user is not banned from the server.", ephemeral: true);
+            await RespondAsync("This user is not banned from the server.", ephemeral: true);
             return;
         }
 

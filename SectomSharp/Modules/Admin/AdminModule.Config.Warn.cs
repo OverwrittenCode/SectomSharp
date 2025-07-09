@@ -79,7 +79,7 @@ public sealed partial class AdminModule
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 if (scalarResult is null)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -108,7 +108,7 @@ public sealed partial class AdminModule
 
                 if (affectedRows == 0)
                 {
-                    await RespondOrFollowupAsync(AlreadyConfiguredMessage);
+                    await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
@@ -125,7 +125,7 @@ public sealed partial class AdminModule
 
                 if (result?.Items.Any() != true)
                 {
-                    await RespondOrFollowupAsync(NothingToView);
+                    await FollowupAsync(NothingToView);
                     return;
                 }
 
@@ -165,7 +165,7 @@ public sealed partial class AdminModule
                                  )
                              );
 
-                await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
+                await FollowupAsync(embeds: [embedBuilder.Build()]);
             }
 
             private sealed record WarningThresholdEntry(uint Value, BotLogType LogType, TimeSpan? Span);

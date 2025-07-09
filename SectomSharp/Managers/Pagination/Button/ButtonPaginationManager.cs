@@ -9,8 +9,10 @@ namespace SectomSharp.Managers.Pagination.Button;
 /// <summary>
 ///     Manages button-based pagination for Discord embeds, allowing users to navigate through multiple pages of content.
 /// </summary>
-internal sealed class ButtonPaginationManager : BasePagination<ButtonPaginationManager>
+internal sealed class ButtonPaginationManager : InstanceManager<ButtonPaginationManager>
 {
+    public const int ChunkSize = 10;
+
     private static readonly PageNavigationButton[] PageNavigationButtons = Enum.GetValues<PageNavigationButton>();
 
     /// <summary>

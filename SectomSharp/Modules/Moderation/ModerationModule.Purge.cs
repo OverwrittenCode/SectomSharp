@@ -27,7 +27,7 @@ public sealed partial class ModerationModule
 
         if (messages.Count == 0)
         {
-            await RespondOrFollowupAsync("No messages newer than 2 weeks were found.");
+            await FollowupAsync("No messages newer than 2 weeks were found.");
             return;
         }
 

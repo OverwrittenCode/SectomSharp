@@ -28,7 +28,7 @@ public sealed partial class MiscModule
         AddInlineFieldEntryIfNotEmpty(guild.StageChannels, "Stage Channels");
         AddInlineFieldEntryIfNotEmpty(guild.CategoryChannels, "Category Channels");
 
-        await RespondOrFollowupAsync(embeds: [embedBuilder.Build()]);
+        await RespondAsync(embeds: [embedBuilder.Build()]);
         return;
 
         void AddInlineFieldEntryIfNotEmpty<T>(IReadOnlyCollection<T> collection, string fieldName)
