@@ -10,5 +10,5 @@ internal static class Storage
 
     public static readonly Dictionary<ICommandInfo, string> CommandInfoFullNameMap = [];
 
-    public static Color LightGold = new(0xe6c866);
+    public static readonly Color LightGold = new(0xe6c866);
 }
