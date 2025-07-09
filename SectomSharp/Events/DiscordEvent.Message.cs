@@ -20,6 +20,8 @@ public sealed partial class DiscordEvent
     private static readonly Func<ILogger, string, string, string, IDisposable?> MessageReceivedScopeCallback =
         LoggerMessage.DefineScope<string, string, string>("Event=MessageReceived, User={Username}, Guild={GuildName}, Channel={ChannelName}");
 
+    private static readonly RequestOptions AutoRoleRequestOptions = new() { AuditLogReason = "Configured auto-role" };
+
     public async Task HandleMessageReceivedAsync(SocketMessage msg)
     {
         if (msg is not SocketUserMessage { Author: SocketGuildUser { IsBot: false } author, Channel: IGuildChannel { Guild: { } guild } channel } message)
@@ -27,11 +29,12 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        long[] roleIds = author.Roles.Select(role => (long)role.Id).ToArray();
+        long[] roleIds = author.Roles.Select(r => (long)r.Id).ToArray();
         uint newLevel = 0;
         uint currentXp = 0;
         uint requiredXp = 0;
         uint rank = 0;
+        ulong? roleId = null;
         bool hasRows;
         Stopwatch stopwatch;
         await using (ApplicationDbContext db = await _dbFactory.CreateDbContextAsync())
@@ -123,10 +126,19 @@ public sealed partial class DiscordEvent
                                       lc."NewLevel",
                                       lc."NewXp" AS "CurrentXp",
                                       get_required_xp(lc."NewLevel") AS "RequiredXp",
-                                      COALESCE(ur."Rank", 1) AS "Rank"
+                                      COALESCE(ur."Rank", 1) AS "Rank",
+                                      lr."Id" AS "NewRoleId"
                                   FROM level_check lc
                                   LEFT JOIN user_rank ur
                                       ON ur."GuildId" = lc."GuildId" AND ur."Id" = lc."UserId"
+                                  LEFT JOIN LATERAL (
+                                      SELECT r."Id"
+                                      FROM "LevelingRoles" r
+                                      WHERE r."GuildId" = lc."GuildId"
+                                        AND r."Level" <= lc."NewLevel"
+                                      ORDER BY r."Level" DESC
+                                      LIMIT 1
+                                  ) lr ON true
                                   WHERE
                                       lc."NewLevel" > lc."CurrentLevel"
                                       AND EXISTS (
@@ -149,6 +161,11 @@ public sealed partial class DiscordEvent
                         currentXp = (uint)reader.GetInt32(1);
                         requiredXp = (uint)reader.GetInt32(2);
                         rank = (uint)reader.GetInt32(3);
+
+                        if (!reader.IsDBNull(4))
+                        {
+                            roleId = (ulong?)reader.GetInt64(4);
+                        }
                     }
 
                     stopwatch.Stop();
@@ -166,8 +183,21 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        IGuildUser currentUserAsync = await guild.GetCurrentUserAsync();
-        if (!currentUserAsync.GetPermissions(channel).Has(ChannelPermission.SendMessages))
+        IGuildUser bot = await guild.GetCurrentUserAsync();
+        if (roleId is { } autoRoleId
+         && bot.GuildPermissions.Has(GuildPermission.ManageRoles)
+         && guild.Roles.FirstOrDefault(r => r.Id == autoRoleId) is { } role
+         && bot.Hierarchy > role.Position
+         && !roleIds.Contains((long)autoRoleId))
+        {
+            try
+            {
+                await author.AddRoleAsync(autoRoleId, AutoRoleRequestOptions);
+            }
+            catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.MissingPermissions) { }
+        }
+
+        if (!bot.GetPermissions(channel).Has(ChannelPermission.SendMessages))
         {
             return;
         }
