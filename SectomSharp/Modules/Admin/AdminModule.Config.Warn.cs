@@ -48,7 +48,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 object? scalarResult;
-                var stopwatch = Stopwatch.StartNew();
+                Stopwatch stopwatch;
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -72,6 +72,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
 
+                    stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }

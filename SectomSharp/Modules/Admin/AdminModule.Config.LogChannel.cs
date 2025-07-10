@@ -64,7 +64,7 @@ public sealed partial class AdminModule
                 await db.Database.OpenConnectionAsync();
 
                 object? scalarResult;
-                var stopwatch = Stopwatch.StartNew();
+                Stopwatch stopwatch;
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -92,6 +92,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
+                    stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }
@@ -125,7 +126,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
-                var stopwatch = Stopwatch.StartNew();
+                var stopwatch = new Stopwatch();
                 try
                 {
                     await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
@@ -158,6 +159,7 @@ public sealed partial class AdminModule
                         cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                         cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
+                        stopwatch.Start();
                         object? rawValue = await cmd.ExecuteScalarAsync();
                         stopwatch.Stop();
                         Debug.Assert(rawValue is not null);
@@ -204,7 +206,7 @@ public sealed partial class AdminModule
                 await db.Database.OpenConnectionAsync();
 
                 object? scalarResult;
-                var stopwatch = Stopwatch.StartNew();
+                Stopwatch stopwatch;
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -237,6 +239,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
+                    stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }
@@ -261,7 +264,7 @@ public sealed partial class AdminModule
                 await db.Database.OpenConnectionAsync();
 
                 object? scalarResult;
-                var stopwatch = Stopwatch.StartNew();
+                Stopwatch stopwatch;
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -294,6 +297,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
+                    stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }

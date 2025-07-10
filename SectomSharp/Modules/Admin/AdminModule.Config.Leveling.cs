@@ -47,7 +47,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 object? scalarResult;
-                var stopwatch = Stopwatch.StartNew();
+                Stopwatch stopwatch;
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -70,6 +70,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
 
+                    stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }
@@ -109,7 +110,7 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 await db.Database.OpenConnectionAsync();
                 object? scalarResult;
-                var stopwatch = Stopwatch.StartNew();
+                Stopwatch stopwatch;
                 await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                 {
                     cmd.CommandText = """
@@ -134,6 +135,7 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
 
+                    stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
                     stopwatch.Stop();
                 }
