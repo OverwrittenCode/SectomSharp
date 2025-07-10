@@ -1,6 +1,6 @@
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Text;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -21,23 +21,6 @@ public sealed partial class AdminModule
         [Group("leveling", "Leveling configuration")]
         public sealed class LevelingModule : DisableableModule<LevelingModule, LevelingConfiguration>
         {
-            private static readonly Func<ApplicationDbContext, ulong, Task<ResultSet<AutoRoleEntry>?>> TryGetAutoRoles =
-                EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId) => db.Guilds.Where(guild => guild.Id == guildId)
-                                                                                   .Select(guild => new ResultSet<AutoRoleEntry>(
-                                                                                            guild.Configuration.Leveling.IsDisabled,
-                                                                                            guild.LevelingRoles.OrderBy(role => role.Level)
-                                                                                                 .Select(role => new AutoRoleEntry(
-                                                                                                      role.Id,
-                                                                                                      role.Level,
-                                                                                                      role.Multiplier,
-                                                                                                      role.Cooldown
-                                                                                                  )
-                                                                                                  )
-                                                                                        )
-                                                                                    )
-                                                                                   .FirstOrDefault()
-                );
-
             /// <inheritdoc />
             public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
@@ -69,6 +52,43 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
+
+                    stopwatch = Stopwatch.StartNew();
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
+                }
+
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                if (scalarResult is null)
+                {
+                    await FollowupAsync(AlreadyConfiguredMessage);
+                    return;
+                }
+
+                await LogAsync(db, Context, reason);
+            }
+
+            /// <inheritdoc />
+            protected override async Task SetIsDisabledAsync(bool isDisabled, string? reason)
+            {
+                await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                await db.Database.OpenConnectionAsync();
+                object? scalarResult;
+                Stopwatch stopwatch;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      INSERT INTO "Guilds" ("Id", "Configuration_Leveling_IsDisabled")
+                                      VALUES (@guildId, @isDisabled)
+                                      ON CONFLICT ("Id") DO UPDATE
+                                          SET "Configuration_Leveling_IsDisabled" = @isDisabled
+                                          WHERE "Guilds"."Configuration_Leveling_IsDisabled" IS DISTINCT FROM @isDisabled
+                                      RETURNING 1
+                                      """;
+
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
 
                     stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
@@ -170,44 +190,72 @@ public sealed partial class AdminModule
             public async Task ViewAutoRoles()
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                ResultSet<AutoRoleEntry>? result = await TryGetAutoRoles(db, Context.Guild.Id);
 
-                if (result?.Items.Any() != true)
+                string? autoRolesText = null;
+                bool isDisabled = false;
+
+                Stopwatch stopwatch;
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    await FollowupAsync(NothingToView);
+                    await db.Database.OpenConnectionAsync();
+
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = """
+                                          SELECT
+                                              g."Configuration_Leveling_IsDisabled" AS "IsDisabled",
+                                              string_agg(
+                                                  '- Level ' || r."Level" || ': <@&' || r."Id" || '>' ||
+                                                  COALESCE(' (x' || trim(trailing '.' from trim(trailing '0' from to_char(r."Multiplier", 'FM999999999.##'))) || ')', '') ||
+                                                  COALESCE(' (' || r."Cooldown" || 's)', ''),
+                                                  E'\n'
+                                              ORDER BY r."Level"
+                                              ) AS "AutoRoles"
+                                          FROM "Guilds" g
+                                          LEFT JOIN "LevelingRoles" r ON r."GuildId" = g."Id"
+                                          WHERE g."Id" = @guildId
+                                          GROUP BY g."Configuration_Leveling_IsDisabled";
+                                          """;
+
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+
+                        stopwatch = Stopwatch.StartNew();
+                        await using (DbDataReader reader =
+                                     await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.CloseConnection))
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                isDisabled = reader.GetBoolean(0);
+                                autoRolesText = reader.IsDBNull(1) ? null : reader.GetString(1);
+                            }
+
+                            stopwatch.Stop();
+                        }
+                    }
+                }
+
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+
+                if (String.IsNullOrWhiteSpace(autoRolesText))
+                {
+                    await FollowupAsync(NothingToView, ephemeral: true);
                     return;
                 }
 
-                EmbedBuilder embedBuilder = GetConfigurationEmbedBuilder(result.IsDisabled);
+                var embedBuilder = new EmbedBuilder
+                {
+                    Title = $"{Context.Guild.Name} Leveling Auto Roles",
+                    Color = Storage.LightGold,
+                    Description = autoRolesText
+                };
 
-                embedBuilder.WithTitle($"{Context.Guild.Name} Leveling Auto Roles")
-                            .WithDescription(
-                                 String.Join(
-                                     '\n',
-                                     result.Items.Select(autoRole =>
-                                         {
-                                             var builder = new StringBuilder($"- Level {autoRole.Level}: {MentionUtils.MentionRole(autoRole.Id)}", 50);
-                                             if (autoRole.Multiplier.HasValue)
-                                             {
-                                                 builder.Append($" (x{autoRole.Multiplier.Value:0.##})");
-                                             }
-
-                                             if (autoRole.Cooldown.HasValue)
-                                             {
-                                                 builder.Append($" ({autoRole.Cooldown.Value}s)");
-                                             }
-
-                                             return builder.ToString();
-                                         }
-                                     )
-                                 )
-                             );
+                if (isDisabled)
+                {
+                    embedBuilder.Footer = new EmbedFooterBuilder { Text = "Module is currently disabled" };
+                }
 
                 await FollowupAsync(embeds: [embedBuilder.Build()]);
             }
-
-            private sealed record AutoRoleEntry(ulong Id, uint Level, double? Multiplier, uint? Cooldown);
         }
     }
 }

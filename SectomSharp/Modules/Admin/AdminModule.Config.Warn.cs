@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using Discord;
@@ -22,22 +23,6 @@ public sealed partial class AdminModule
         {
             private const uint MinThreshold = 1;
             private const uint MaxThreshold = 20;
-
-            private static readonly Func<ApplicationDbContext, ulong, Task<ResultSet<WarningThresholdEntry>?>> TryGetWarningThresholds =
-                EF.CompileAsyncQuery((ApplicationDbContext db, ulong guildId) => db.Guilds.Where(guild => guild.Id == guildId)
-                                                                                   .Select(guild => new ResultSet<WarningThresholdEntry>(
-                                                                                            guild.Configuration.Warning.IsDisabled,
-                                                                                            guild.WarningThresholds.OrderBy(threshold => threshold.Value)
-                                                                                                 .Select(threshold => new WarningThresholdEntry(
-                                                                                                          threshold.Value,
-                                                                                                          threshold.LogType,
-                                                                                                          threshold.Span
-                                                                                                      )
-                                                                                                  )
-                                                                                        )
-                                                                                    )
-                                                                                   .FirstOrDefault()
-                );
 
             /// <inheritdoc />
             public WarnModule(ILogger<WarnModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
@@ -87,6 +72,42 @@ public sealed partial class AdminModule
                 await LogAsync(db, Context, reason);
             }
 
+            protected override async Task SetIsDisabledAsync(bool isDisabled, string? reason)
+            {
+                await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+                await db.Database.OpenConnectionAsync();
+                object? scalarResult;
+                Stopwatch stopwatch;
+                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                {
+                    cmd.CommandText = """
+                                      INSERT INTO "Guilds" ("Id", "Configuration_Warning_IsDisabled")
+                                      VALUES (@guildId, @isDisabled)
+                                      ON CONFLICT ("Id") DO UPDATE
+                                          SET "Configuration_Warning_IsDisabled" = @isDisabled
+                                          WHERE "Guilds"."Configuration_Warning_IsDisabled" IS DISTINCT FROM @isDisabled
+                                      RETURNING 1
+                                      """;
+
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
+
+                    stopwatch = Stopwatch.StartNew();
+                    scalarResult = await cmd.ExecuteScalarAsync();
+                    stopwatch.Stop();
+                }
+
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                if (scalarResult is null)
+                {
+                    await FollowupAsync(AlreadyConfiguredMessage);
+                    return;
+                }
+
+                await LogAsync(db, Context, reason);
+            }
+
             [SlashCmd("Add a timeout punishment on reaching a number of warnings")]
             public async Task AddTimeoutPunishment(
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold,
@@ -120,56 +141,105 @@ public sealed partial class AdminModule
             public async Task ViewThresholds()
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
 
-                ResultSet<WarningThresholdEntry>? result = await TryGetWarningThresholds(db, Context.Guild.Id);
+                string? thresholdsText = null;
+                bool isDisabled = false;
 
-                if (result?.Items.Any() != true)
+                Stopwatch stopwatch;
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    await FollowupAsync(NothingToView);
+                    await db.Database.OpenConnectionAsync();
+
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = $"""
+                                           WITH flag_values AS (
+                                               SELECT * FROM (VALUES
+                                                   (1,  '{nameof(BotLogType.Warn)}'),
+                                                   (2,  '{nameof(BotLogType.Ban)}'),
+                                                   (4,  '{nameof(BotLogType.Softban)}'),
+                                                   (8,  '{nameof(BotLogType.Timeout)}'),
+                                                   (16, '{nameof(BotLogType.Configuration)}'),
+                                                   (32, '{nameof(BotLogType.Kick)}'),
+                                                   (64, '{nameof(BotLogType.Deafen)}'),
+                                                   (128,'{nameof(BotLogType.Mute)}'),
+                                                   (256,'{nameof(BotLogType.Nick)}'),
+                                                   (512,'{nameof(BotLogType.Purge)}'),
+                                                   (1024,'{nameof(BotLogType.ModNote)}')
+                                               ) AS f(value, name)
+                                           )
+                                           SELECT
+                                               g."Configuration_Warning_IsDisabled" AS "IsDisabled",
+                                               string_agg(
+                                                   '- ' || t."Value" ||
+                                                   CASE
+                                                       WHEN t."Value" % 100 BETWEEN 11 AND 13 THEN 'th'
+                                                       WHEN t."Value" % 10 = 1 THEN 'st'
+                                                       WHEN t."Value" % 10 = 2 THEN 'nd'
+                                                       WHEN t."Value" % 10 = 3 THEN 'rd'
+                                                       ELSE 'th'
+                                                   END ||
+                                                   ' Strike: **' ||
+                                                   COALESCE(
+                                                       CASE
+                                                           WHEN t."Span" IS NULL THEN NULL
+                                                           WHEN date_part('day', t."Span") > 0 THEN date_part('day', t."Span")::int || ' day'
+                                                           WHEN date_part('hour', t."Span") > 0 THEN date_part('hour', t."Span")::int || ' hour'
+                                                           WHEN date_part('minute', t."Span") > 0 THEN date_part('minute', t."Span")::int || ' minute'
+                                                           ELSE date_part('second', t."Span")::int || ' second'
+                                                       END || ' ',
+                                                       ''
+                                                   ) ||
+                                                   COALESCE(f.name, t."LogType"::text) ||
+                                                   '**',
+                                                   E'\n'
+                                               ORDER BY t."Value") AS "Thresholds"
+                                           FROM "Guilds" g
+                                           LEFT JOIN "WarningThresholds" t ON t."GuildId" = g."Id"
+                                           LEFT JOIN flag_values f ON f.value = t."LogType"
+                                           WHERE g."Id" = @guildId
+                                           GROUP BY g."Configuration_Warning_IsDisabled";
+                                           """;
+
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+
+                        stopwatch = Stopwatch.StartNew();
+                        await using (DbDataReader reader =
+                                     await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.CloseConnection))
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                isDisabled = reader.GetBoolean(0);
+                                thresholdsText = reader.IsDBNull(1) ? null : reader.GetString(1);
+                            }
+
+                            stopwatch.Stop();
+                        }
+                    }
+                }
+
+                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+
+                if (String.IsNullOrWhiteSpace(thresholdsText))
+                {
+                    await FollowupAsync(NothingToView, ephemeral: true);
                     return;
                 }
 
-                EmbedBuilder embedBuilder = GetConfigurationEmbedBuilder(result.IsDisabled);
+                var embedBuilder = new EmbedBuilder
+                {
+                    Title = $"{Context.Guild.Name} Warning Thresholds",
+                    Color = Storage.LightGold,
+                    Description = thresholdsText
+                };
 
-                embedBuilder.WithTitle($"{Context.Guild.Name} Warning Thresholds")
-                            .WithDescription(
-                                 String.Join(
-                                     '\n',
-                                     result.Items.Select(threshold =>
-                                         {
-                                             string ordinalSuffix = threshold.Value % 100 is >= 11 and <= 13
-                                                 ? "th"
-                                                 : (threshold.Value % 10) switch
-                                                 {
-                                                     1 => "st",
-                                                     2 => "nd",
-                                                     3 => "rd",
-                                                     _ => "th"
-                                                 };
-
-                                             string strikePosition = threshold.Value + ordinalSuffix;
-
-                                             string durationText = threshold.Span.HasValue
-                                                 ? threshold.Span.Value switch
-                                                 {
-                                                     { Days: var d and > 0 } => $"{d} day",
-                                                     { Hours: var h and > 0 } => $"{h} hour",
-                                                     { Minutes: var m and > 0 } => $"{m} minute",
-                                                     _ => $"{threshold.Span.Value.Seconds} second"
-                                                 }
-                                                 : "";
-
-                                             return $"- {strikePosition} Strike: {Format.Bold($"{durationText} {threshold.LogType}")}";
-                                         }
-                                     )
-                                 )
-                             );
+                if (isDisabled)
+                {
+                    embedBuilder.Footer = new EmbedFooterBuilder { Text = "Module is currently disabled" };
+                }
 
                 await FollowupAsync(embeds: [embedBuilder.Build()]);
             }
-
-            private sealed record WarningThresholdEntry(uint Value, BotLogType LogType, TimeSpan? Span);
         }
     }
 }
