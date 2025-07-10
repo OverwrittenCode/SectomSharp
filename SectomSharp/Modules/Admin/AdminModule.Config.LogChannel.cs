@@ -405,6 +405,8 @@ public sealed partial class AdminModule
                                     embeds[page++] = embedBuilder.Build();
                                 }
                             }
+
+                            stopwatch.Stop();
                         }
                     }
                 }
@@ -510,6 +512,8 @@ public sealed partial class AdminModule
                                     embeds[page++] = embedBuilder.Build();
                                 }
                             }
+
+                            stopwatch.Stop();
                         }
                     }
                 }

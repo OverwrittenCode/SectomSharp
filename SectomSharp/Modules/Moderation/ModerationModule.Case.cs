@@ -163,6 +163,8 @@ public sealed partial class ModerationModule
                                 embeds[page++] = embedBuilder.Build();
                             }
                         }
+
+                        stopwatch.Stop();
                     }
                 }
             }
