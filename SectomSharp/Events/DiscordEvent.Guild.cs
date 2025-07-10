@@ -12,17 +12,17 @@ public sealed partial class DiscordEvent
 {
     public async Task HandleGuildUpdatedAsync(SocketGuild oldGuild, SocketGuild newGuild)
     {
-        await using ApplicationDbContext db = await _dbFactory.CreateDbContextAsync();
+        AuditLogGuildUpdatedResult[] auditLogChannels;
+        await using (ApplicationDbContext db = await _dbFactory.CreateDbContextAsync())
+        {
+            auditLogChannels = await db.AuditLogChannels
+                                       .Where(channel => channel.GuildId == newGuild.Id && ((int)channel.Type & (int)(AuditLogType.Emoji | AuditLogType.Server)) != 0)
+                                       .Select(channel => new AuditLogGuildUpdatedResult(channel.Type, channel.WebhookUrl))
+                                       .Take(2)
+                                       .ToArrayAsync();
+        }
 
-        if (await db.AuditLogChannels.Where(channel => channel.GuildId == newGuild.Id && ((int)channel.Type & (int)(AuditLogType.Emoji | AuditLogType.Server)) != 0)
-                    .Select(channel => new
-                         {
-                             channel.Type,
-                             channel.WebhookUrl
-                         }
-                     )
-                    .Take(2)
-                    .ToArrayAsync() is not { } auditLogChannels)
+        if (auditLogChannels.Length == 0)
         {
             return;
         }
@@ -81,4 +81,6 @@ public sealed partial class DiscordEvent
 
         await LogAsync(newGuild, serverChannelWebhookClient, AuditLogType.Server, OperationType.Update, entries, newGuild.Name, newGuild.Name, newGuild.IconUrl);
     }
+
+    public sealed record AuditLogGuildUpdatedResult(AuditLogType Type, string WebhookUrl);
 }
