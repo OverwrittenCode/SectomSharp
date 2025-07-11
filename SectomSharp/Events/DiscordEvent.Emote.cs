@@ -3,6 +3,7 @@ using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
@@ -50,17 +51,20 @@ public sealed partial class DiscordEvent
     }
 
     private static async Task HandleGuildEmoteAlteredAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, OperationType operationType, GuildEmote emote)
-    {
-        List<AuditLogEntry> entries =
-        [
-            new("Id", emote.Id),
-            new("Name", emote.Name),
-            new("Animated", emote.Animated),
-            new("Url", emote.Url)
-        ];
-
-        await LogAsync(newGuild, discordWebhookClient, AuditLogType.Emoji, operationType, entries, emote.Id.ToString(), emote.Name);
-    }
+        => await LogAsync(
+            newGuild,
+            discordWebhookClient,
+            AuditLogType.Emoji,
+            operationType,
+            [
+                EmbedFieldBuilderFactory.Create("Id", emote.Id),
+                EmbedFieldBuilderFactory.Create("Name", emote.Name),
+                EmbedFieldBuilderFactory.Create("Animated", emote.Animated),
+                EmbedFieldBuilderFactory.Create("Url", emote.Url)
+            ],
+            emote.Id,
+            emote.Name
+        );
 
     private static async Task HandleGuildEmoteAddedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
         => await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Create, emote);
@@ -69,12 +73,13 @@ public sealed partial class DiscordEvent
         => await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Delete, emote);
 
     private static async Task HandleGuildEmoteUpdatedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote oldEmote, GuildEmote newEmote)
-    {
-        List<AuditLogEntry> entries =
-        [
-            new("Name", GetChangeEntry(oldEmote.Name, newEmote.Name))
-        ];
-
-        await LogAsync(newGuild, discordWebhookClient, AuditLogType.Emoji, OperationType.Update, entries, newEmote.Id.ToString(), newEmote.Name);
-    }
+        => await LogAsync(
+            newGuild,
+            discordWebhookClient,
+            AuditLogType.Emoji,
+            OperationType.Update,
+            [EmbedFieldBuilderFactory.Create("Name", GetChangeEntry(oldEmote.Name, newEmote.Name))],
+            newEmote.Id,
+            newEmote.Name
+        );
 }

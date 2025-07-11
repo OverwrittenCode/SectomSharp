@@ -44,7 +44,6 @@ public sealed partial class ModerationModule
 
         await DeferAsync();
         await user.RemoveTimeOutAsync(DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
-
         await CaseUtils.LogAsync(DbContextFactory, Context, BotLogType.Timeout, OperationType.Delete, user.Id, reason: reason);
     }
 }

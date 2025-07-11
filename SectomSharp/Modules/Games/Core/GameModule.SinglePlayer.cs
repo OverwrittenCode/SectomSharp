@@ -22,7 +22,11 @@ public sealed partial class GameModule
         where T : struct
     {
         await DeferAsync(true);
-        EmbedBuilder embedBuilder = new EmbedBuilder().WithColor(Color.Purple).WithDescription("Select your choice below to play against the computer.");
+        var embedBuilder = new EmbedBuilder
+        {
+            Color = Color.Purple,
+            Description = "Select your choice below to play against the computer."
+        };
         IUserMessage message = await FollowupAsync(embeds: [embedBuilder.Build()], components: components);
 
         var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);

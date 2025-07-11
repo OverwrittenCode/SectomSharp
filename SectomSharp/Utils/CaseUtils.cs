@@ -100,19 +100,12 @@ internal static class CaseUtils
         string? reason = null
     )
     {
-        if (!context.Interaction.HasResponded)
-        {
-            await context.Interaction.DeferAsync();
-        }
-
         ulong? perpetratorId = context.User.Id == context.Client.CurrentUser.Id ? null : context.User.Id;
 
         var command = (SocketSlashCommand)context.Interaction;
-        List<string> commandMentionArguments = [command.CommandName];
-        List<EmbedFieldBuilder> commandFields = [];
+        var commandMentionArguments = new List<string>(3) { command.CommandName };
 
         IReadOnlyCollection<SocketSlashCommandDataOption> options = command.Data.Options;
-
         while (options.Any(x => x.Type is ApplicationCommandOptionType.SubCommand or ApplicationCommandOptionType.SubCommandGroup))
         {
             if (options.ElementAtOrDefault(0) is not { } option)
@@ -130,6 +123,7 @@ internal static class CaseUtils
             options = optionData;
         }
 
+        List<EmbedFieldBuilder> commandFields = new(options.Count);
         foreach (SocketSlashCommandDataOption option in options)
         {
             string value = option.Value switch
@@ -139,38 +133,28 @@ internal static class CaseUtils
                 _ => option.Value.ToString() ?? "Unknown"
             };
 
-            commandFields.Add(
-                new EmbedFieldBuilder
-                {
-                    Name = option.Name,
-                    Value = value
-                }
-            );
+            commandFields.Add(EmbedFieldBuilderFactory.Create(option.Name, value));
         }
 
         string caseId = StringUtils.GenerateUniqueId();
 
-        EmbedBuilder commandInputEmbedBuilder = new EmbedBuilder().WithDescription($"</{String.Join(' ', commandMentionArguments)}:{command.CommandId}>")
-                                                                  .WithAuthor($"{logType}{operationType} | {caseId}")
-                                                                  .WithColor(
-                                                                       perpetratorId is null
-                                                                           ? Color.Purple
-                                                                           : operationType == OperationType.Update
-                                                                               ? Color.Orange
-                                                                               : Color.Red
-                                                                   )
-                                                                  .WithFields(commandFields)
-                                                                  .WithCurrentTimestamp();
+        var commandInputEmbedBuilder = new EmbedBuilder
+        {
+            Description = $"</{String.Join(' ', commandMentionArguments)}:{command.CommandId}>",
+            Author = new EmbedAuthorBuilder { Name = $"{logType}{operationType} | {caseId}" },
+            Fields = commandFields,
+            Timestamp = DateTimeOffset.UtcNow
+        };
 
         if (perpetratorId.HasValue)
         {
-            commandInputEmbedBuilder.WithColor(operationType == OperationType.Update ? Color.Orange : Color.Red)
-                                    .WithThumbnailUrl(context.User.GetDisplayAvatarUrl())
-                                    .WithFooter($"Perpetrator: {perpetratorId}");
+            commandInputEmbedBuilder.Color = operationType == OperationType.Update ? Color.Orange : Color.Red;
+            commandInputEmbedBuilder.ThumbnailUrl = context.User.GetDisplayAvatarUrl();
+            commandInputEmbedBuilder.Footer = new EmbedFooterBuilder { Text = $"Perpetrator: {perpetratorId.Value}" };
         }
         else
         {
-            commandInputEmbedBuilder.WithColor(Color.Purple);
+            commandInputEmbedBuilder.Color = Color.Purple;
         }
 
         var @case = new Case
@@ -283,13 +267,24 @@ internal static class CaseUtils
                 {
                     await restUser.SendMessageAsync(
                         embeds: [commandLogEmbed],
-                        components: new ComponentBuilder().WithButton(
-                                                               $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
-                                                               "notice",
-                                                               ButtonStyle.Secondary,
-                                                               disabled: true
-                                                           )
-                                                          .Build()
+                        components: new ComponentBuilder
+                        {
+                            ActionRows =
+                            [
+                                new ActionRowBuilder
+                                {
+                                    Components =
+                                    [
+                                        new ButtonBuilder(
+                                            $"Sent from {context.Guild.Name}".Truncate(ButtonBuilder.MaxButtonLabelLength),
+                                            "notice",
+                                            ButtonStyle.Secondary,
+                                            isDisabled: true
+                                        ).Build()
+                                    ]
+                                }
+                            ]
+                        }.Build()
                     );
                 }
             }

@@ -27,7 +27,7 @@ public sealed partial class GameModule
     )
         where T : struct
     {
-        embedBuilder.WithDescription("Both players select your choice below.");
+        embedBuilder.Description = "Both players select your choice below.";
         await ModifyOriginalResponseAsync(properties =>
             {
                 properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]);

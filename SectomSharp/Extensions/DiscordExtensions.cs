@@ -35,5 +35,33 @@ internal static class DiscordExtensions
     ///     URL that displays its hex code.
     /// </summary>
     /// <returns>The URL.</returns>
-    public static string ToHyperlinkedColourPicker(this Color colour) => Format.Url(colour.ToString(), $"https://imagecolorpicker.com/color-code/{colour.RawValue:X6}");
+    public static string ToHyperlinkedColourPicker(this Color colour)
+    {
+        const string prefix = "[#";
+        const string middleFix = "](https://imagecolorpicker.com/color-code/";
+        const string suffix = ")";
+        const int hexLength = 6;
+
+        int totalLength = prefix.Length + hexLength + middleFix.Length + hexLength + suffix.Length;
+
+        return String.Create(
+            totalLength,
+            colour.RawValue,
+            static (span, value) =>
+            {
+                Span<char> hex = stackalloc char[hexLength];
+                value.TryFormat(hex, out _, "X6");
+
+                prefix.CopyTo(span);
+                int i = prefix.Length;
+                hex.CopyTo(span[i..]);
+                i += hexLength;
+                middleFix.CopyTo(span[i..]);
+                i += middleFix.Length;
+                hex.CopyTo(span[i..]);
+                i += 6;
+                suffix.CopyTo(span[i..]);
+            }
+        );
+    }
 }

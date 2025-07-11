@@ -3,6 +3,7 @@ using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
@@ -60,24 +61,20 @@ public sealed partial class DiscordEvent
         };
 
     private static string GetOverwriteTargetDisplay(Overwrite overwrite)
-    {
-        string mention = overwrite.TargetType == PermissionTarget.User ? MentionUtils.MentionUser(overwrite.TargetId) : MentionUtils.MentionRole(overwrite.TargetId);
-
-        return $"{Format.Bold("Mention:")} {mention}";
-    }
+        => overwrite.TargetType == PermissionTarget.User ? $"**Mention:** <@{overwrite.TargetId}>" : $"**Mention:** <@&{overwrite.TargetId}>";
 
     private static string FormatPermissionLists(List<ChannelPermission> allowed, List<ChannelPermission> denied)
     {
-        List<string> parts = [];
+        var parts = new List<string>(2);
 
         if (allowed.Count > 0)
         {
-            parts.Add($"{Format.Bold("Allowed:")} {String.Join(", ", allowed)}");
+            parts.Add($"**Allowed:** {String.Join(", ", allowed)}");
         }
 
         if (denied.Count > 0)
         {
-            parts.Add($"{Format.Bold("Denied:")} {String.Join(", ", denied)}");
+            parts.Add($"**Denied:** {String.Join(", ", denied)}");
         }
 
         return String.Join('\n', parts);
@@ -90,58 +87,51 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel);
-        if (webhookClient is null)
-        {
-            return;
-        }
-
         ChannelDetails details = GetChannelDetails(guildChannel);
 
-        List<AuditLogEntry> entries =
-        [
-            new("Name", details.Name),
-            new("Type", details.Type),
-            new("Position", details.Position)
-        ];
-
-        if (details.CategoryId is { } categoryId)
+        var builders = new List<EmbedFieldBuilder>(10)
         {
-            entries.Add(new AuditLogEntry("Category", categoryId));
+            EmbedFieldBuilderFactory.Create("Name", details.Name),
+            EmbedFieldBuilderFactory.Create("Type", details.Type),
+            EmbedFieldBuilderFactory.Create("Position", details.Position)
+        };
+        if (details.CategoryId.HasValue)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Category", details.CategoryId.Value));
         }
 
         if (!String.IsNullOrEmpty(details.Topic))
         {
-            entries.Add(new AuditLogEntry("Topic", details.Topic));
+            builders.Add(EmbedFieldBuilderFactory.Create("Topic", details.Topic));
         }
 
         if (details.IsNsfw)
         {
-            entries.Add(new AuditLogEntry("NSFW", true));
+            builders.Add(EmbedFieldBuilderFactory.Create("NSFW", "True"));
         }
 
         if (details.SlowMode is { } slowmode and > 0)
         {
-            entries.Add(new AuditLogEntry("Slowmode", TimeSpan.FromSeconds(slowmode)));
+            builders.Add(EmbedFieldBuilderFactory.Create("Slowmode", TimeSpan.FromSeconds(slowmode)));
         }
 
         if (details.Bitrate is { } bitrate)
         {
-            entries.Add(new AuditLogEntry("Bitrate", bitrate));
+            builders.Add(EmbedFieldBuilderFactory.Create("Bitrate", bitrate));
         }
 
         if (details.UserLimit is { } userLimit)
         {
-            entries.Add(new AuditLogEntry("User Limit", userLimit));
+            builders.Add(EmbedFieldBuilderFactory.Create("User Limit", userLimit));
         }
 
         if (details.Overwrites is not null)
         {
-            entries.AddRange(
+            builders.AddRange(
                 from overwrite in details.Overwrites
                 let value = FormatPermissionLists(overwrite.Permissions.ToAllowList(), overwrite.Permissions.ToDenyList())
                 where !String.IsNullOrEmpty(value)
-                select new AuditLogEntry(
+                select EmbedFieldBuilderFactory.CreateTruncated(
                     overwrite.TargetId.ToString(),
                     $"""
                      {GetOverwriteTargetDisplay(overwrite)}
@@ -151,7 +141,18 @@ public sealed partial class DiscordEvent
             );
         }
 
-        await LogAsync(guildChannel.Guild, webhookClient, AuditLogType.Channel, operationType, entries, guildChannel.Id.ToString(), guildChannel.Name);
+        if (builders.Count == 0)
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel);
+        if (webhookClient is null)
+        {
+            return;
+        }
+
+        await LogAsync(guildChannel.Guild, webhookClient, AuditLogType.Channel, operationType, builders, guildChannel.Id, guildChannel.Name);
     }
 
     public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
@@ -166,93 +167,77 @@ public sealed partial class DiscordEvent
             return;
         }
 
+        ChannelDetails before = GetChannelDetails(oldChannel);
+        ChannelDetails after = GetChannelDetails(newChannel);
+
+        var builders = new List<EmbedFieldBuilder>(10);
+        AddIfChanged(builders, "Name", before.Name, after.Name);
+        AddIfChanged(builders, "Category", before.CategoryId, after.CategoryId);
+        AddIfChanged(builders, "Topic", before.Topic, after.Topic);
+        AddIfChanged(builders, "NSFW", after.IsNsfw, before.IsNsfw != after.IsNsfw);
+        if (before.SlowMode != after.SlowMode)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Slowmode", GetChangeEntry(TimeSpan.FromSeconds(before.SlowMode ?? 0), TimeSpan.FromSeconds(after.SlowMode ?? 0))));
+        }
+
+        AddIfChanged(builders, "Bitrate", before.Bitrate, after.Bitrate);
+        AddIfChanged(builders, "User Limit", before.UserLimit, after.UserLimit);
+        if ((before.Overwrites, after.Overwrites) is (not null, not null))
+        {
+            IEnumerable<Overwrite> mergedOverwrites = after.Overwrites.UnionBy(before.Overwrites, overwrite => overwrite.TargetId);
+
+            foreach (Overwrite overwrite in mergedOverwrites)
+            {
+                Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
+                Overwrite? afterOverwrite = after.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
+
+                string? value = (beforeOverwrite, afterOverwrite) switch
+                {
+                    ({ } prev, { } curr) => FormatPermissionLists(
+                        curr.Permissions.ToAllowList().Except(prev.Permissions.ToAllowList()).ToList(),
+                        prev.Permissions.ToAllowList().Except(curr.Permissions.ToAllowList()).ToList()
+                    ),
+                    (null, { } added) => FormatPermissionLists(added.Permissions.ToAllowList(), added.Permissions.ToDenyList()),
+                    ({ } removed, null) => FormatPermissionLists(removed.Permissions.ToAllowList(), removed.Permissions.ToDenyList()),
+                    _ => null
+                };
+
+                if (String.IsNullOrEmpty(value))
+                {
+                    continue;
+                }
+
+                string key = (beforeOverwrite, afterOverwrite) switch
+                {
+                    (null, not null) => $"{overwrite.TargetId} (Added)",
+                    (not null, null) => $"{overwrite.TargetId} (Removed)",
+                    _ => overwrite.TargetId.ToString()
+                };
+
+                builders.Add(
+                    EmbedFieldBuilderFactory.CreateTruncated(
+                        key,
+                        $"""
+                         {GetOverwriteTargetDisplay(overwrite)}
+                         {value}
+                         """
+                    )
+                );
+            }
+        }
+
+        if (builders.Count == 0)
+        {
+            return;
+        }
+
         using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newChannel.Guild, AuditLogType.Channel);
         if (webhookClient is null)
         {
             return;
         }
 
-        ChannelDetails before = GetChannelDetails(oldChannel);
-        ChannelDetails after = GetChannelDetails(newChannel);
-
-        List<AuditLogEntry> entries =
-        [
-            new("Name", GetChangeEntry(before.Name, after.Name), before.Name != after.Name),
-            new("Category", GetChangeEntry(before.CategoryId, after.CategoryId), before.CategoryId != after.CategoryId),
-            new("Topic", GetChangeEntry(before.Topic, after.Topic), before.Topic != after.Topic),
-            new("NSFW", after.IsNsfw, before.IsNsfw != after.IsNsfw),
-            new("Slowmode", GetChangeEntry(TimeSpan.FromSeconds(before.SlowMode ?? 0), TimeSpan.FromSeconds(after.SlowMode ?? 0)), before.SlowMode != after.SlowMode),
-            new("Bitrate", GetChangeEntry(before.Bitrate, after.Bitrate), before.Bitrate != after.Bitrate),
-            new("User Limit", GetChangeEntry(before.UserLimit, after.UserLimit), before.UserLimit != after.UserLimit)
-        ];
-
-        if ((before.Overwrites, after.Overwrites) is (not null, not null))
-        {
-            List<AuditLogEntry> overwriteChanges = [];
-
-            IEnumerable<Overwrite> mergedOverwrites = after.Overwrites.UnionBy(before.Overwrites, overwrite => overwrite.TargetId);
-
-            foreach (Overwrite overwrite in mergedOverwrites)
-            {
-                string key = overwrite.TargetId.ToString();
-
-                Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
-
-                Overwrite? afterOverwrite = after.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
-
-                key += (beforeOverwrite, afterOverwrite) switch
-                {
-                    (null, not null) => " (Added)",
-                    (not null, null) => " (Removed)",
-                    _ => ""
-                };
-
-                string value = "";
-                switch (beforeOverwrite, afterOverwrite)
-                {
-                    case ({ } prev, { } curr):
-                        List<ChannelPermission> beforeAllowed = prev.Permissions.ToAllowList();
-                        List<ChannelPermission> afterAllowed = curr.Permissions.ToAllowList();
-                        List<ChannelPermission> newlyAllowed = afterAllowed.Except(beforeAllowed).ToList();
-                        List<ChannelPermission> newlyDenied = beforeAllowed.Except(afterAllowed).ToList();
-
-                        value = FormatPermissionLists(newlyAllowed, newlyDenied);
-
-                        break;
-                    case (null, { } added):
-                        value = FormatPermissionLists(added.Permissions.ToAllowList(), added.Permissions.ToDenyList());
-
-                        break;
-                    case ({ } removed, null):
-                        value = FormatPermissionLists(removed.Permissions.ToAllowList(), removed.Permissions.ToDenyList());
-
-                        break;
-                }
-
-                AuditLogEntry entry = new(
-                    key,
-                    $"""
-                     {GetOverwriteTargetDisplay(overwrite)}
-                     {value}
-                     """,
-                    !String.IsNullOrEmpty(value)
-                );
-
-                if (entry.ShouldInclude)
-                {
-                    overwriteChanges.Add(entry);
-                }
-            }
-
-            entries.AddRange(overwriteChanges);
-        }
-
-        if (!entries.Any(c => c.ShouldInclude))
-        {
-            return;
-        }
-
-        await LogAsync(newChannel.Guild, webhookClient, AuditLogType.Channel, OperationType.Update, entries, newChannel.Id.ToString(), newChannel.Name);
+        await LogAsync(newChannel.Guild, webhookClient, AuditLogType.Channel, OperationType.Update, builders, newChannel.Id, newChannel.Name);
     }
 
     private readonly record struct ChannelDetails

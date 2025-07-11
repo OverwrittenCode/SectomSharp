@@ -3,6 +3,7 @@ using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
@@ -18,21 +19,21 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Position", role.Position),
-            new("Hoisted", role.IsHoisted),
-            new("Managed", role.IsManaged),
-            new("Hex Code", role.Color.ToHyperlinkedColourPicker()),
-            new("Permissions", String.Join(", ", role.Permissions.ToList()))
-        ];
+        List<EmbedFieldBuilder> builders = new(6)
+        {
+            EmbedFieldBuilderFactory.Create("Position", role.Position),
+            EmbedFieldBuilderFactory.Create("Hoisted", role.IsHoisted),
+            EmbedFieldBuilderFactory.Create("Managed", role.IsManaged),
+            EmbedFieldBuilderFactory.Create("Hex Code", role.Color.ToHyperlinkedColourPicker()),
+            EmbedFieldBuilderFactory.CreateTruncated("Permissions", String.Join(", ", role.Permissions.ToList()))
+        };
 
         if (role.GetIconUrl() is { } iconUrl)
         {
-            entries.Add(new AuditLogEntry("Icon", iconUrl));
+            builders.Add(EmbedFieldBuilderFactory.Create("Icon", iconUrl));
         }
 
-        await LogAsync(role.Guild, webhookClient, AuditLogType.Role, operationType, entries, role.Id.ToString(), GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
+        await LogAsync(role.Guild, webhookClient, AuditLogType.Role, operationType, builders, role.Id, GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 
     public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
@@ -46,21 +47,20 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role);
-        if (webhookClient is null)
+        List<EmbedFieldBuilder> builders = new(8);
+        AddIfChanged(builders, "Name", oldRole.Name, newRole.Name);
+        AddIfChanged(builders, "Emoji", oldRole.Emoji, newRole.Emoji);
+        if (oldRole.Icon != newRole.Icon)
         {
-            return;
+            builders.Add(EmbedFieldBuilderFactory.Create("Icon", GetChangeEntry(oldRole.GetIconUrl(), newRole.GetIconUrl())));
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Name", GetChangeEntry(oldRole.Name, newRole.Name), oldRole.Name != newRole.Name),
-            new("Emoji", GetChangeEntry(oldRole.Emoji?.ToString(), newRole.Emoji?.ToString()), oldRole.Emoji?.ToString() != newRole.Emoji?.ToString()),
-            new("Icon", GetChangeEntry(oldRole.GetIconUrl(), newRole.GetIconUrl()), oldRole.Icon != newRole.Icon),
-            new("Hoisted", $"Set to {newRole.IsHoisted}", oldRole.IsHoisted != newRole.IsHoisted),
-            new("Mentionable", $"Set to {newRole.IsMentionable}", oldRole.IsMentionable != newRole.IsMentionable),
-            new("Hex Code", GetChangeEntry(oldRole.Color.ToHyperlinkedColourPicker(), newRole.Color.ToHyperlinkedColourPicker()), oldRole.Color != newRole.Color)
-        ];
+        AddIfChanged(builders, "Hoisted", oldRole.IsHoisted, newRole.IsHoisted);
+        AddIfChanged(builders, "Mentionable", oldRole.IsMentionable, newRole.IsMentionable);
+        if (oldRole.Color != newRole.Color)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Hex Code", GetChangeEntry(oldRole.Color.ToHyperlinkedColourPicker(), newRole.Color.ToHyperlinkedColourPicker())));
+        }
 
         if (oldRole.Permissions.RawValue != newRole.Permissions.RawValue)
         {
@@ -69,13 +69,24 @@ public sealed partial class DiscordEvent
 
             if (String.Join(", ", afterSet.Except(beforeSet)) is { Length: > 0 } addedPermissions)
             {
-                entries.Add(new AuditLogEntry("Added Permissions", addedPermissions));
+                builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Added Permissions", addedPermissions));
             }
 
             if (String.Join(", ", beforeSet.Except(afterSet)) is { Length: > 0 } removedPermissions)
             {
-                entries.Add(new AuditLogEntry("Removed Permissions", removedPermissions));
+                builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Removed Permissions", removedPermissions));
             }
+        }
+
+        if (builders.Count == 0)
+        {
+            return;
+        }
+
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role);
+        if (webhookClient is null)
+        {
+            return;
         }
 
         await LogAsync(
@@ -83,8 +94,8 @@ public sealed partial class DiscordEvent
             webhookClient,
             AuditLogType.Role,
             OperationType.Update,
-            entries,
-            newRole.Id.ToString(),
+            builders,
+            newRole.Id,
             GetRoleDisplayName(newRole),
             newRole.GetIconUrl(),
             newRole.Color

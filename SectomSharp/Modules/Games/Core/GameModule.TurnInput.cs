@@ -98,8 +98,7 @@ public sealed partial class GameModule
             {
                 currentPlayer = isPlayerOneTurn ? playerOne : playerTwo;
 
-                string currentPlayerMention = MentionUtils.MentionUser(currentPlayer.Id);
-                embedBuilder.WithDescription($"Turn: {currentPlayerMention}");
+                embedBuilder.Description = $"Turn: <@{currentPlayer.Id}>";
                 await ModifyOriginalResponseAsync(properties =>
                     {
                         properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]);
@@ -130,7 +129,7 @@ public sealed partial class GameModule
                         }
                     ))
                 {
-                    await ModifyOriginalResponseWithErrorEmbedAsync(embedBuilder, message, $"{currentPlayerMention} did not select a choice in time.");
+                    await ModifyOriginalResponseWithErrorEmbedAsync(embedBuilder, message, $"<@{currentPlayer.Id}> did not select a choice in time.");
                     return;
                 }
 
@@ -157,7 +156,9 @@ public sealed partial class GameModule
             var computer = new TurnInputPlayer<T>(PlayerType.Two, Context.Client.CurrentUser.Id);
             bool isUserTurn = true;
 
-            embedBuilder.WithColor(Color.Purple).WithTitle(gameTitle).WithDescription(yourTurnMessage);
+            embedBuilder.Color = Color.Purple;
+            embedBuilder.Title = gameTitle;
+            embedBuilder.Description = yourTurnMessage;
 
             await DeferAsync(true);
             message = await FollowupAsync(embeds: [embedBuilder.Build()], components: components);
@@ -200,7 +201,7 @@ public sealed partial class GameModule
                 {
                     const int delayMs = 1500;
                     await Task.Delay(delayMs);
-                    embedBuilder.WithDescription("🤖 My turn. Thinking...");
+                    embedBuilder.Description = "🤖 My turn. Thinking...";
                     message = await ModifyOriginalResponseAsync(properties => properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]));
                     await Task.Delay(delayMs);
 
@@ -215,7 +216,7 @@ public sealed partial class GameModule
                     }
 
                     isUserTurn = true;
-                    embedBuilder.WithDescription(yourTurnMessage);
+                    embedBuilder.Description = yourTurnMessage;
                     message = await ModifyOriginalResponseAsync(properties =>
                         {
                             properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]);

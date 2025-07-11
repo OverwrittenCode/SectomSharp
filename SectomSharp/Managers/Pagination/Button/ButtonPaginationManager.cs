@@ -113,7 +113,7 @@ internal sealed class ButtonPaginationManager : InstanceManager<ButtonPagination
         {
             ActionRows =
             [
-                new ActionRowBuilder().WithComponents(ButtonComponents)
+                new ActionRowBuilder { Components = ButtonComponents }
             ]
         }.Build();
 

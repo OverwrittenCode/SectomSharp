@@ -1,5 +1,3 @@
-using Discord;
-
 namespace SectomSharp.Extensions;
 
 internal static class DateTimeExtensions
@@ -9,5 +7,5 @@ internal static class DateTimeExtensions
     /// </summary>
     /// <param name="time">The time of this timestamp tag.</param>
     /// <returns>The newly create timestamp string.</returns>
-    public static string GetRelativeTimestamp(this DateTime time) => TimestampTag.FormatFromDateTime(time, TimestampTagStyles.Relative);
+    public static string GetRelativeTimestamp(this DateTimeOffset time) => $"<t:{time.ToUnixTimeSeconds()}:R>";
 }

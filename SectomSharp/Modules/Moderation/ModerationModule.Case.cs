@@ -149,7 +149,7 @@ public sealed partial class ModerationModule
                             embedBuilder.Description = batch;
                             if (totalPages > 1)
                             {
-                                embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page 1/{totalPages}");
+                                embedBuilder.Footer = new EmbedFooterBuilder { Text = $"Page 1/{totalPages}" };
                             }
 
                             embeds[page++] = embedBuilder.Build();
@@ -159,7 +159,7 @@ public sealed partial class ModerationModule
                                 batch = reader.GetString(0);
 
                                 embedBuilder.Description = batch;
-                                embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page {page + 1}/{totalPages}");
+                                embedBuilder.Footer = new EmbedFooterBuilder { Text = $"Page {page + 1}/{totalPages}" };
                                 embeds[page++] = embedBuilder.Build();
                             }
                         }

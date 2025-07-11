@@ -101,30 +101,26 @@ public sealed partial class ModerationModule
         }
 
         (BotLogType LogType, uint Value, TimeSpan? Span) punishmentThreshold = thresholds.Count == 2 && thresholds[1].Value == currentWarnings ? thresholds[1] : thresholds[0];
-
-        string warningDisplayText = $"{Format.Code(currentWarnings.ToString())} warnings";
-
         GuildPermissions botPermissions = Context.Guild.CurrentUser.GuildPermissions;
-
         switch (punishmentThreshold.LogType)
         {
             case BotLogType.Ban:
                 {
                     if (!botPermissions.BanMembers)
                     {
-                        await SendFailureMessageAsync();
+                        await SendFailureMessageAsync(this, nameof(BotLogType.Ban), currentWarnings);
                         return;
                     }
 
                     if (punishmentThreshold.Span is not null)
                     {
-                        throw new InvalidOperationException($"{punishmentThreshold.LogType} does not support a timespan.");
+                        throw new InvalidOperationException($"{nameof(BotLogType.Ban)} does not support a timespan.");
                     }
 
                     // It is better to log the case after the action,
                     // However in this case the action must be done first
                     // as the DM won't work if user is no longer in guild
-                    await LogCaseAsync(db);
+                    await LogCaseAsync(db, this, punishmentThreshold, user, currentWarnings);
                     await user.BanAsync(options: DiscordUtils.GetAuditReasonRequestOptions(Context, reason));
                 }
 
@@ -134,17 +130,17 @@ public sealed partial class ModerationModule
                 {
                     if (!botPermissions.ModerateMembers)
                     {
-                        await SendFailureMessageAsync();
+                        await SendFailureMessageAsync(this, nameof(BotLogType.Timeout), currentWarnings);
                         return;
                     }
 
                     if (!punishmentThreshold.Span.HasValue)
                     {
-                        throw new InvalidOperationException($"{punishmentThreshold.LogType} requires a timespan.");
+                        throw new InvalidOperationException($"{nameof(BotLogType.Timeout)} requires a timespan.");
                     }
 
                     await user.SetTimeOutAsync(punishmentThreshold.Span.Value);
-                    await LogCaseAsync(db);
+                    await LogCaseAsync(db, this, punishmentThreshold, user, currentWarnings);
                 }
 
                 break;
@@ -155,21 +151,26 @@ public sealed partial class ModerationModule
 
         return;
 
-        // using db directly flags AccessToDisposedClosure
-        async Task LogCaseAsync(ApplicationDbContext dbContext)
+        static async Task LogCaseAsync(
+            ApplicationDbContext db,
+            ModerationModule moderationModule,
+            (BotLogType LogType, uint Value, TimeSpan? Span) punishmentThreshold,
+            IGuildUser user,
+            int currentWarnings
+        )
             => await CaseUtils.LogAsync(
-                dbContext,
-                Context,
+                db,
+                moderationModule.Context,
                 punishmentThreshold.LogType,
                 OperationType.Create,
                 user.Id,
                 expiresAt: user.TimedOutUntil?.Date,
-                reason: $"A configured threshold was matched for {warningDisplayText}."
+                reason: $"A configured threshold was matched for `{currentWarnings}` warnings."
             );
 
-        async Task SendFailureMessageAsync()
-            => await FollowupAsync(
-                $"Warning configuration is setup to {punishmentThreshold.LogType} a user on reaching {warningDisplayText} but I lack permission to do so. Please contact a server administrator to fix this."
+        static async Task SendFailureMessageAsync(ModerationModule moderationModule, string logTypeAction, int currentWarnings)
+            => await moderationModule.FollowupAsync(
+                $"Warning configuration is setup to {logTypeAction} a user on reaching `{currentWarnings}` warnings but I lack permission to do so. Please contact a server administrator to fix this."
             );
     }
 }

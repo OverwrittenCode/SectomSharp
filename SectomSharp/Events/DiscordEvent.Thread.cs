@@ -2,6 +2,7 @@
 using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
@@ -15,16 +16,21 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Id", thread.Id),
-            new("Name", thread.Name),
-            new("Type", thread.Type),
-            new("Parent", MentionUtils.MentionChannel(thread.ParentChannel.Id)),
-            new("Topic", thread.Topic)
-        ];
-
-        await LogAsync(thread.Guild, webhookClient, AuditLogType.Thread, operationType, entries, thread.Id.ToString(), thread.Name);
+        await LogAsync(
+            thread.Guild,
+            webhookClient,
+            AuditLogType.Thread,
+            operationType,
+            [
+                EmbedFieldBuilderFactory.Create("Id", thread.Id),
+                EmbedFieldBuilderFactory.Create("Name", thread.Name),
+                EmbedFieldBuilderFactory.Create("Type", thread.Type),
+                EmbedFieldBuilderFactory.Create("Parent", $"<#{thread.ParentChannel.Id}>"),
+                EmbedFieldBuilderFactory.Create("Topic", thread.Topic)
+            ],
+            thread.Id,
+            thread.Name
+        );
     }
 
     public async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
@@ -34,26 +40,28 @@ public sealed partial class DiscordEvent
 
     public async Task HandleThreadUpdatedAsync(Cacheable<SocketThreadChannel, ulong> oldPartialThread, SocketThreadChannel newThread)
     {
+        SocketThreadChannel oldThread = await oldPartialThread.GetOrDownloadAsync();
+
+        List<EmbedFieldBuilder> builders = new(4);
+        AddIfChanged(builders, "Name", oldThread.Name, newThread.Name);
+        AddIfChanged(builders, "Type", oldThread.Type, newThread.Type);
+        if (oldThread.ParentChannel.Id != newThread.ParentChannel.Id)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Parent", GetChangeEntry($"<#{oldThread.ParentChannel.Id}>", $"<#{newThread.ParentChannel.Id}>")));
+        }
+
+        AddIfChanged(builders, "Topic", oldThread.Topic, newThread.Topic);
+        if (builders.Count == 0)
+        {
+            return;
+        }
+
         using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newThread.Guild, AuditLogType.Thread);
         if (webhookClient is null)
         {
             return;
         }
 
-        SocketThreadChannel oldThread = await oldPartialThread.GetOrDownloadAsync();
-
-        List<AuditLogEntry> entries =
-        [
-            new("Name", GetChangeEntry(oldThread.Name, newThread.Name), oldThread.Name != newThread.Name),
-            new("Type", $"Set to {newThread.Type}", oldThread.Type != newThread.Type),
-            new(
-                "Parent",
-                GetChangeEntry(MentionUtils.MentionChannel(oldThread.ParentChannel.Id), MentionUtils.MentionChannel(newThread.ParentChannel.Id)),
-                oldThread.ParentChannel.Id != newThread.ParentChannel.Id
-            ),
-            new("Topic", GetChangeEntry(oldThread.Topic, newThread.Topic), oldThread.Topic != newThread.Topic)
-        ];
-
-        await LogAsync(newThread.Guild, webhookClient, AuditLogType.Thread, OperationType.Update, entries, newThread.Id.ToString(), newThread.Name);
+        await LogAsync(newThread.Guild, webhookClient, AuditLogType.Thread, OperationType.Update, builders, newThread.Id, newThread.Name);
     }
 }

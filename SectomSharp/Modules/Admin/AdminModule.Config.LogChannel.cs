@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -57,7 +58,7 @@ public sealed partial class AdminModule
             [SlashCmd("Add or modify a bot log channel configuration")]
             public async Task SetBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(out ITextChannel channel, out BotLogType action, out string? reason);
+                options.Deconstruct(out SocketTextChannel channel, out BotLogType action, out string? reason);
 
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -111,11 +112,11 @@ public sealed partial class AdminModule
             [RequireBotPermission(GuildPermission.ViewAuditLog)]
             public async Task SetAuditLog([ComplexParameter] LogChannelOptions<AuditLogType> options)
             {
-                options.Deconstruct(out ITextChannel channel, out AuditLogType action, out string? reason);
+                options.Deconstruct(out SocketTextChannel channel, out AuditLogType action, out string? reason);
 
                 if (!Context.Guild.CurrentUser.GetPermissions(channel).ManageWebhooks)
                 {
-                    await RespondAsync($"Bot requires channel permission {nameof(ChannelPermission.ManageWebhooks)} in {MentionUtils.MentionChannel(channel.Id)}", ephemeral: true);
+                    await RespondAsync($"Bot requires channel permission {nameof(ChannelPermission.ManageWebhooks)} in <#{channel.Id}>", ephemeral: true);
 
                     return;
                 }
@@ -199,7 +200,7 @@ public sealed partial class AdminModule
             [SlashCmd("Remove a bot log channel configuration")]
             public async Task RemoveBotLog([ComplexParameter] LogChannelOptions<BotLogType> options)
             {
-                options.Deconstruct(out ITextChannel channel, out BotLogType action, out string? reason);
+                options.Deconstruct(out SocketTextChannel channel, out BotLogType action, out string? reason);
 
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -257,7 +258,7 @@ public sealed partial class AdminModule
             [SlashCmd("Remove an audit log channel configuration")]
             public async Task RemoveAuditLog([ComplexParameter] LogChannelOptions<AuditLogType> options)
             {
-                options.Deconstruct(out ITextChannel channel, out AuditLogType action, out string? reason);
+                options.Deconstruct(out SocketTextChannel channel, out AuditLogType action, out string? reason);
 
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -391,7 +392,7 @@ public sealed partial class AdminModule
                                 embedBuilder.Description = batch;
                                 if (totalPages > 1)
                                 {
-                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page 1/{totalPages}");
+                                    embedBuilder.Footer = new EmbedFooterBuilder { Text = $"Page 1/{totalPages}" };
                                 }
 
                                 embeds[page++] = embedBuilder.Build();
@@ -401,7 +402,7 @@ public sealed partial class AdminModule
                                     batch = reader.GetString(0);
 
                                     embedBuilder.Description = batch;
-                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page {page + 1}/{totalPages}");
+                                    embedBuilder.Footer = new EmbedFooterBuilder { Text = $"Page {page + 1}/{totalPages}" };
                                     embeds[page++] = embedBuilder.Build();
                                 }
                             }
@@ -498,7 +499,7 @@ public sealed partial class AdminModule
                                 embedBuilder.Description = batch;
                                 if (totalPages > 1)
                                 {
-                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page 1/{totalPages}");
+                                    embedBuilder.Footer = new EmbedFooterBuilder { Text = $"Page 1/{totalPages}" };
                                 }
 
                                 embeds[page++] = embedBuilder.Build();
@@ -508,7 +509,7 @@ public sealed partial class AdminModule
                                     batch = reader.GetString(0);
 
                                     embedBuilder.Description = batch;
-                                    embedBuilder.Footer = new EmbedFooterBuilder().WithText($"Page {page + 1}/{totalPages}");
+                                    embedBuilder.Footer = new EmbedFooterBuilder { Text = $"Page {page + 1}/{totalPages}" };
                                     embeds[page++] = embedBuilder.Build();
                                 }
                             }
@@ -529,7 +530,7 @@ public sealed partial class AdminModule
                 await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
             }
 
-            public readonly record struct LogChannelOptions<T>(ITextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)
+            public readonly record struct LogChannelOptions<T>(SocketTextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)
                 where T : struct, Enum;
         }
     }

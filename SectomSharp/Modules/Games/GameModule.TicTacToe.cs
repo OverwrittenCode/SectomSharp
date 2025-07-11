@@ -56,14 +56,17 @@ public sealed partial class GameModule
 
             Debug.Assert(!buttonComponent.IsDisabled);
 
-            ButtonBuilder buttonBuilder = buttonComponent.ToBuilder().WithDisabled(true);
+            ButtonBuilder buttonBuilder = buttonComponent.ToBuilder();
+            buttonBuilder.IsDisabled = true;
             if (playerType == PlayerType.One)
             {
-                buttonBuilder.WithLabel("X").WithStyle(ButtonStyle.Danger);
+                buttonBuilder.Label = "X";
+                buttonBuilder.Style = ButtonStyle.Danger;
             }
             else
             {
-                buttonBuilder.WithLabel("O").WithStyle(ButtonStyle.Primary);
+                buttonBuilder.Label = "O";
+                buttonBuilder.Style = ButtonStyle.Primary;
             }
 
             componentBuilder.ActionRows[row].Components[col] = buttonBuilder.Build();
@@ -123,19 +126,19 @@ public sealed partial class GameModule
                 0x54
             ];
 
-            var componentBuilder = new ComponentBuilder();
+            var actionRowBuilders = new List<ActionRowBuilder>(GridSize);
             for (int row = 0; row < GridSize; row++)
             {
-                var actionRowBuilder = new ActionRowBuilder();
+                var components = new List<IMessageComponent>(GridSize);
                 for (int col = 0; col < GridSize; col++)
                 {
-                    actionRowBuilder.WithButton(InvisibleCharacter, (row * GridSize + col).ToString(), ButtonStyle.Secondary);
+                    components.Add(new ButtonBuilder(InvisibleCharacter, (row * GridSize + col).ToString(), ButtonStyle.Secondary).Build());
                 }
 
-                componentBuilder.AddRow(actionRowBuilder);
+                actionRowBuilders.Add(new ActionRowBuilder { Components = components });
             }
 
-            Components = componentBuilder.Build();
+            Components = new ComponentBuilder { ActionRows = actionRowBuilders }.Build();
         }
     }
 }

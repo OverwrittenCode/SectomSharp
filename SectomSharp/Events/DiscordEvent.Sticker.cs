@@ -1,6 +1,8 @@
-﻿using Discord.Webhook;
+﻿using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
@@ -14,15 +16,20 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Id", sticker.Id),
-            new("Name", sticker.Name),
-            new("Description", sticker.Description),
-            new("Format", sticker.Format)
-        ];
-
-        await LogAsync(sticker.Guild, webhookClient, AuditLogType.Sticker, operationType, entries, sticker.Guild.Id.ToString(), sticker.Name);
+        await LogAsync(
+            sticker.Guild,
+            webhookClient,
+            AuditLogType.Sticker,
+            operationType,
+            [
+                EmbedFieldBuilderFactory.Create("Id", sticker.Id),
+                EmbedFieldBuilderFactory.Create("Name", sticker.Name),
+                EmbedFieldBuilderFactory.Create("Description", sticker.Description),
+                EmbedFieldBuilderFactory.Create("Format", sticker.Format)
+            ],
+            sticker.Guild.Id,
+            sticker.Name
+        );
     }
 
     public async Task HandleGuildStickerCreatedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Create);
@@ -31,18 +38,20 @@ public sealed partial class DiscordEvent
 
     public async Task HandleGuildStickerUpdatedAsync(SocketCustomSticker oldSticker, SocketCustomSticker newSticker)
     {
+        List<EmbedFieldBuilder> builders = new(2);
+        AddIfChanged(builders, "Name", oldSticker.Name, newSticker.Name);
+        AddIfChanged(builders, "Description", oldSticker.Description, newSticker.Description);
+        if (builders.Count == 0)
+        {
+            return;
+        }
+
         using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newSticker.Guild, AuditLogType.Sticker);
         if (webhookClient is null)
         {
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Name", GetChangeEntry(oldSticker.Name, newSticker.Name), oldSticker.Name != newSticker.Name),
-            new("Description", GetChangeEntry(oldSticker.Description, newSticker.Description), oldSticker.Description != newSticker.Description)
-        ];
-
-        await LogAsync(newSticker.Guild, webhookClient, AuditLogType.Sticker, OperationType.Update, entries, newSticker.Id.ToString(), newSticker.Name);
+        await LogAsync(newSticker.Guild, webhookClient, AuditLogType.Sticker, OperationType.Update, builders, newSticker.Id, newSticker.Name);
     }
 }

@@ -103,7 +103,8 @@ public sealed partial class GameModule
     /// <param name="description">The description for the embed.</param>
     private async Task ModifyOriginalResponseWithErrorEmbedAsync(EmbedBuilder embedBuilder, IUserMessage message, string description)
     {
-        embedBuilder.WithColor(Color.Red).WithDescription(description);
+        embedBuilder.Color = Color.Red;
+        embedBuilder.Description = description;
         await ModifyOriginalResponseAsync(properties =>
             {
                 properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]);
@@ -121,7 +122,8 @@ public sealed partial class GameModule
     /// <param name="color">The color for the embed.</param>
     private async Task ModifyOriginalResponseWithRoundOverAsync(EmbedBuilder embedBuilder, MessageComponent components, string description, Color color)
     {
-        embedBuilder.WithColor(color).WithDescription(description);
+        embedBuilder.Color = color;
+        embedBuilder.Description = description;
         await ModifyOriginalResponseAsync(properties =>
             {
                 properties.Embeds = new Optional<Embed[]>([embedBuilder.Build()]);
@@ -184,15 +186,17 @@ public sealed partial class GameModule
             return null;
         }
 
-        embedBuilder.WithColor(Color.Purple).WithTitle(gameTitle).WithDescription($"{Context.Interaction.User.Mention} has challenged {opponent.Mention}!");
+        embedBuilder.Color = Color.Purple;
+        embedBuilder.Title = gameTitle;
+        embedBuilder.Description = $"{Context.Interaction.User.Mention} has challenged {opponent.Mention}!";
 
         string customId = StringUtils.GenerateUniqueId();
         string acceptId = $"{customId}-accept";
         string declineId = $"{customId}-decline";
-        ButtonComponent acceptButton = new ButtonBuilder().WithLabel("Accept").WithCustomId(acceptId).WithStyle(ButtonStyle.Success).Build();
-        ButtonComponent declineButton = new ButtonBuilder().WithLabel("Decline").WithCustomId(declineId).WithStyle(ButtonStyle.Danger).Build();
-        ActionRowBuilder actionRowBuilder = new ActionRowBuilder().WithComponents([acceptButton, declineButton]);
-        MessageComponent components = new ComponentBuilder().AddRow(actionRowBuilder).Build();
+        ButtonComponent acceptButton = new ButtonBuilder("Accept", acceptId, ButtonStyle.Success).Build();
+        ButtonComponent declineButton = new ButtonBuilder("Decline", declineId, ButtonStyle.Danger).Build();
+        var actionRowBuilder = new ActionRowBuilder { Components = [acceptButton, declineButton] };
+        MessageComponent components = new ComponentBuilder { ActionRows = [actionRowBuilder] }.Build();
 
         await DeferAsync();
         IUserMessage message = await FollowupAsync(embeds: [embedBuilder.Build()], components: components);
@@ -203,10 +207,13 @@ public sealed partial class GameModule
             return message;
         }
 
+        embedBuilder.Color = Color.Red;
+        embedBuilder.Description = "Request declined.";
+        Embed[] declinedEmbeds = [embedBuilder.Build()];
         await ModifyOriginalResponseAsync(properties =>
             {
                 properties.Components = components.Components.FromComponentsWithAllDisabled().Build();
-                properties.Embeds = new[] { embedBuilder.WithColor(Color.Red).WithDescription("Request declined.").Build() };
+                properties.Embeds = declinedEmbeds;
             }
         );
 

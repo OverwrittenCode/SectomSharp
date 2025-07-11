@@ -215,7 +215,7 @@ public sealed partial class DiscordEvent
         using var stream = new MemoryStream(imageBytes);
         try
         {
-            await msg.Channel.SendFileAsync(stream, "RankCard.png", $"{author.Mention} has ranked up to {Format.Bold($"Level {newLevel}")} 🎉");
+            await msg.Channel.SendFileAsync(stream, "RankCard.png", $"<@{author.Id}> has ranked up to **Level {newLevel}** 🎉");
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.MissingPermissions) { }
     }
@@ -227,50 +227,46 @@ public sealed partial class DiscordEvent
             return;
         }
 
+        var builders = new List<EmbedFieldBuilder>(8)
+        {
+            EmbedFieldBuilderFactory.Create("Channel Id", message.Channel.Id),
+            EmbedFieldBuilderFactory.Create("Author", $"<@{message.Author.Id}>"),
+            EmbedFieldBuilderFactory.Create("Created At", message.Timestamp.GetRelativeTimestamp()),
+            EmbedFieldBuilderFactory.CreateTruncated("Content", message.Content)
+        };
+
+        if (message.MentionedChannelIds.Count > 0)
+        {
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(id => $"<#{id}>"))));
+        }
+
+        if (message.MentionedRoleIds.Count > 0)
+        {
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(id => $"<@&{id}>"))));
+        }
+
+        if (message.MentionedUserIds.Count > 0)
+        {
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(id => $"<@{id}>"))));
+        }
+
+        if (message.MentionedEveryone)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Mentioned Everyone", message.MentionedEveryone));
+        }
+
+        if (builders.Count == 0)
+        {
+            return;
+        }
+
         using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild, AuditLogType.Message);
         if (webhookClient is null)
         {
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Channel Id", message.Channel.Id),
-            new("Author", message.Author.Mention),
-            new("Created At", message.Timestamp.DateTime.GetRelativeTimestamp()),
-            new("Content", message.Content)
-        ];
-
-        if (message.MentionedChannelIds.Count > 0)
-        {
-            entries.Add(new AuditLogEntry("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(MentionUtils.MentionChannel))));
-        }
-
-        if (message.MentionedRoleIds.Count > 0)
-        {
-            entries.Add(new AuditLogEntry("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(MentionUtils.MentionRole))));
-        }
-
-        if (message.MentionedUserIds.Count > 0)
-        {
-            entries.Add(new AuditLogEntry("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(MentionUtils.MentionUser))));
-        }
-
-        if (message.MentionedEveryone)
-        {
-            entries.Add(new AuditLogEntry("Mentioned Everyone", message.MentionedEveryone));
-        }
-
-        await LogAsync(
-            guild,
-            webhookClient,
-            AuditLogType.Message,
-            OperationType.Delete,
-            entries,
-            message.Id.ToString(),
-            message.Author.Username,
-            message.Author.GetDisplayAvatarUrl()
-        );
+        await LogAsync(guild, webhookClient, AuditLogType.Message, OperationType.Delete, builders, message.Id, message.Author.Username, message.Author.GetDisplayAvatarUrl());
     }
 
     public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
@@ -280,24 +276,24 @@ public sealed partial class DiscordEvent
             return;
         }
 
+        if (oldMessage.Content == newMessage.Content)
+        {
+            return;
+        }
+
         using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild, AuditLogType.Message);
         if (webhookClient is null)
         {
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Content", GetChangeEntry(oldMessage.Content, newMessage.Content), oldMessage.Content != newMessage.Content)
-        ];
-
         await LogAsync(
             guild,
             webhookClient,
             AuditLogType.Message,
             OperationType.Update,
-            entries,
-            newMessage.Id.ToString(),
+            [EmbedFieldBuilderFactory.CreateTruncated("Content", GetChangeEntry(oldMessage.Content, newMessage.Content))],
+            newMessage.Id,
             newMessage.Author.Username,
             newMessage.Author.GetDisplayAvatarUrl()
         );

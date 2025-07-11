@@ -17,10 +17,16 @@ public sealed partial class MiscModule
             return;
         }
 
-        string avatarUrl = restUser.GetDisplayAvatarUrl(size: 2048)!;
-
-        EmbedBuilder embed = new EmbedBuilder().WithColor(restUser.AccentColor ?? Color.Purple).WithAuthor(restUser.GlobalName).WithImageUrl(avatarUrl);
-
-        await RespondAsync(embeds: [embed.Build()]);
+        await RespondAsync(
+            embeds:
+            [
+                new EmbedBuilder
+                {
+                    Color = restUser.AccentColor ?? Color.Purple,
+                    Author = new EmbedAuthorBuilder { Name = restUser.GlobalName },
+                    ImageUrl = restUser.GetDisplayAvatarUrl(size: 2048)
+                }.Build()
+            ]
+        );
     }
 }

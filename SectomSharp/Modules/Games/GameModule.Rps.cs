@@ -79,8 +79,7 @@ public sealed partial class GameModule
                                                        )
                                                       .ToList();
 
-            ActionRowBuilder actionRow = new ActionRowBuilder().WithComponents(buttons);
-            Components = new ComponentBuilder().AddRow(actionRow).Build();
+            Components = new ComponentBuilder { ActionRows = [new ActionRowBuilder { Components = buttons }] }.Build();
         }
 
         public enum Move

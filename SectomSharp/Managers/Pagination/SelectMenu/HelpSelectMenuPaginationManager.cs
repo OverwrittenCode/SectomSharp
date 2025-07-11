@@ -26,7 +26,12 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
                                                                                         .GroupBy(info => info.Category)
                                                                                         .ToArray();
 
-        Embed mainEmbed = new EmbedBuilder().WithTitle("Help Menu").WithColor(Storage.LightGold).WithDescription("This is the main menu. Select a command category below.").Build();
+        Embed mainEmbed = new EmbedBuilder
+        {
+            Title = "Help Menu",
+            Color = Storage.LightGold,
+            Description = "This is the main menu. Select a command category below."
+        }.Build();
         List<SelectMenuOptionBuilder> categoryOptions = groupedCommands
                                                        .Select(group => new SelectMenuOptionBuilder(
                                                                 group.Key.Name,
@@ -40,10 +45,12 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
             group => group.Key.Name,
             group =>
             {
-                Embed categoryEmbed = new EmbedBuilder().WithTitle($"Help Menu | {group.Key.Name} Commands")
-                                                        .WithColor(Storage.LightGold)
-                                                        .WithDescription("Select a command below")
-                                                        .Build();
+                Embed categoryEmbed = new EmbedBuilder
+                {
+                    Title = $"Help Menu | {group.Key.Name} Commands",
+                    Color = Storage.LightGold,
+                    Description = "Select a command below"
+                }.Build();
 
                 List<SelectMenuOptionBuilder> commandOptions = group.Select(info => new SelectMenuOptionBuilder(info.Name, info.Name, info.SlashCommand.Description)).ToList();
 
@@ -51,15 +58,15 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
                     info => info.Name,
                     info => new[]
                     {
-                        new EmbedBuilder().WithTitle("Help Menu | Command Info")
-                                          .WithColor(Storage.LightGold)
-                                          .WithDescription(
-                                               $"""
-                                                {Format.Bold("Name")}: {info.Name}
-                                                {Format.Bold("Description")}: {info.SlashCommand.Description}
-                                                """
-                                           )
-                                          .Build()
+                        new EmbedBuilder
+                        {
+                            Title = "Help Menu | Command Info",
+                            Color = Storage.LightGold,
+                            Description = $"""
+                                           **Name:** {info.Name}
+                                           **Description**: {info.SlashCommand.Description}
+                                           """
+                        }.Build()
                     }
                 );
 

@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
@@ -38,48 +39,58 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        List<AuditLogEntry> entries =
-        [
-            new("Name", GetChangeEntry(oldGuild.Name, newGuild.Name), oldGuild.Name != newGuild.Name),
-            new("Region", GetChangeEntry(oldGuild.PreferredLocale, newGuild.PreferredLocale), oldGuild.PreferredLocale != newGuild.PreferredLocale),
-            new("Verification Level", GetChangeEntry(oldGuild.VerificationLevel, newGuild.VerificationLevel), oldGuild.VerificationLevel != newGuild.VerificationLevel),
-            new(
-                "Default Message Notifications",
-                GetChangeEntry(oldGuild.DefaultMessageNotifications, newGuild.DefaultMessageNotifications),
-                oldGuild.DefaultMessageNotifications != newGuild.DefaultMessageNotifications
-            ),
-            new("Afk Timeout (seconds)", GetChangeEntry(oldGuild.AFKTimeout, newGuild.AFKTimeout), oldGuild.AFKTimeout != newGuild.AFKTimeout),
-            new("Icon", GetChangeEntry(oldGuild.IconUrl, newGuild.IconUrl), oldGuild.IconUrl != newGuild.IconUrl),
-            new("Banner", GetChangeEntry(oldGuild.BannerUrl, newGuild.BannerUrl), oldGuild.BannerUrl != newGuild.BannerUrl),
-            new("Splash", GetChangeEntry(oldGuild.SplashUrl, newGuild.SplashUrl), oldGuild.SplashUrl != newGuild.SplashUrl),
-            new("Afk Channel", GetChangeEntry(oldGuild.AFKChannel?.Mention, newGuild.AFKChannel?.Mention), oldGuild.AFKChannel?.Id != newGuild.AFKChannel?.Id),
-            new("System Channel", GetChangeEntry(oldGuild.SystemChannel?.Mention, newGuild.SystemChannel?.Mention), oldGuild.SystemChannel?.Id != newGuild.SystemChannel?.Id),
-            new("Owner", GetChangeEntry(oldGuild.Owner?.Mention, newGuild.Owner?.Mention), oldGuild.Owner?.Id != newGuild.Owner?.Id),
-            new(
-                "Explicit Content Filter Level",
-                GetChangeEntry(oldGuild.ExplicitContentFilter, newGuild.ExplicitContentFilter),
-                oldGuild.ExplicitContentFilter != newGuild.ExplicitContentFilter
-            ),
-            new("Preferred Local", GetChangeEntry(oldGuild.PreferredLocale, newGuild.PreferredLocale), oldGuild.PreferredLocale != newGuild.PreferredLocale),
-            new(
-                "Preferred Culture",
-                GetChangeEntry(oldGuild.PreferredCulture?.NativeName, newGuild.PreferredCulture?.NativeName),
-                oldGuild.PreferredCulture?.Equals(newGuild.PreferredCulture) == false
-            ),
-            new("Enable Boost Progress Bar", $"Set to {newGuild.IsBoostProgressBarEnabled}", oldGuild.IsBoostProgressBarEnabled != newGuild.IsBoostProgressBarEnabled),
-            new(
-                "Safety Alerts Channel Id",
-                GetChangeEntry(
-                    oldGuild.SafetyAlertsChannel?.Id is { } oldGuildSafetyAlertsChannelId ? MentionUtils.MentionChannel(oldGuildSafetyAlertsChannelId) : null,
-                    newGuild.SafetyAlertsChannel?.Id is { } newGuildSafetyAlertsChannelId ? MentionUtils.MentionChannel(newGuildSafetyAlertsChannelId) : null
-                ),
-                oldGuild.SafetyAlertsChannel != newGuild.SafetyAlertsChannel
-            )
-        ];
+        List<EmbedFieldBuilder> builders = new(16);
+        AddIfChanged(builders, "Name", oldGuild.Name, newGuild.Name);
+        AddIfChanged(builders, "Region", oldGuild.PreferredLocale, newGuild.PreferredLocale);
+        AddIfChanged(builders, "Verification Level", oldGuild.VerificationLevel, newGuild.VerificationLevel);
+        AddIfChanged(builders, "Default Message Notifications", oldGuild.DefaultMessageNotifications, newGuild.DefaultMessageNotifications);
+        AddIfChanged(builders, "Afk Timeout (seconds)", oldGuild.AFKTimeout, newGuild.AFKTimeout);
+        AddIfChanged(builders, "Icon", oldGuild.IconUrl, newGuild.IconUrl);
+        AddIfChanged(builders, "Banner", oldGuild.BannerUrl, newGuild.BannerUrl);
+        AddIfChanged(builders, "Splash", oldGuild.SplashUrl, newGuild.SplashUrl);
+        if (oldGuild.AFKChannel?.Id != newGuild.AFKChannel?.Id)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Afk Channel", GetChangeEntry(oldGuild.AFKChannel?.Mention, newGuild.AFKChannel?.Mention)));
+        }
+
+        if (oldGuild.SystemChannel?.Id != newGuild.SystemChannel?.Id)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("System Channel", GetChangeEntry(oldGuild.SystemChannel?.Mention, newGuild.SystemChannel?.Mention)));
+        }
+
+        if (oldGuild.OwnerId != newGuild.OwnerId)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Owner", GetChangeEntry(oldGuild.Owner?.Mention, newGuild.Owner?.Mention)));
+        }
+
+        AddIfChanged(builders, "Explicit Content Filter Level", oldGuild.ExplicitContentFilter, newGuild.ExplicitContentFilter);
+        AddIfChanged(builders, "Preferred Local", oldGuild.PreferredLocale, newGuild.PreferredLocale);
+        if (oldGuild.PreferredCulture?.Equals(newGuild.PreferredCulture) == false)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Preferred Culture", GetChangeEntry(oldGuild.PreferredCulture?.NativeName, newGuild.PreferredCulture?.NativeName)));
+        }
+
+        AddIfChanged(builders, "Enable Boost Progress Bar", oldGuild.IsBoostProgressBarEnabled, newGuild.IsBoostProgressBarEnabled);
+        if (oldGuild.SafetyAlertsChannel != newGuild.SafetyAlertsChannel)
+        {
+            builders.Add(
+                EmbedFieldBuilderFactory.Create(
+                    "Safety Alerts Channel",
+                    GetChangeEntry(
+                        oldGuild.SafetyAlertsChannel is { Id: var oldGuildSafetyAlertsChannelId } ? $"<#{oldGuildSafetyAlertsChannelId}>" : null,
+                        newGuild.SafetyAlertsChannel is { Id: var newGuildSafetyAlertsChannelId } ? $"<#{newGuildSafetyAlertsChannelId}>" : null
+                    )
+                )
+            );
+        }
+
+        if (builders.Count == 0)
+        {
+            return;
+        }
 
         using var serverChannelWebhookClient = new DiscordWebhookClient(serverChannelWebhookUrl);
-
-        await LogAsync(newGuild, serverChannelWebhookClient, AuditLogType.Server, OperationType.Update, entries, newGuild.Name, newGuild.Name, newGuild.IconUrl);
+        await LogAsync(newGuild, serverChannelWebhookClient, AuditLogType.Server, OperationType.Update, builders, newGuild.Name, newGuild.Name, newGuild.IconUrl);
     }
 
     public sealed record AuditLogGuildUpdatedResult(AuditLogType Type, string WebhookUrl);

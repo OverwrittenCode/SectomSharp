@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Webhook;
 using JetBrains.Annotations;
@@ -6,66 +8,71 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
-using SectomSharp.Extensions;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Events;
 
 public sealed partial class DiscordEvent
 {
-    private static async Task LogAsync(
+    private static async Task LogAsync<T>(
         IGuild guild,
         DiscordWebhookClient webhookClient,
         AuditLogType auditLogType,
         OperationType operationType,
-        IEnumerable<AuditLogEntry> entries,
-        string footerPrefix,
+        List<EmbedFieldBuilder> embedFieldBuilders,
+        T footerPrefix,
         string authorName,
         string? authorIconUrl = null,
         Color? colour = null
     )
     {
-        try
-        {
-            EmbedBuilder embed = new EmbedBuilder().WithAuthor(authorName, authorIconUrl)
-                                                   .WithColor(
-                                                        colour
-                                                     ?? operationType switch
-                                                        {
-                                                            OperationType.Create => Color.Green,
-                                                            OperationType.Update => Color.Orange,
-                                                            OperationType.Delete => Color.Red,
-                                                            _ => throw new InvalidEnumArgumentException(nameof(operationType), (int)operationType, typeof(OperationType))
-                                                        }
-                                                    )
-                                                   .WithFields(
-                                                        from entry in entries
-                                                        where entry.ShouldInclude
-                                                        let fieldValue = entry.Value?.ToString()?.Truncate(EmbedFieldBuilder.MaxFieldValueLength)
-                                                        where !String.IsNullOrEmpty(fieldValue)
-                                                        select new EmbedFieldBuilder
-                                                        {
-                                                            Name = entry.Key,
-                                                            Value = fieldValue
-                                                        }
-                                                    )
-                                                   .WithFooter($"{footerPrefix} | {auditLogType}{operationType}")
-                                                   .WithCurrentTimestamp();
+        Debug.Assert(embedFieldBuilders.Count > 0);
 
-            if (embed.Fields.Count > 0)
+        var embedBuilder = new EmbedBuilder
+        {
+            Author = new EmbedAuthorBuilder
             {
-                IGuildUser bot = await guild.GetCurrentUserAsync();
+                Name = authorName,
+                IconUrl = authorIconUrl
+            },
+            Color = colour
+                 ?? operationType switch
+                    {
+                        OperationType.Create => Color.Green,
+                        OperationType.Update => Color.Orange,
+                        OperationType.Delete => Color.Red,
+                        _ => throw new InvalidEnumArgumentException(nameof(operationType), (int)operationType, typeof(OperationType))
+                    },
+            Fields = embedFieldBuilders,
+            Footer = new EmbedFooterBuilder { Text = $"{footerPrefix} | {auditLogType}{operationType}" },
+            Timestamp = DateTimeOffset.UtcNow
+        };
 
-                await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: [embed.Build()]);
-            }
-        }
-        finally
-        {
-            webhookClient.Dispose();
-        }
+        IGuildUser bot = await guild.GetCurrentUserAsync();
+        await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: [embedBuilder.Build()]);
     }
 
     private static string GetChangeEntry<T>(T before, T after)
-        => $"{Format.Bold("Before:")} {(before is null ? "N/A" : before)}\n{Format.Bold("After:")} {(after is null ? "N/A" : after)}";
+        => $"""
+            **Before:** {(before is null ? "N/A" : before)}
+            **After:** {(after is null ? "N/A" : after)}
+            """;
+
+    private static void AddIfChanged(List<EmbedFieldBuilder> builders, [ConstantExpected] string key, bool before, bool after)
+    {
+        if (before != after)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create(key, after ? "Set to True" : "Set to False"));
+        }
+    }
+
+    private static void AddIfChanged<T>(List<EmbedFieldBuilder> builders, [ConstantExpected] string key, T before, T after)
+    {
+        if (!EqualityComparer<T>.Default.Equals(before, after))
+        {
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated(key, GetChangeEntry(before, after)));
+        }
+    }
 
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
     private readonly ILogger<DiscordEvent> _logger;
@@ -87,6 +94,4 @@ public sealed partial class DiscordEvent
 
         return webhookUrl is null ? null : new DiscordWebhookClient(webhookUrl);
     }
-
-    private record struct AuditLogEntry(string Key, object? Value, bool ShouldInclude = true);
 }

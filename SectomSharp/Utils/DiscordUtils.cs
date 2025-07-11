@@ -1,6 +1,5 @@
 using Discord;
 using Discord.Interactions;
-using SectomSharp.Extensions;
 
 namespace SectomSharp.Utils;
 
@@ -17,28 +16,25 @@ internal static class DiscordUtils
     /// </summary>
     /// <param name="context">The interaction context.</param>
     /// <param name="reason">The given reason.</param>
-    /// <param name="extra">A list of key-value pairs to include.</param>
     /// <returns>A new instance of <see cref="RequestOptions" />.</returns>
-    public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason, List<KeyValuePair<string, string>>? extra = null)
-    {
-        const int maxAuditReasonLength = 512;
-
-        List<KeyValuePair<string, string>> keyValuePairs =
-        [
-            new("Perpetrator", $"{context.User.Username} ({context.User.Id})"),
-            new("Channel", $"{context.Channel.Name} ({context.Channel.Id})"),
-            new("Reason", reason ?? "No reason provided.")
-        ];
-
-        if (extra is null)
+    public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason)
+        => new()
         {
-            extra = keyValuePairs;
-        }
-        else
-        {
-            extra.InsertRange(0, keyValuePairs);
-        }
+            AuditLogReason =
+                $"[Perpetrator]: {context.User.Username} ({context.User.Id}) | [Channel]: {context.Channel.Name} ({context.Channel.Id}) | [Reason]: {reason ?? "No reason provided."}"
+        };
 
-        return new RequestOptions { AuditLogReason = String.Join(" | ", extra.Select(kvp => $"[{kvp.Key}]: {kvp.Value}")).Truncate(maxAuditReasonLength) };
-    }
+    /// <summary>
+    ///     Creates a new instance of <see cref="RequestOptions" /> with a set audit log reason.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="reason">The given reason.</param>
+    /// <param name="metadata">The extra metadata.</param>
+    /// <returns>A new instance of <see cref="RequestOptions" />.</returns>
+    public static RequestOptions GetAuditReasonRequestOptions(SocketInteractionContext context, string? reason, string metadata)
+        => new()
+        {
+            AuditLogReason =
+                $"[Perpetrator]: {context.User.Username} ({context.User.Id}) | [Channel]: {context.Channel.Name} ({context.Channel.Id}) | [Reason]: {reason ?? "No reason provided."} | {metadata}"
+        };
 }
