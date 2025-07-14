@@ -9,11 +9,11 @@ public abstract class BaseOneToManyGuildRelation : BaseEntity
     public Guild Guild { get; private set; } = null!;
 }
 
-public abstract class BaseOneToManyGuildRelationConfiguration<TThis> : BaseEntityConfiguration<TThis>
-    where TThis : BaseOneToManyGuildRelation
+public abstract class BaseOneToManyGuildRelationConfiguration<TEntity> : BaseEntityConfiguration<TEntity>
+    where TEntity : BaseOneToManyGuildRelation
 {
     /// <inheritdoc />
-    public override void Configure(EntityTypeBuilder<TThis> builder)
+    public override void Configure(EntityTypeBuilder<TEntity> builder)
     {
         builder.Property(relation => relation.GuildId).IsRequiredSnowflakeId();
         base.Configure(builder);
