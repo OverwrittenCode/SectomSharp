@@ -414,13 +414,18 @@ public sealed partial class AdminModule
 
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
-                if (embeds.Length == 0)
+                switch (embeds.Length)
                 {
-                    await FollowupAsync(NothingToView, ephemeral: true);
-                    return;
+                    case 0:
+                        await FollowupAsync(NothingToView, ephemeral: true);
+                        return;
+                    case 1:
+                        await FollowupAsync(embeds: embeds);
+                        return;
+                    default:
+                        await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
+                        return;
                 }
-
-                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
             }
 
             [SlashCmd("View the audit log channel configuration")]
@@ -521,13 +526,18 @@ public sealed partial class AdminModule
 
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
-                if (embeds.Length == 0)
+                switch (embeds.Length)
                 {
-                    await FollowupAsync(NothingToView, ephemeral: true);
-                    return;
+                    case 0:
+                        await FollowupAsync(NothingToView, ephemeral: true);
+                        return;
+                    case 1:
+                        await FollowupAsync(embeds: embeds);
+                        return;
+                    default:
+                        await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
+                        return;
                 }
-
-                await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
             }
 
             public readonly record struct LogChannelOptions<T>(SocketTextChannel Channel, T Action, [ReasonMaxLength] string? Reason = null)

@@ -244,13 +244,18 @@ public sealed partial class ModerationModule
 
             Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
-            if (embeds.Length == 0)
+            switch (embeds.Length)
             {
-                await FollowupAsync(NothingToView, ephemeral: true);
-                return;
+                case 0:
+                    await FollowupAsync(NothingToView, ephemeral: true);
+                    return;
+                case 1:
+                    await FollowupAsync(embeds: embeds);
+                    return;
+                default:
+                    await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = embeds }.InitAsync(Context);
+                    return;
             }
-
-            await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
         }
     }
 }
