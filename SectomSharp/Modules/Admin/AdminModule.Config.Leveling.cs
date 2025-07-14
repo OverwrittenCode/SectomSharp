@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
-using SectomSharp.Data.Entities;
 using SectomSharp.Extensions;
 using SectomSharp.Utils;
 
@@ -19,8 +18,11 @@ public sealed partial class AdminModule
     public sealed partial class ConfigModule
     {
         [Group("leveling", "Leveling configuration")]
-        public sealed class LevelingModule : DisableableModule<LevelingModule, LevelingConfiguration>
+        public sealed class LevelingModule : DisableableModule<LevelingModule>, IDisableableModule<LevelingModule>
         {
+            /// <inheritdoc />
+            public static string DisableColumnName => "Configuration_Leveling_IsDisabled";
+
             /// <inheritdoc />
             public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
@@ -52,43 +54,6 @@ public sealed partial class AdminModule
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
-
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
-                }
-
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is null)
-                {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                await LogAsync(db, Context, reason);
-            }
-
-            /// <inheritdoc />
-            protected override async Task SetIsDisabledAsync(bool isDisabled, string? reason)
-            {
-                await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
-                {
-                    cmd.CommandText = """
-                                      INSERT INTO "Guilds" ("Id", "Configuration_Leveling_IsDisabled")
-                                      VALUES (@guildId, @isDisabled)
-                                      ON CONFLICT ("Id") DO UPDATE
-                                          SET "Configuration_Leveling_IsDisabled" = @isDisabled
-                                          WHERE "Guilds"."Configuration_Leveling_IsDisabled" IS DISTINCT FROM @isDisabled
-                                      RETURNING 1
-                                      """;
-
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
 
                     stopwatch = Stopwatch.StartNew();
                     scalarResult = await cmd.ExecuteScalarAsync();
