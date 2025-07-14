@@ -198,7 +198,6 @@ public sealed partial class AdminModule
                 await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
                     await db.Database.OpenConnectionAsync();
-
                     await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
                     {
                         cmd.CommandText = """

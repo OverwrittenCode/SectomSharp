@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
+using SectomSharp.Data.CompositeTypes;
 using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
@@ -31,13 +32,85 @@ public sealed partial class ModerationModule
         public async Task View([MinLength(CaseConfiguration.IdLength)] [MaxLength(CaseConfiguration.IdLength)] string id)
         {
             await DeferAsync();
-            ViewResult? result;
+            (string? LogMessageUrl, EmbedBuilder EmbedBuilder)? result = null;
+            Stopwatch stopwatch;
             await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
             {
-                result = await db.Cases.Where(c => c.GuildId == Context.Guild.Id && c.Id == id)
-                                 .Select(c => (ViewResult?)new ViewResult(c.CommandInputEmbedBuilder, c.LogMessageUrl))
-                                 .FirstOrDefaultAsync();
+                await db.Database.OpenConnectionAsync();
+                await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+
+                cmd.CommandText = $"""
+                                   SELECT
+                                       c."LogMessageUrl",
+                                       c."CreatedAt",
+                                       c."Fields",
+                                       c."Color",
+                                       c."Description",
+                                       c."PerpetratorAvatarUrl",
+                                       CONCAT(
+                                         CASE c."LogType"
+                                             WHEN 1    THEN '{nameof(BotLogType.Warn)}'
+                                             WHEN 2    THEN '{nameof(BotLogType.Ban)}'
+                                             WHEN 4    THEN '{nameof(BotLogType.Softban)}'
+                                             WHEN 8    THEN '{nameof(BotLogType.Timeout)}'
+                                             WHEN 16   THEN '{nameof(BotLogType.Configuration)}'
+                                             WHEN 32   THEN '{nameof(BotLogType.Kick)}'
+                                             WHEN 64   THEN '{nameof(BotLogType.Deafen)}'
+                                             WHEN 128  THEN '{nameof(BotLogType.Mute)}'
+                                             WHEN 256  THEN '{nameof(BotLogType.Nick)}'
+                                             WHEN 512  THEN '{nameof(BotLogType.Purge)}'
+                                             WHEN 1024 THEN '{nameof(BotLogType.ModNote)}'
+                                             ELSE 'Unknown'
+                                         END,
+                                         CASE "OperationType"
+                                             WHEN 0 THEN '{nameof(OperationType.Create)}'
+                                             WHEN 1 THEN '{nameof(OperationType.Update)}'
+                                             WHEN 2 THEN '{nameof(OperationType.Delete)}'
+                                             ELSE 'Unknown'
+                                         END,
+                                         ' | ',
+                                         "Id"
+                                       ) AS "Header",
+                                       CONCAT('Perpetrator: ', "PerpetratorId") AS "Footer"
+                                   FROM "Cases" c
+                                   WHERE c."GuildId" = @guildId AND c."Id" = @id
+                                   """;
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromVarchar("id", id));
+
+                stopwatch = Stopwatch.StartNew();
+                await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.SingleRow | CommandBehavior.CloseConnection))
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        string? logMessageUrl = reader.IsDBNull(0) ? null : reader.GetString(0);
+                        DateTime createdAt = reader.GetDateTime(1);
+                        List<EmbedFieldBuilder> fields = CompositeEmbedField.ToBuilders(reader.GetFieldValue<CompositeEmbedField[]>(2));
+                        var color = new Color((uint)reader.GetInt32(3));
+                        string description = reader.GetString(4);
+                        string avatarUrl = reader.GetString(5);
+                        string header = reader.GetString(6);
+                        string footer = reader.GetString(7);
+
+                        var embedBuilder = new EmbedBuilder
+                        {
+                            Timestamp = createdAt,
+                            Fields = fields,
+                            Color = color,
+                            Description = description,
+                            ThumbnailUrl = avatarUrl,
+                            Author = new EmbedAuthorBuilder { Name = header },
+                            Footer = new EmbedFooterBuilder { Text = footer }
+                        };
+
+                        result = (logMessageUrl, embedBuilder);
+                    }
+
+                    stopwatch.Stop();
+                }
             }
+
+            Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
 
             if (!result.HasValue)
             {
@@ -45,7 +118,7 @@ public sealed partial class ModerationModule
                 return;
             }
 
-            await FollowupAsync(embeds: [result.Value.CommandInputEmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(result.Value.LogMessageUrl));
+            await FollowupAsync(embeds: [result.Value.EmbedBuilder.Build()], components: CaseUtils.GenerateLogMessageButton(result.Value.LogMessageUrl));
         }
 
         [SlashCmd("List and filter all cases on the server")]
@@ -179,7 +252,5 @@ public sealed partial class ModerationModule
 
             await new ButtonPaginationManager(_loggerFactory, Context) { Embeds = [.. embeds] }.InitAsync(Context);
         }
-
-        private readonly record struct ViewResult(EmbedBuilder CommandInputEmbedBuilder, string? LogMessageUrl);
     }
 }

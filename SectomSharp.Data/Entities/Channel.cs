@@ -15,12 +15,7 @@ public sealed class ChannelConfiguration : SnowflakeConfiguration<Channel>
     public override void Configure(EntityTypeBuilder<Channel> builder)
     {
         builder.HasOne(channel => channel.Guild).WithMany(guild => guild.Channels).HasForeignKey(channel => channel.GuildId).IsRequired();
-        builder.HasIndex(c => new
-            {
-                c.GuildId,
-                c.Id
-            }
-        );
+        builder.HasIndex(c => new { c.GuildId, c.Id });
         base.Configure(builder);
     }
 }

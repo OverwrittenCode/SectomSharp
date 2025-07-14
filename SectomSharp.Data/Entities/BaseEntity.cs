@@ -6,7 +6,7 @@ namespace SectomSharp.Data.Entities;
 
 public abstract class BaseEntity
 {
-    public DateTime CreatedAt
+    public DateTimeOffset CreatedAt
     {
         get;
         [UsedImplicitly(Reason = Constants.ValueGeneratedOnAdd)] private set;
@@ -18,5 +18,5 @@ public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
 {
     /// <inheritdoc />
     public virtual void Configure(EntityTypeBuilder<T> builder)
-        => builder.Property(e => e.CreatedAt).HasColumnType(Constants.PostgreSql.Timestamptz).HasDefaultValueSql(Constants.PostgreSql.Now).ValueGeneratedOnAdd().IsRequired();
+        => builder.Property(e => e.CreatedAt).HasDefaultValueSql(Constants.PostgreSql.Now).ValueGeneratedOnAdd().IsRequired();
 }

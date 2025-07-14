@@ -15,12 +15,7 @@ public sealed class BotLogChannelConfiguration : SnowflakeConfiguration<BotLogCh
     {
         builder.HasOne(channel => channel.Guild).WithMany(guild => guild.BotLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();
         builder.Property(channel => channel.Type).IsRequired();
-        builder.HasIndex(c => new
-            {
-                c.GuildId,
-                c.Id
-            }
-        );
+        builder.HasIndex(c => new { c.GuildId, c.Id });
         base.Configure(builder);
     }
 }

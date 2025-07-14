@@ -73,12 +73,11 @@ public sealed class InteractionHandler : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
-        IEnumerable<ICommandInfo> commandInfos = _interactionService.Modules.SelectMany(module
-            => module.SlashCommands.Cast<ICommandInfo>()
-                     .Concat(module.ContextCommands)
-                     .Concat(module.ComponentCommands)
-                     .Concat(module.AutocompleteCommands)
-                     .Concat(module.ModalCommands)
+        IEnumerable<ICommandInfo> commandInfos = _interactionService.Modules.SelectMany(module => module.SlashCommands.Cast<ICommandInfo>()
+                                                                                                        .Concat(module.ContextCommands)
+                                                                                                        .Concat(module.ComponentCommands)
+                                                                                                        .Concat(module.AutocompleteCommands)
+                                                                                                        .Concat(module.ModalCommands)
         );
         foreach (ICommandInfo cmd in commandInfos)
         {

@@ -8,7 +8,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using SectomSharp.Data;
+using SectomSharp.Data.CompositeTypes;
 using SectomSharp.Events;
 using SectomSharp.Services;
 
@@ -20,9 +22,17 @@ builder.Configuration.AddJsonFile("appsettings.json", false, false).AddUserSecre
 
 string connectionString = builder.Configuration["PostgreSQL:ConnectionString"] ?? throw new InvalidOperationException("Missing PostgreSQL connection string");
 
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+dataSourceBuilder.MapComposite<CompositeEmbedField>(CompositeEmbedField.PgName);
+NpgsqlDataSource dataSource = dataSourceBuilder.Build();
+
+builder.Services.AddSingleton(dataSource);
+
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole();
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+builder.Services.AddDbContextFactory<ApplicationDbContext>((s, options) => options.UseNpgsql(s.GetRequiredService<NpgsqlDataSource>())
+                                                                                  .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+);
 
 builder.Services.AddSingleton(
     new DiscordSocketConfig

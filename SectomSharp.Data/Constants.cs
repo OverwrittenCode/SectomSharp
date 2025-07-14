@@ -6,8 +6,6 @@ internal static class Constants
 
     public static class PostgreSql
     {
-        public const string Timestamptz = "timestamptz";
         public const string Now = "NOW()";
-        public const string JsonB = "jsonb";
     }
 }

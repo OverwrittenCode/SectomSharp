@@ -28,7 +28,7 @@ internal static class PropertyBuilderExtensions
     public static PropertyBuilder<uint> IsRequiredNonNegativeInt(this PropertyBuilder<uint> builder) => builder.HasConversion<int>().IsRequired();
 
     /// <summary>
-    ///     Configures the property as a non-negative nullable int32 that never exceeds <see cref="Int32.MaxValue" />.
+    ///     Configures the property as a nullable non-negative nullable int32 that never exceeds <see cref="Int32.MaxValue" />.
     /// </summary>
     /// <param name="builder">The property builder for a <see cref="UInt32" /> property.</param>
     /// <returns>The configured property builder.</returns>

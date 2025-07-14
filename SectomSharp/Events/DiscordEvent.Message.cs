@@ -149,7 +149,7 @@ public sealed partial class DiscordEvent
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", guild.Id));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("userId", author.Id));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromInt64Array("roleIds", roleIds));
-                cmd.Parameters.Add(NpgsqlParameterFactory.FromDateTime("now", message.CreatedAt.UtcDateTime));
+                cmd.Parameters.Add(NpgsqlParameterFactory.FromDateTimeOffset("now", message.CreatedAt));
                 await cmd.PrepareAsync();
 
                 stopwatch = Stopwatch.StartNew();

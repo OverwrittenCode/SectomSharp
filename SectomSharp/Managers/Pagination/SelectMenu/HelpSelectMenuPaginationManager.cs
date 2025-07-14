@@ -18,10 +18,11 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
     public static void Initialize(InteractionService interactionService)
     {
         IGrouping<CategoryAttribute, CommandInfo>[] groupedCommands = interactionService.SlashCommands.Select(cmd => new CommandInfo(
-                                                                                                 (CategoryAttribute)cmd.Module.Attributes.First(attr => attr is CategoryAttribute),
-                                                                                                 Storage.CommandInfoFullNameMap[cmd],
-                                                                                                 cmd
-                                                                                             )
+                                                                                                                  (CategoryAttribute)
+                                                                                                                  cmd.Module.Attributes.First(attr => attr is CategoryAttribute),
+                                                                                                                  Storage.CommandInfoFullNameMap[cmd],
+                                                                                                                  cmd
+                                                                                                              )
                                                                                          )
                                                                                         .GroupBy(info => info.Category)
                                                                                         .ToArray();
@@ -34,11 +35,11 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
         }.Build();
         List<SelectMenuOptionBuilder> categoryOptions = groupedCommands
                                                        .Select(group => new SelectMenuOptionBuilder(
-                                                                group.Key.Name,
-                                                                group.Key.Name,
-                                                                $"The {group.Key.Name} category",
-                                                                group.Key.Emoji
-                                                            )
+                                                                   group.Key.Name,
+                                                                   group.Key.Name,
+                                                                   $"The {group.Key.Name} category",
+                                                                   group.Key.Emoji
+                                                               )
                                                         )
                                                        .ToList();
         Dictionary<string, CategoryData> categoryMappings = groupedCommands.ToDictionary(

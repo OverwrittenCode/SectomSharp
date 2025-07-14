@@ -17,8 +17,7 @@ public sealed partial class ModerationModule
         await DeferAsync();
         IUserMessage originalMessage = await GetOriginalResponseAsync();
 
-        DateTime earliestAllowedPurgeDateTime = DateTime.UtcNow.AddDays(-14);
-
+        DateTimeOffset earliestAllowedPurgeDateTime = DateTimeOffset.UtcNow.AddDays(-14);
         var channel = (SocketTextChannel)Context.Channel;
 
         List<IMessage> messages = (await channel.GetMessagesAsync(amount + 1).FlattenAsync())

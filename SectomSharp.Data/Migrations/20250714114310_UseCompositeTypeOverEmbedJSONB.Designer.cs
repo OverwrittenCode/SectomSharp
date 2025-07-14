@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SectomSharp.Data;
@@ -11,9 +12,11 @@ using SectomSharp.Data;
 namespace SectomSharp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250714114310_UseCompositeTypeOverEmbedJSONB")]
+    partial class UseCompositeTypeOverEmbedJSONB
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -27,9 +30,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<long>("GuildId")
@@ -55,9 +58,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<long>("GuildId")
@@ -88,9 +91,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<int>("Color")
                         .HasColumnType("integer");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
@@ -98,8 +101,8 @@ namespace SectomSharp.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<DateTimeOffset?>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamptz");
 
                     b.Property<string>("LogMessageUrl")
                         .HasMaxLength(96)
@@ -143,9 +146,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<long>("GuildId")
@@ -163,9 +166,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.HasKey("Id");
@@ -181,9 +184,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<int?>("Cooldown")
                         .HasColumnType("integer");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<long>("GuildId")
@@ -214,9 +217,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.HasKey("GuildId", "Id");
@@ -232,9 +235,9 @@ namespace SectomSharp.Data.Migrations
                     b.Property<int>("Value")
                         .HasColumnType("integer");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("LogType")
@@ -416,8 +419,8 @@ namespace SectomSharp.Data.Migrations
                                 .HasColumnType("integer")
                                 .HasDefaultValue(0);
 
-                            b1.Property<DateTimeOffset?>("UpdatedAt")
-                                .HasColumnType("timestamp with time zone");
+                            b1.Property<DateTime?>("UpdatedAt")
+                                .HasColumnType("timestamptz");
 
                             b1.HasKey("UserGuildId", "UserId");
 

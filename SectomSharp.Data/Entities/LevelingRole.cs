@@ -19,24 +19,8 @@ public sealed class LevelingRoleConfiguration : SnowflakeConfiguration<LevelingR
         builder.HasOne(role => role.Guild).WithMany(guild => guild.LevelingRoles).HasForeignKey(role => role.GuildId).IsRequired();
         builder.Property(role => role.Level).IsRequiredNonNegativeInt();
         builder.Property(role => role.Cooldown).IsNonNegativeInt();
-        builder.HasIndex(role => new
-            {
-                role.GuildId,
-                role.Level
-            }
-        );
-        builder.HasIndex(role => new
-                    {
-                        role.GuildId,
-                        role.Id
-                    }
-                )
-               .IncludeProperties(role => new
-                    {
-                        role.Cooldown,
-                        role.Multiplier
-                    }
-                );
+        builder.HasIndex(role => new { role.GuildId, role.Level });
+        builder.HasIndex(role => new { role.GuildId, role.Id }).IncludeProperties(role => new { role.Cooldown, role.Multiplier });
         base.Configure(builder);
     }
 }

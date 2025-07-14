@@ -45,11 +45,11 @@ public static class NpgsqlParameterFactory
     public static NpgsqlParameter<string?> FromJsonB(string name, string? value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Jsonb };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static NpgsqlParameter<DateTime> FromDateTime(string name, DateTime value, NpgsqlDbType npgsqlDbType = NpgsqlDbType.TimestampTz)
+    public static NpgsqlParameter<DateTimeOffset> FromDateTimeOffset(string name, DateTimeOffset value, NpgsqlDbType npgsqlDbType = NpgsqlDbType.TimestampTz)
         => new(name, value) { NpgsqlDbType = npgsqlDbType };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static NpgsqlParameter<DateTime?> FromDateTime(string name, DateTime? value, NpgsqlDbType npgsqlDbType = NpgsqlDbType.TimestampTz)
+    public static NpgsqlParameter<DateTimeOffset?> FromDateTimeOffset(string name, DateTimeOffset? value, NpgsqlDbType npgsqlDbType = NpgsqlDbType.TimestampTz)
         => new(name, value) { NpgsqlDbType = npgsqlDbType };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -84,4 +84,10 @@ public static class NpgsqlParameterFactory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static NpgsqlParameter<long?[]> FromInt64Array(string name, long?[] value) => new(name, value) { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Bigint };
+
+    public static NpgsqlParameter<T[]> FromCompositeArray<T>(string name, T[] value, string pgName)
+        => new(name, value)
+        {
+            DataTypeName = pgName
+        };
 }

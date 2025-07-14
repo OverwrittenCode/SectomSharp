@@ -22,20 +22,8 @@ public sealed class UserConfiguration : SnowflakeConfiguration<User>
     public override void Configure(EntityTypeBuilder<User> builder)
     {
         builder.HasOne(user => user.Guild).WithMany(guild => guild.Users).HasForeignKey(user => user.GuildId).IsRequired();
-        builder.OwnsOne(
-            user => user.Level,
-            levelBuilder =>
-            {
-                levelBuilder.Property(level => level.CurrentXp).IsRequiredNonNegativeInt().HasDefaultValue(0);
-                levelBuilder.Property(level => level.UpdatedAt).HasColumnType(Constants.PostgreSql.Timestamptz);
-            }
-        );
-        builder.HasKey(user => new
-            {
-                user.GuildId,
-                user.Id
-            }
-        );
+        builder.OwnsOne(user => user.Level, levelBuilder => levelBuilder.Property(level => level.CurrentXp).IsRequiredNonNegativeInt().HasDefaultValue(0));
+        builder.HasKey(user => new { user.GuildId, user.Id });
         base.Configure(builder);
     }
 }

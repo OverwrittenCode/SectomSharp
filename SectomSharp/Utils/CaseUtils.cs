@@ -4,9 +4,8 @@ using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using SectomSharp.Data;
-using SectomSharp.Data.Entities;
+using SectomSharp.Data.CompositeTypes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
 
@@ -17,9 +16,9 @@ internal static class CaseUtils
     private static readonly Func<ApplicationDbContext, ulong, BotLogType, Task<ulong?>> GetGuildWithMatchedLogChannels =
         EF.CompileAsyncQuery((ApplicationDbContext context, ulong guildId, BotLogType logType) => context.Guilds.Where(g => g.Id == guildId)
                                                                                                          .Select(g => (ulong?)g.BotLogChannels
-                                                                                                             .Where(channel => channel.Type.HasFlag(logType))
-                                                                                                             .Select(channel => channel.Id)
-                                                                                                             .FirstOrDefault()
+                                                                                                                    .Where(channel => channel.Type.HasFlag(logType))
+                                                                                                                    .Select(channel => channel.Id)
+                                                                                                                    .FirstOrDefault()
                                                                                                           )
                                                                                                          .FirstOrDefault()
         );
@@ -69,7 +68,7 @@ internal static class CaseUtils
         OperationType operationType,
         ulong? targetId = null,
         ulong? channelId = null,
-        DateTime? expiresAt = null,
+        DateTimeOffset? expiresAt = null,
         string? reason = null
     )
     {
@@ -96,7 +95,7 @@ internal static class CaseUtils
         OperationType operationType,
         ulong? targetId = null,
         ulong? channelId = null,
-        DateTime? expiresAt = null,
+        DateTimeOffset? expiresAt = null,
         string? reason = null
     )
     {
@@ -124,6 +123,8 @@ internal static class CaseUtils
         }
 
         List<EmbedFieldBuilder> commandFields = new(options.Count);
+        var compositeEmbedFields = new CompositeEmbedField[options.Count];
+        int index = 0;
         foreach (SocketSlashCommandDataOption option in options)
         {
             string value = option.Value switch
@@ -133,54 +134,49 @@ internal static class CaseUtils
                 _ => option.Value.ToString() ?? "Unknown"
             };
 
-            commandFields.Add(EmbedFieldBuilderFactory.Create(option.Name, value));
+            EmbedFieldBuilder embedFieldBuilder = EmbedFieldBuilderFactory.Create(option.Name, value);
+            commandFields.Add(embedFieldBuilder);
+            compositeEmbedFields[index++] = new CompositeEmbedField(option.Name, value);
         }
 
         string caseId = StringUtils.GenerateUniqueId();
 
+        string description = $"</{String.Join(' ', commandMentionArguments)}:{command.CommandId}>";
         var commandInputEmbedBuilder = new EmbedBuilder
         {
-            Description = $"</{String.Join(' ', commandMentionArguments)}:{command.CommandId}>",
+            Description = description,
             Author = new EmbedAuthorBuilder { Name = $"{logType}{operationType} | {caseId}" },
             Fields = commandFields,
             Timestamp = DateTimeOffset.UtcNow
         };
 
+        string? displayAvatarUrl = null;
+        Color color;
         if (perpetratorId.HasValue)
         {
-            commandInputEmbedBuilder.Color = operationType == OperationType.Update ? Color.Orange : Color.Red;
-            commandInputEmbedBuilder.ThumbnailUrl = context.User.GetDisplayAvatarUrl();
+            color = operationType == OperationType.Update ? Color.Orange : Color.Red;
+            displayAvatarUrl = context.User.GetDisplayAvatarUrl();
+            commandInputEmbedBuilder.ThumbnailUrl = displayAvatarUrl;
             commandInputEmbedBuilder.Footer = new EmbedFooterBuilder { Text = $"Perpetrator: {perpetratorId.Value}" };
         }
         else
         {
-            commandInputEmbedBuilder.Color = Color.Purple;
+            color = Color.Purple;
         }
 
-        var @case = new Case
-        {
-            GuildId = context.Guild.Id,
-            Id = caseId,
-            PerpetratorId = perpetratorId,
-            TargetId = targetId,
-            ChannelId = channelId,
-            LogType = logType,
-            OperationType = operationType,
-            CommandInputEmbedBuilder = commandInputEmbedBuilder,
-            ExpiresAt = expiresAt,
-            Reason = reason
-        };
-
+        commandInputEmbedBuilder.Color = color;
         Embed commandLogEmbed = commandInputEmbedBuilder.Build();
 
-        ulong? botLogChannelId = await GetGuildWithMatchedLogChannels(db, context.Guild.Id, @case.LogType);
+        ulong guildId = context.Guild.Id;
+        string? logMessageUrl = null;
+        ulong? botLogChannelId = await GetGuildWithMatchedLogChannels(db, guildId, logType);
 
         if (botLogChannelId.HasValue
          && context.Guild.Channels.FirstOrDefault(c => c.Id == botLogChannelId) is ITextChannel logChannel
          && context.Guild.CurrentUser.GetPermissions(logChannel).Has(ChannelPermission.SendMessages))
         {
             IUserMessage userMessage = await logChannel.SendMessageAsync(embeds: [commandLogEmbed]);
-            @case.LogMessageUrl = userMessage.GetJumpUrl();
+            logMessageUrl = userMessage.GetJumpUrl();
         }
 
         await db.Database.ExecuteSqlRawAsync(
@@ -216,10 +212,13 @@ internal static class CaseUtils
                 "ChannelId",
                 "LogType",
                 "OperationType", 
-                "CommandInputEmbedBuilder",
                 "ExpiresAt",
                 "Reason",
-                "LogMessageUrl"
+                "LogMessageUrl",
+                "Fields",
+                "Color",
+                "Description",
+                "PerpetratorAvatarUrl"
             )
             VALUES (
                 @guildId,
@@ -229,26 +228,32 @@ internal static class CaseUtils
                 @caseChannelId,
                 @logType,
                 @operationType,
-                @commandInput,
                 @expiresAt,
                 @reason,
-                @logMessageUrl
+                @logMessageUrl,
+                @fields,
+                @color,
+                @description,
+                @perpetratorAvatarUrl
             );
             """,
-            NpgsqlParameterFactory.FromSnowflakeId("guildId", @case.GuildId),
+            NpgsqlParameterFactory.FromSnowflakeId("guildId", guildId),
             NpgsqlParameterFactory.FromBoolean("guildNotExists", !botLogChannelId.HasValue),
             NpgsqlParameterFactory.FromSnowflakeId("channelId", channelId),
             NpgsqlParameterFactory.FromBoolean("channelIdHasValue", channelId.HasValue),
             NpgsqlParameterFactory.FromSnowflakeId("perpetratorId", perpetratorId),
             NpgsqlParameterFactory.FromSnowflakeId("targetId", targetId),
-            NpgsqlParameterFactory.FromVarchar("caseId", @case.Id),
-            NpgsqlParameterFactory.FromSnowflakeId("caseChannelId", @case.ChannelId),
-            NpgsqlParameterFactory.FromEnum32("logType", @case.LogType),
-            NpgsqlParameterFactory.FromEnum32("operationType", @case.OperationType),
-            NpgsqlParameterFactory.FromJsonB("commandInput", @case.CommandInputEmbedBuilder.ToJsonString(Formatting.None)),
-            NpgsqlParameterFactory.FromDateTime("expiresAt", @case.ExpiresAt),
+            NpgsqlParameterFactory.FromVarchar("caseId", caseId),
+            NpgsqlParameterFactory.FromSnowflakeId("caseChannelId", channelId),
+            NpgsqlParameterFactory.FromEnum32("logType", logType),
+            NpgsqlParameterFactory.FromEnum32("operationType", operationType),
+            NpgsqlParameterFactory.FromDateTimeOffset("expiresAt", expiresAt),
             NpgsqlParameterFactory.FromVarchar("reason", reason),
-            NpgsqlParameterFactory.FromVarchar("logMessageUrl", @case.LogMessageUrl)
+            NpgsqlParameterFactory.FromVarchar("logMessageUrl", logMessageUrl),
+            NpgsqlParameterFactory.FromCompositeArray("fields", compositeEmbedFields, $"{CompositeEmbedField.PgName}[]"),
+            NpgsqlParameterFactory.FromNonNegativeInt32("color", color.RawValue),
+            NpgsqlParameterFactory.FromVarchar("description", description),
+            NpgsqlParameterFactory.FromVarchar("perpetratorAvatarUrl", displayAvatarUrl)
         );
 
         bool? successfulDm = null;
@@ -294,6 +299,6 @@ internal static class CaseUtils
             }
         }
 
-        await context.Interaction.FollowupAsync(successfulDm == false ? "Unable to DM user." : null, [commandLogEmbed], components: GenerateLogMessageButton(@case.LogMessageUrl));
+        await context.Interaction.FollowupAsync(successfulDm == false ? "Unable to DM user." : null, [commandLogEmbed], components: GenerateLogMessageButton(logMessageUrl));
     }
 }
