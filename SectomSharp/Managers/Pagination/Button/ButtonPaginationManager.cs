@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using StrongInteractions.Generated;
 
 namespace SectomSharp.Managers.Pagination.Button;
 
@@ -92,7 +93,7 @@ internal sealed class ButtonPaginationManager : InstanceManager<ButtonPagination
                                          string label = pageNavigatorButton.ToString();
                                          return new ButtonBuilder(
                                              label,
-                                             GenerateComponentId(label),
+                                             StrongInteractionIds.Button(InteractionId, pageNavigatorButton),
                                              pageNavigatorButton == PageNavigationButton.Exit ? ButtonStyle.Danger : ButtonStyle.Primary,
                                              isDisabled: pageNavigatorButton switch
                                              {

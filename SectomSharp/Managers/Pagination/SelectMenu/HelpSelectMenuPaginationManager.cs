@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
 using SectomSharp.Utils;
+using StrongInteractions.Generated;
 
 namespace SectomSharp.Managers.Pagination.SelectMenu;
 
@@ -143,8 +144,8 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
     /// <inheritdoc />
     public HelpSelectMenuPaginationManager(ILoggerFactory loggerFactory, SocketInteractionContext context) : base(loggerFactory, context)
     {
-        string categoryId = GenerateComponentId(nameof(HelpSelectMenuType.Category));
-        _commandId = GenerateComponentId(nameof(HelpSelectMenuType.Command));
+        string categoryId = StrongInteractionIds.HelpSelectMenu(InteractionId, HelpSelectMenuType.Category);
+        _commandId = StrongInteractionIds.HelpSelectMenu(InteractionId, HelpSelectMenuType.Command);
         _currentCategory = "";
         _categorySelectMenu = new ActionRowBuilder().AddComponent(new SelectMenuBuilder(categoryId, _helpData.CategoryOptions, "Choose a category").Build());
     }

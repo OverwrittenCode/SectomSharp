@@ -9,7 +9,6 @@ using Discord.WebSocket;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Extensions;
-using SectomSharp.Utils;
 
 namespace SectomSharp.Managers;
 
@@ -34,7 +33,7 @@ internal abstract class InstanceManager<T>
     private static readonly Func<ILogger, ulong, TimeSpan, IDisposable?> ScopeCallback = LoggerMessage.DefineScope<ulong, TimeSpan>("Instance Id={InstanceId}, Timeout={Timeout}");
 
     /// <summary>
-    ///     A dictionary storing all active instances of <typeparamref name="T" /> keyed by <see cref="_interactionId" />.
+    ///     A dictionary storing all active instances of <typeparamref name="T" /> keyed by <see cref="InteractionId" />.
     /// </summary>
     private static readonly ConcurrentDictionary<ulong, T> Instances = [];
 
@@ -94,7 +93,6 @@ internal abstract class InstanceManager<T>
     }
 
     private readonly ILogger<T> _logger;
-    private readonly ulong _interactionId;
     private readonly ulong _userId;
 
     private int _state;
@@ -103,6 +101,11 @@ internal abstract class InstanceManager<T>
     private CancellationTokenSource? _inactivityCts;
     private CancellationTokenSource? _apiCts;
     private RestFollowupMessage _originalMessage = null!;
+
+    /// <summary>
+    ///     Gets the interaction id.
+    /// </summary>
+    protected ulong InteractionId { get; }
 
     /// <summary>
     ///     Gets the time interval to wait before the instance is automatically freed due to user inactivity.
@@ -125,11 +128,11 @@ internal abstract class InstanceManager<T>
     ///     Initialises a new instance of the InstanceManager class.
     /// </summary>
     /// <param name="logger">The logger.</param>
-    /// <param name="context">The context used for the <see cref="_interactionId" />.</param>
+    /// <param name="context">The context used for the <see cref="InteractionId" />.</param>
     protected InstanceManager(ILoggerFactory loggerFactory, SocketInteractionContext context)
     {
         _logger = loggerFactory.CreateLogger<T>();
-        _interactionId = context.Interaction.Id;
+        InteractionId = context.Interaction.Id;
         _userId = context.User.Id;
     }
 
@@ -160,7 +163,7 @@ internal abstract class InstanceManager<T>
     /// </summary>
     /// <returns>The scope.</returns>
     [MustDisposeResource]
-    private IDisposable? CreateScope() => ScopeCallback(_logger, _interactionId, InactivityTimeout);
+    private IDisposable? CreateScope() => ScopeCallback(_logger, InteractionId, InactivityTimeout);
 
     /// <summary>
     ///     Cleans up resources.
@@ -187,7 +190,7 @@ internal abstract class InstanceManager<T>
         Timer? hardTimer = Interlocked.Exchange(ref _hardTimer, null);
         hardTimer?.Dispose();
 
-        Instances.TryRemove(_interactionId, out _);
+        Instances.TryRemove(InteractionId, out _);
     }
 
     /// <summary>
@@ -359,38 +362,6 @@ internal abstract class InstanceManager<T>
     protected abstract Task<RestFollowupMessage> FollowupWithInitialResponseAsync(SocketInteractionContext context);
 
     /// <summary>
-    ///     Constructs a unique component id by combining the instance type <see cref="Name" />, the instance <see cref="_interactionId" />,
-    ///     and a component-specific segment, using <see cref="Storage.ComponentWildcardSeparator" /> as the separator.
-    /// </summary>
-    /// <param name="str">The segment that identifies the specific component within this instance.</param>
-    /// <returns>The full component id string.</returns>
-    [Pure]
-    protected string GenerateComponentId(string str)
-    {
-        // in 2090 this will be 20
-        const int discordSnowflakeLength = 19;
-
-        return String.Create(
-            Name.Length + 1 + discordSnowflakeLength + 1 + str.Length,
-            (Name, Id: _interactionId, str),
-            static (span, state) =>
-            {
-                (string name, ulong id, string suffix) = state;
-
-                name.AsSpan().CopyTo(span);
-                int i = name.Length;
-                span[i++] = Storage.ComponentWildcardSeparator;
-
-                id.TryFormat(span[i..], out int idLen);
-                i += idLen;
-
-                span[i++] = Storage.ComponentWildcardSeparator;
-                suffix.AsSpan().CopyTo(span[i..]);
-            }
-        );
-    }
-
-    /// <summary>
     ///     Initiates the instance Ensures the message is deferred, starts the timer, and sends the initial response.
     /// </summary>
     /// <param name="context">The context.</param>
@@ -449,7 +420,7 @@ internal abstract class InstanceManager<T>
             Timeout.InfiniteTimeSpan
         );
 
-        Instances[_interactionId] = (T)this;
+        Instances[InteractionId] = (T)this;
         using (CreateScope())
         {
             _logger.InstanceTimerStarted();

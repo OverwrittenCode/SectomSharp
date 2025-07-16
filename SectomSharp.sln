@@ -14,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SectomSharp.Data", "SectomSharp.Data\SectomSharp.Data.csproj", "{95CC3F26-C804-4BCC-9071-50AB43A9B18D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StrongInteractions", "StrongInteractions\StrongInteractions.csproj", "{66C3DDE1-7BCD-450E-8BA6-CC3EAFFCA267}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +30,10 @@ Global
 		{95CC3F26-C804-4BCC-9071-50AB43A9B18D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{95CC3F26-C804-4BCC-9071-50AB43A9B18D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{95CC3F26-C804-4BCC-9071-50AB43A9B18D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66C3DDE1-7BCD-450E-8BA6-CC3EAFFCA267}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66C3DDE1-7BCD-450E-8BA6-CC3EAFFCA267}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66C3DDE1-7BCD-450E-8BA6-CC3EAFFCA267}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66C3DDE1-7BCD-450E-8BA6-CC3EAFFCA267}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
