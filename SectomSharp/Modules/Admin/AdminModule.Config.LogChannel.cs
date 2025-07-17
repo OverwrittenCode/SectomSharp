@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
+using Discord.Rest;
 using Discord.WebSocket;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
@@ -170,11 +171,11 @@ public sealed partial class AdminModule
 
                     if (result is AuditLogUpsertResult.InsertedAndNeedsWebhookUrl)
                     {
-                        IWebhook webhook = (await channel.GetWebhooksAsync()).FirstOrDefault(w => w.Creator.Id == Context.Guild.CurrentUser.Id)
-                                        ?? await channel.CreateWebhookAsync(
-                                               Context.Guild.CurrentUser.DisplayName,
-                                               options: DiscordUtils.GetAuditReasonRequestOptions(Context, "Automated webhook creation")
-                                           );
+                        RestWebhook webhook = (await channel.GetWebhooksAsync()).FirstOrDefault(w => w.Creator.Id == Context.Guild.CurrentUser.Id)
+                                           ?? await channel.CreateWebhookAsync(
+                                                  Context.Guild.CurrentUser.DisplayName,
+                                                  options: DiscordUtils.GetAuditReasonRequestOptions(Context, "Automated webhook creation")
+                                              );
 
                         string webhookUrl = $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}";
                         await db.AuditLogChannels.Where(x => x.Id == channel.Id).ExecuteUpdateAsync(x => x.SetProperty(c => c.WebhookUrl, webhookUrl));
