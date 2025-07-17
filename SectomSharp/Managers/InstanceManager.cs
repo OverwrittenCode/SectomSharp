@@ -28,8 +28,6 @@ internal abstract class InstanceManager<T>
     private const string SessionUnavailableMessage = "This session is currently unavailable. Please try again shortly.";
     private const string SessionNotForYouMessage = "This session is not for you.";
 
-    private static readonly string Name = typeof(T).Name;
-
     private static readonly Func<ILogger, ulong, TimeSpan, IDisposable?> ScopeCallback = LoggerMessage.DefineScope<ulong, TimeSpan>("Instance Id={InstanceId}, Timeout={Timeout}");
 
     /// <summary>
