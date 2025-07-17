@@ -13,7 +13,6 @@ public sealed class BotLogChannelConfiguration : SnowflakeConfiguration<BotLogCh
     /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<BotLogChannel> builder)
     {
-        builder.HasOne(channel => channel.Guild).WithMany(guild => guild.BotLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();
         builder.Property(channel => channel.Type).IsRequired();
         builder.HasIndex(c => new { c.GuildId, c.Id });
         base.Configure(builder);

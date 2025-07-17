@@ -14,13 +14,12 @@ namespace SectomSharp.Utils;
 internal static class CaseUtils
 {
     private static readonly Func<ApplicationDbContext, ulong, BotLogType, Task<ulong?>> GetGuildWithMatchedLogChannels =
-        EF.CompileAsyncQuery((ApplicationDbContext context, ulong guildId, BotLogType logType) => context.Guilds.Where(g => g.Id == guildId)
-                                                                                                         .Select(g => (ulong?)g.BotLogChannels
-                                                                                                                    .Where(channel => channel.Type.HasFlag(logType))
-                                                                                                                    .Select(channel => channel.Id)
-                                                                                                                    .FirstOrDefault()
-                                                                                                          )
-                                                                                                         .FirstOrDefault()
+        EF.CompileAsyncQuery((ApplicationDbContext context, ulong guildId, BotLogType logType) => context
+                                                                                                 .BotLogChannels.Where(channel => channel.GuildId == guildId
+                                                                                                                        && channel.Type.HasFlag(logType)
+                                                                                                  )
+                                                                                                 .Select(channel => (ulong?)channel.Id)
+                                                                                                 .FirstOrDefault()
         );
 
     /// <summary>

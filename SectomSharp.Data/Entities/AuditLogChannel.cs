@@ -17,7 +17,6 @@ public sealed class AuditLogChannelConfiguration : SnowflakeConfiguration<AuditL
     /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<AuditLogChannel> builder)
     {
-        builder.HasOne(channel => channel.Guild).WithMany(guild => guild.AuditLogChannels).HasForeignKey(channel => channel.GuildId).IsRequired();
         builder.Property(channel => channel.Type).IsRequired();
         builder.Property(channel => channel.WebhookUrl).IsRequired().HasMaxLength(WebhookUrlLength);
         builder.HasIndex(c => new { c.GuildId, c.Id });

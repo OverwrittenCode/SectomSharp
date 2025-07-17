@@ -47,17 +47,15 @@ public sealed class CaseConfiguration : BaseOneToManyGuildRelationConfiguration<
     /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<Case> builder)
     {
-        builder.HasOne(@case => @case.Guild).WithMany(guild => guild.Cases).HasForeignKey(@case => @case.GuildId).IsRequired();
-
         builder.Property(@case => @case.PerpetratorId).IsSnowflakeId();
         builder.Property(@case => @case.PerpetratorAvatarUrl).HasMaxLength(PerpetratorAvatarUrlMaxLength);
-        builder.HasOne(@case => @case.Perpetrator).WithMany(user => user.PerpetratorCases).HasForeignKey(@case => new { @case.GuildId, @case.PerpetratorId });
+        builder.HasOne(@case => @case.Perpetrator).WithMany().HasForeignKey(@case => new { @case.GuildId, @case.PerpetratorId });
 
         builder.Property(@case => @case.TargetId).IsSnowflakeId();
-        builder.HasOne(@case => @case.Target).WithMany(user => user.TargetCases).HasForeignKey(@case => new { @case.GuildId, @case.TargetId });
+        builder.HasOne(@case => @case.Target).WithMany().HasForeignKey(@case => new { @case.GuildId, @case.TargetId });
 
         builder.Property(@case => @case.ChannelId).IsSnowflakeId();
-        builder.HasOne(@case => @case.Channel).WithMany(channel => channel.Cases).HasForeignKey(@case => @case.ChannelId);
+        builder.HasOne(@case => @case.Channel).WithMany().HasForeignKey(@case => @case.ChannelId);
 
         builder.Property(@case => @case.LogType).IsRequired();
         builder.Property(@case => @case.OperationType).IsRequired();

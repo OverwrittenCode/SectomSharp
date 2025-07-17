@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SectomSharp.Data.Extensions;
@@ -8,20 +7,6 @@ namespace SectomSharp.Data.Entities;
 public sealed class Guild : BaseEntity, ISnowflakeId
 {
     public required ulong Id { get; init; }
-
-    [UsedImplicitly]
-    public ICollection<User> Users { get; } = [];
-
-    [UsedImplicitly]
-    public ICollection<Channel> Channels { get; } = [];
-
-    public ICollection<AuditLogChannel> AuditLogChannels { get; } = [];
-    public ICollection<BotLogChannel> BotLogChannels { get; } = [];
-    public ICollection<Case> Cases { get; } = [];
-
-    public ICollection<LevelingRole> LevelingRoles { get; } = [];
-    public ICollection<WarningThreshold> WarningThresholds { get; } = [];
-
     public Configuration Configuration { get; init; } = new();
 }
 

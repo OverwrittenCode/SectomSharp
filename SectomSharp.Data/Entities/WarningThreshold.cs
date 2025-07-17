@@ -17,7 +17,6 @@ public sealed class WarningThresholdConfiguration : BaseOneToManyGuildRelationCo
     /// <inheritdoc />
     public override void Configure(EntityTypeBuilder<WarningThreshold> builder)
     {
-        builder.HasOne(threshold => threshold.Guild).WithMany(guild => guild.WarningThresholds).HasForeignKey(threshold => threshold.GuildId).IsRequired();
         builder.Property(threshold => threshold.Value).IsRequiredNonNegativeInt();
         builder.Property(threshold => threshold.LogType).IsRequired();
         builder.HasKey(threshold => new { threshold.GuildId, threshold.Value });
