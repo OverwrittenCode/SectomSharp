@@ -37,16 +37,17 @@ public sealed partial class ModerationModule
                                       WHERE "Id" = @guildId
                                   ),
                                   warning_count AS (
-                                      SELECT 
-                                          CASE 
+                                      SELECT
+                                          CASE
                                               WHEN sg."Configuration_Warning_IsDisabled" = TRUE THEN 0
                                               ELSE (
                                                   SELECT COUNT(*)
                                                   FROM "Cases"
-                                                  WHERE "GuildId" = @guildId
-                                                    AND "TargetId" = @targetId
-                                                    AND "LogType" = @logType
-                                                    AND "OperationType" = @operationType
+                                                  WHERE
+                                                      "GuildId" = @guildId
+                                                      AND "TargetId" = @targetId
+                                                      AND "LogType" = @logType
+                                                      AND "OperationType" = @operationType
                                               )
                                           END AS "CurrentWarningCount"
                                       FROM selected_guild sg
@@ -60,13 +61,13 @@ public sealed partial class ModerationModule
                                       FROM "WarningThresholds" threshold
                                       JOIN selected_guild sg ON sg."Id" = threshold."GuildId"
                                       CROSS JOIN warning_count wc
-                                      WHERE sg."Configuration_Warning_IsDisabled" = FALSE
-                                        AND threshold."Value" <= wc."CurrentWarningCount"
+                                      WHERE
+                                          sg."Configuration_Warning_IsDisabled" = FALSE
+                                          AND threshold."Value" <= wc."CurrentWarningCount"
                                       ORDER BY threshold."Value" DESC
                                       LIMIT 2
                                   )
-                              SELECT *
-                              FROM warning_thresholds;
+                              SELECT * FROM warning_thresholds;
                               """;
 
             cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));

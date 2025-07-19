@@ -43,85 +43,85 @@ public sealed partial class DiscordEvent
             await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
             {
                 cmd.CommandText = """
-                                  WITH leveling_data AS (
-                                      SELECT
-                                          g."Id" AS "GuildId",
-                                          @userId AS "UserId",
-                                          COALESCE(ra."MaxRoleCooldown", g."Configuration_Leveling_GlobalCooldown") AS "Cooldown",
-                                          GREATEST(
-                                              CASE
-                                                  WHEN g."Configuration_Leveling_AccumulateMultipliers" THEN COALESCE(ra."SumMultiplier", 0)
-                                                  ELSE COALESCE(ra."MaxMultiplier", 0)
-                                              END,
-                                              g."Configuration_Leveling_GlobalMultiplier"
-                                          ) AS "Multiplier",
-                                          COALESCE(u."Level_CurrentXp", 0) AS "CurrentXp",
-                                          u."Level_UpdatedAt" AS "UpdatedAt"
-                                      FROM "Guilds" g
-                                      LEFT JOIN "Users" u
-                                          ON u."GuildId" = g."Id" AND u."Id" = @userId
-                                      LEFT JOIN (
+                                  WITH
+                                      leveling_data AS (
                                           SELECT
-                                              r."GuildId",
-                                              MAX(r."Cooldown") AS "MaxRoleCooldown",
-                                              SUM(COALESCE(r."Multiplier", 0)) AS "SumMultiplier",
-                                              MAX(COALESCE(r."Multiplier", 0)) AS "MaxMultiplier"
-                                          FROM "LevelingRoles" r
-                                          WHERE r."Id" = ANY(@roleIds)
-                                          GROUP BY r."GuildId"
-                                      ) ra
-                                          ON ra."GuildId" = g."Id"
-                                      WHERE
-                                          g."Id" = @guildId
-                                          AND NOT g."Configuration_Leveling_IsDisabled"
-                                  ),
-                                  xp_calculation AS (
-                                      SELECT
-                                          ld.*,
-                                          get_level(ld."CurrentXp") AS "CurrentLevel",
-                                          get_xp_gain(ld."Multiplier") AS "XpGain"
-                                      FROM leveling_data ld
-                                      WHERE (ld."UpdatedAt" IS NULL OR @now - ld."UpdatedAt" >= INTERVAL '1 second' * ld."Cooldown")
-                                  ),
-                                  updated_xp AS (
-                                      SELECT
-                                          xc.*,
-                                          xc."CurrentXp" + xc."XpGain" AS "NewXp"
-                                      FROM xp_calculation xc
-                                  ),
-                                  level_check AS (
-                                      SELECT
-                                          ux.*,
-                                          CASE
-                                              WHEN ux."NewXp" >= get_required_xp(ux."CurrentLevel")
-                                              THEN ux."CurrentLevel" + 1
-                                              ELSE ux."CurrentLevel"
-                                          END AS "NewLevel"
-                                      FROM updated_xp ux
-                                  ),
-                                  user_update AS (
-                                      INSERT INTO "Users" ("Id", "GuildId", "Level_CurrentXp", "Level_UpdatedAt")
-                                      SELECT lc."UserId", lc."GuildId", lc."NewXp", @now
-                                      FROM level_check lc
-                                      ON CONFLICT ("GuildId", "Id")
-                                      DO UPDATE SET
-                                          "Level_CurrentXp" = EXCLUDED."Level_CurrentXp",
-                                          "Level_UpdatedAt" = EXCLUDED."Level_UpdatedAt"
-                                      RETURNING "GuildId", "Id"
-                                  ),
-                                  user_rank AS (
-                                      SELECT
-                                          u."Id",
-                                          u."GuildId",
-                                          u."Level_CurrentXp",
-                                          ROW_NUMBER() OVER (
-                                              PARTITION BY u."GuildId" 
-                                              ORDER BY u."Level_CurrentXp" DESC
-                                          ) AS "Rank"
-                                      FROM "Users" u
-                                      WHERE u."GuildId" = @guildId
-                                        AND u."Level_CurrentXp" > 0
-                                  )
+                                              g."Id" AS "GuildId",
+                                              @userId AS "UserId",
+                                              COALESCE(ra."MaxRoleCooldown", g."Configuration_Leveling_GlobalCooldown") AS "Cooldown",
+                                              GREATEST(
+                                                  CASE
+                                                      WHEN g."Configuration_Leveling_AccumulateMultipliers" THEN COALESCE(ra."SumMultiplier", 0)
+                                                      ELSE COALESCE(ra."MaxMultiplier", 0)
+                                                  END,
+                                                  g."Configuration_Leveling_GlobalMultiplier"
+                                              ) AS "Multiplier",
+                                              COALESCE(u."Level_CurrentXp", 0) AS "CurrentXp",
+                                              u."Level_UpdatedAt" AS "UpdatedAt"
+                                          FROM "Guilds" g
+                                          LEFT JOIN "Users" u ON u."GuildId" = g."Id" AND u."Id" = @userId
+                                          LEFT JOIN (
+                                              SELECT
+                                                  r."GuildId",
+                                                  MAX(r."Cooldown") AS "MaxRoleCooldown",
+                                                  SUM(COALESCE(r."Multiplier", 0)) AS "SumMultiplier",
+                                                  MAX(COALESCE(r."Multiplier", 0)) AS "MaxMultiplier"
+                                              FROM "LevelingRoles" r
+                                              WHERE r."Id" = ANY(@roleIds)
+                                              GROUP BY r."GuildId"
+                                          ) ra ON ra."GuildId" = g."Id"
+                                          WHERE
+                                              g."Id" = @guildId
+                                              AND NOT g."Configuration_Leveling_IsDisabled"
+                                      ),
+                                      xp_calculation AS (
+                                          SELECT
+                                              ld.*,
+                                              get_level(ld."CurrentXp") AS "CurrentLevel",
+                                              get_xp_gain(ld."Multiplier") AS "XpGain"
+                                          FROM leveling_data ld
+                                          WHERE
+                                              ld."UpdatedAt" IS NULL
+                                              OR @now - ld."UpdatedAt" >= INTERVAL '1 second' * ld."Cooldown"
+                                      ),
+                                      updated_xp AS (
+                                          SELECT
+                                              xc.*,
+                                              xc."CurrentXp" + xc."XpGain" AS "NewXp"
+                                          FROM xp_calculation xc
+                                      ),
+                                      level_check AS (
+                                          SELECT
+                                              ux.*,
+                                              CASE
+                                                  WHEN ux."NewXp" >= get_required_xp(ux."CurrentLevel") THEN ux."CurrentLevel" + 1
+                                                  ELSE ux."CurrentLevel"
+                                              END AS "NewLevel"
+                                          FROM updated_xp ux
+                                      ),
+                                      user_update AS (
+                                          INSERT INTO "Users" ("Id", "GuildId", "Level_CurrentXp", "Level_UpdatedAt")
+                                          SELECT lc."UserId", lc."GuildId", lc."NewXp", @now
+                                          FROM level_check lc
+                                          ON CONFLICT ("GuildId", "Id") DO UPDATE SET
+                                              "Level_CurrentXp" = EXCLUDED."Level_CurrentXp",
+                                              "Level_UpdatedAt" = EXCLUDED."Level_UpdatedAt"
+                                          RETURNING "GuildId", "Id"
+                                      ),
+                                      user_rank AS (
+                                          SELECT
+                                              u."Id",
+                                              u."GuildId",
+                                              u."Level_CurrentXp",
+                                              ROW_NUMBER() OVER (
+                                                  PARTITION BY u."GuildId" 
+                                                  ORDER BY u."Level_CurrentXp" DESC
+                                              ) AS "Rank"
+                                          FROM "Users" u
+                                          WHERE
+                                              u."GuildId" = @guildId
+                                              AND u."Level_CurrentXp" > 0
+                                      )
                                   SELECT
                                       lc."NewLevel",
                                       lc."NewXp" AS "CurrentXp",
@@ -129,13 +129,13 @@ public sealed partial class DiscordEvent
                                       COALESCE(ur."Rank", 1) AS "Rank",
                                       lr."Id" AS "NewRoleId"
                                   FROM level_check lc
-                                  LEFT JOIN user_rank ur
-                                      ON ur."GuildId" = lc."GuildId" AND ur."Id" = lc."UserId"
+                                  LEFT JOIN user_rank ur ON ur."GuildId" = lc."GuildId" AND ur."Id" = lc."UserId"
                                   LEFT JOIN LATERAL (
                                       SELECT r."Id"
                                       FROM "LevelingRoles" r
-                                      WHERE r."GuildId" = lc."GuildId"
-                                        AND r."Level" <= lc."NewLevel"
+                                      WHERE
+                                          r."GuildId" = lc."GuildId"
+                                          AND r."Level" <= lc."NewLevel"
                                       ORDER BY r."Level" DESC
                                       LIMIT 1
                                   ) lr ON true
@@ -143,7 +143,9 @@ public sealed partial class DiscordEvent
                                       lc."NewLevel" > lc."CurrentLevel"
                                       AND EXISTS (
                                           SELECT 1 FROM user_update uu
-                                          WHERE uu."GuildId" = lc."GuildId" AND uu."Id" = lc."UserId"
+                                          WHERE
+                                              uu."GuildId" = lc."GuildId"
+                                              AND uu."Id" = lc."UserId"
                                       )
                                   """;
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", guild.Id));

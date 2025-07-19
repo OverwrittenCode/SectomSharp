@@ -38,7 +38,6 @@ public sealed partial class ModerationModule
             {
                 await db.Database.OpenConnectionAsync();
                 await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-
                 cmd.CommandText = $"""
                                    SELECT
                                        c."LogMessageUrl",
@@ -73,7 +72,9 @@ public sealed partial class ModerationModule
                                        ) AS "Header",
                                        CONCAT('Perpetrator: ', "PerpetratorId") AS "Footer"
                                    FROM "Cases" c
-                                   WHERE c."GuildId" = @guildId AND c."Id" = @id
+                                   WHERE
+                                       c."GuildId" = @guildId
+                                       AND c."Id" = @id
                                    """;
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
                 cmd.Parameters.Add(NpgsqlParameterFactory.FromVarchar("id", id));
@@ -165,12 +166,13 @@ public sealed partial class ModerationModule
                                                c."CreatedAt",
                                                row_number() OVER (ORDER BY c."CreatedAt" DESC) AS rn
                                            FROM "Cases" c
-                                           WHERE c."GuildId" = @guildId
-                                             AND (@targetId IS NULL OR c."TargetId" = @targetId)
-                                             AND (@perpetratorId IS NULL OR c."PerpetratorId" = @perpetratorId)
-                                             AND (@channelId IS NULL OR c."ChannelId" = @channelId)
-                                             AND (@logType IS NULL OR c."LogType" = @logType)
-                                             AND (@operationType IS NULL OR c."OperationType" = @operationType)
+                                           WHERE
+                                               c."GuildId" = @guildId
+                                               AND (@targetId IS NULL OR c."TargetId" = @targetId)
+                                               AND (@perpetratorId IS NULL OR c."PerpetratorId" = @perpetratorId)
+                                               AND (@channelId IS NULL OR c."ChannelId" = @channelId)
+                                               AND (@logType IS NULL OR c."LogType" = @logType)
+                                               AND (@operationType IS NULL OR c."OperationType" = @operationType)
                                            ORDER BY c."CreatedAt" DESC
                                            LIMIT 1000
                                        ),

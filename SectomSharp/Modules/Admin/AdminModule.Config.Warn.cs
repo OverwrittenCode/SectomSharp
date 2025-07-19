@@ -51,7 +51,7 @@ public sealed partial class AdminModule
                                               ON CONFLICT DO NOTHING
                                               RETURNING 1
                                           )
-                                          SELECT 1 FROM inserted;
+                                      SELECT 1 FROM inserted;
                                       """;
 
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));

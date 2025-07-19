@@ -38,9 +38,8 @@ public sealed partial class AdminModule
             private static readonly string DisableQuery = $"""
                                                            INSERT INTO "Guilds" ("Id", "{TThis.DisableColumnName}")
                                                            VALUES (@guildId, @isDisabled)
-                                                           ON CONFLICT ("Id") DO UPDATE
-                                                               SET "{TThis.DisableColumnName}" = @isDisabled
-                                                               WHERE "Guilds"."{TThis.DisableColumnName}" IS DISTINCT FROM @isDisabled
+                                                           ON CONFLICT ("Id") DO UPDATE SET "{TThis.DisableColumnName}" = @isDisabled
+                                                           WHERE "Guilds"."{TThis.DisableColumnName}" IS DISTINCT FROM @isDisabled
                                                            RETURNING 1
                                                            """;
 

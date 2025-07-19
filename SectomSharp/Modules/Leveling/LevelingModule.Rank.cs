@@ -37,7 +37,6 @@ public sealed partial class LevelingModule
         {
             await db.Database.OpenConnectionAsync();
             await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-
             cmd.CommandText = """
                               SELECT
                                   get_level(u."Level_CurrentXp") AS "CurrentLevel",
@@ -46,11 +45,14 @@ public sealed partial class LevelingModule
                                   (
                                       SELECT COUNT(*) + 1
                                       FROM "Users" u2
-                                      WHERE u2."GuildId" = @guildId
-                                        AND u2."Level_CurrentXp" > u."Level_CurrentXp"
+                                      WHERE
+                                          u2."GuildId" = @guildId
+                                          AND u2."Level_CurrentXp" > u."Level_CurrentXp"
                                   ) AS "Rank"
                               FROM "Users" u
-                              WHERE u."GuildId" = @guildId AND u."Id" = @userId;
+                              WHERE
+                                  u."GuildId" = @guildId
+                                  AND u."Id" = @userId;
                               """;
 
             cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));

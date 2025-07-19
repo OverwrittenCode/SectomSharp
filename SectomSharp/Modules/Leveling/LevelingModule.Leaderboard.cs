@@ -26,15 +26,15 @@ public sealed partial class LevelingModule
         {
             await db.Database.OpenConnectionAsync();
             await using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-
             cmd.CommandText = """
                               SELECT
                                   u."Id" AS "UserId",
                                   get_level(u."Level_CurrentXp") AS "CurrentLevel",
                                   u."Level_CurrentXp" AS "CurrentXp"
                               FROM "Users" u
-                              WHERE u."GuildId" = @guildId
-                                AND u."Level_CurrentXp" > 0
+                              WHERE
+                                  u."GuildId" = @guildId
+                                  AND u."Level_CurrentXp" > 0
                               ORDER BY u."Level_CurrentXp" DESC
                               LIMIT 5;
                               """;

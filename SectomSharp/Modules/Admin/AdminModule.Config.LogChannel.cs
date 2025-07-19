@@ -80,9 +80,8 @@ public sealed partial class AdminModule
                                           channel_upsert AS (
                                               INSERT INTO "BotLogChannels" ("Id", "GuildId", "Type")
                                               VALUES (@channelId, @guildId, @action)
-                                              ON CONFLICT ("Id") DO UPDATE SET
-                                                  "Type" = EXCLUDED."Type" | "BotLogChannels"."Type"
-                                              WHERE 
+                                              ON CONFLICT ("Id") DO UPDATE SET "Type" = EXCLUDED."Type" | "BotLogChannels"."Type"
+                                              WHERE
                                                   EXISTS (SELECT 1 FROM guild_upsert)
                                                   OR ("BotLogChannels"."Type" & @action) = 0
                                               RETURNING 1
@@ -145,8 +144,7 @@ public sealed partial class AdminModule
                                               channel_upsert AS (
                                                   INSERT INTO "AuditLogChannels" ("Id", "GuildId", "Type", "WebhookUrl")
                                                   VALUES (@channelId, @guildId, @action, '')
-                                                  ON CONFLICT ("Id") DO UPDATE
-                                                        SET "Type" = "AuditLogChannels"."Type" | EXCLUDED."Type"
+                                                  ON CONFLICT ("Id") DO UPDATE SET "Type" = "AuditLogChannels"."Type" | EXCLUDED."Type"
                                                   WHERE ("AuditLogChannels"."Type" & @action) = 0
                                                   RETURNING
                                                       CASE
@@ -214,21 +212,23 @@ public sealed partial class AdminModule
                     cmd.CommandText = """
                                       WITH
                                           deleted AS (
-                                              DELETE FROM "BotLogChannels"
-                                                  WHERE "Id" = @channelId
-                                                      AND "GuildId" = @guildId
-                                                      AND "Type" = @action
-                                                  RETURNING 1
+                                              DELETE
+                                              FROM "BotLogChannels"
+                                              WHERE
+                                                  "Id" = @channelId
+                                                  AND "GuildId" = @guildId
+                                                  AND "Type" = @action
+                                              RETURNING 1
                                           ),
                                           updated AS (
                                               UPDATE "BotLogChannels"
-                                                  SET "Type" = "Type" & ~@action
-                                                  WHERE
-                                                      NOT EXISTS (SELECT 1 FROM deleted)
-                                                      AND "Id" = @channelId
-                                                      AND "GuildId" = @guildId
-                                                      AND "Type" & @action <> 0
-                                                  RETURNING 1
+                                              SET "Type" = "Type" & ~@action
+                                              WHERE
+                                                  NOT EXISTS (SELECT 1 FROM deleted)
+                                                  AND "Id" = @channelId
+                                                  AND "GuildId" = @guildId
+                                                  AND "Type" & @action <> 0
+                                              RETURNING 1
                                           )
                                       SELECT EXISTS (
                                           SELECT 1 FROM deleted
@@ -272,21 +272,23 @@ public sealed partial class AdminModule
                     cmd.CommandText = """
                                       WITH
                                           deleted AS (
-                                              DELETE FROM "BotLogChannels"
-                                                  WHERE "Id" = @channelId
-                                                      AND "GuildId" = @guildId
-                                                      AND "Type" = @action
-                                                  RETURNING 1
+                                              DELETE
+                                              FROM "BotLogChannels"
+                                              WHERE
+                                                  "Id" = @channelId
+                                                  AND "GuildId" = @guildId
+                                                  AND "Type" = @action
+                                              RETURNING 1
                                           ),
                                           updated AS (
                                               UPDATE "BotLogChannels"
-                                                  SET "Type" = "Type" & ~@action
-                                                  WHERE
-                                                      NOT EXISTS (SELECT 1 FROM deleted)
-                                                      AND "Id" = @channelId
-                                                      AND "GuildId" = @guildId
-                                                      AND "Type" & @action <> 0
-                                                  RETURNING 1
+                                              SET "Type" = "Type" & ~@action
+                                              WHERE
+                                                  NOT EXISTS (SELECT 1 FROM deleted)
+                                                  AND "Id" = @channelId
+                                                  AND "GuildId" = @guildId
+                                                  AND "Type" & @action <> 0
+                                              RETURNING 1
                                           )
                                       SELECT EXISTS (
                                           SELECT 1 FROM deleted

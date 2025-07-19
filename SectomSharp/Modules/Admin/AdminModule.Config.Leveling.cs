@@ -41,12 +41,14 @@ public sealed partial class AdminModule
                                           "Configuration_Leveling_AccumulateMultipliers" = COALESCE(@accumulateMultipliers, "Configuration_Leveling_AccumulateMultipliers"),
                                           "Configuration_Leveling_GlobalMultiplier" = COALESCE(@globalMultiplier, "Configuration_Leveling_GlobalMultiplier"),
                                           "Configuration_Leveling_GlobalCooldown" = COALESCE(@globalCooldown, "Configuration_Leveling_GlobalCooldown")
-                                      WHERE "Id" = @guildId
-                                      AND (
-                                          (@accumulateMultipliers IS NOT NULL AND @accumulateMultipliers != "Configuration_Leveling_AccumulateMultipliers")
-                                          OR (@globalMultiplier IS NOT NULL AND @globalMultiplier != "Configuration_Leveling_GlobalMultiplier")
-                                          OR (@globalCooldown IS NOT NULL AND @globalCooldown != "Configuration_Leveling_GlobalCooldown")
-                                      )
+                                      WHERE
+                                          "Id" = @guildId
+                                          AND
+                                          (
+                                              (@accumulateMultipliers IS NOT NULL AND @accumulateMultipliers != "Configuration_Leveling_AccumulateMultipliers")
+                                              OR (@globalMultiplier IS NOT NULL AND @globalMultiplier != "Configuration_Leveling_GlobalMultiplier")
+                                              OR (@globalCooldown IS NOT NULL AND @globalCooldown != "Configuration_Leveling_GlobalCooldown")
+                                          )
                                       RETURNING 1
                                       """;
 
@@ -111,7 +113,7 @@ public sealed partial class AdminModule
                                               ON CONFLICT DO NOTHING
                                               RETURNING 1
                                           )
-                                          SELECT 1 FROM inserted;
+                                      SELECT 1 FROM inserted;
                                       """;
 
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
@@ -173,7 +175,7 @@ public sealed partial class AdminModule
                                                   COALESCE(' (x' || trim(trailing '.' from trim(trailing '0' from to_char(r."Multiplier", 'FM999999999.##'))) || ')', '') ||
                                                   COALESCE(' (' || r."Cooldown" || 's)', ''),
                                                   E'\n'
-                                              ORDER BY r."Level"
+                                                  ORDER BY r."Level"
                                               ) AS "AutoRoles"
                                           FROM "Guilds" g
                                           LEFT JOIN "LevelingRoles" r ON r."GuildId" = g."Id"
