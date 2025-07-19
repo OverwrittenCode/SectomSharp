@@ -193,8 +193,8 @@ public sealed partial class GameModule
         string customId = StringUtils.GenerateUniqueId();
         string acceptId = $"{customId}-accept";
         string declineId = $"{customId}-decline";
-        ButtonComponent acceptButton = new ButtonBuilder("Accept", acceptId, ButtonStyle.Success).Build();
-        ButtonComponent declineButton = new ButtonBuilder("Decline", declineId, ButtonStyle.Danger).Build();
+        var acceptButton = ButtonBuilder.CreateSuccessButton("Accept", acceptId);
+        var declineButton = ButtonBuilder.CreateDangerButton("Decline", declineId);
         var actionRowBuilder = new ActionRowBuilder { Components = [acceptButton, declineButton] };
         MessageComponent components = new ComponentBuilder { ActionRows = [actionRowBuilder] }.Build();
 

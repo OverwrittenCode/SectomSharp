@@ -52,11 +52,10 @@ public sealed partial class GameModule
             int col = moveIndex % TicTacToeStorage.GridSize;
 
             ComponentBuilder componentBuilder = ComponentBuilder.FromComponents(components);
-            var buttonComponent = (ButtonComponent)componentBuilder.ActionRows[row].Components[col];
+            var buttonBuilder = (ButtonBuilder)componentBuilder.ActionRows[row].Components[col];
 
-            Debug.Assert(!buttonComponent.IsDisabled);
+            Debug.Assert(!buttonBuilder.IsDisabled);
 
-            ButtonBuilder buttonBuilder = buttonComponent.ToBuilder();
             buttonBuilder.IsDisabled = true;
             if (playerType == PlayerType.One)
             {
@@ -69,7 +68,7 @@ public sealed partial class GameModule
                 buttonBuilder.Style = ButtonStyle.Primary;
             }
 
-            componentBuilder.ActionRows[row].Components[col] = buttonBuilder.Build();
+            componentBuilder.ActionRows[row].Components[col] = buttonBuilder;
             return componentBuilder.Build();
         }
 
@@ -129,10 +128,10 @@ public sealed partial class GameModule
             var actionRowBuilders = new List<ActionRowBuilder>(GridSize);
             for (int row = 0; row < GridSize; row++)
             {
-                var components = new List<IMessageComponent>(GridSize);
+                var components = new List<IMessageComponentBuilder>(GridSize);
                 for (int col = 0; col < GridSize; col++)
                 {
-                    components.Add(new ButtonBuilder(InvisibleCharacter, (row * GridSize + col).ToString(), ButtonStyle.Secondary).Build());
+                    components.Add(ButtonBuilder.CreateSecondaryButton(InvisibleCharacter, (row * GridSize + col).ToString()));
                 }
 
                 actionRowBuilders.Add(new ActionRowBuilder { Components = components });

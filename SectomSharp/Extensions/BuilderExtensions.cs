@@ -26,7 +26,7 @@ internal static class BuilderExtensions
 
                 case ActionRowComponent actionRow:
                     IReadOnlyCollection<IMessageComponent> actionRowComponents = actionRow.Components;
-                    var list = new List<IMessageComponent>(actionRowComponents.Count);
+                    var list = new List<IMessageComponentBuilder>(actionRowComponents.Count);
                     foreach (IMessageComponent messageComponent in actionRowComponents)
                     {
                         switch (messageComponent)
@@ -51,10 +51,10 @@ internal static class BuilderExtensions
 
         return new ComponentBuilder { ActionRows = actionRows };
 
-        static ButtonComponent DisableButton(ButtonComponent button) => new ButtonBuilder(button.Label, button.CustomId, button.Style, button.Url, button.Emote, true).Build();
+        static ButtonBuilder DisableButton(ButtonComponent button) => new(button.Label, button.CustomId, button.Style, button.Url, button.Emote, true);
 
-        static SelectMenuComponent DisableSelectMenu(SelectMenuComponent menu)
-            => new SelectMenuBuilder(
+        static SelectMenuBuilder DisableSelectMenu(SelectMenuComponent menu)
+            => new(
                 menu.CustomId,
                 menu.Options.Select(o => new SelectMenuOptionBuilder(o.Label, o.Value, o.Description, o.Emote, o.IsDefault)).ToList(),
                 menu.Placeholder,
@@ -64,6 +64,6 @@ internal static class BuilderExtensions
                 menu.Type,
                 menu.ChannelTypes.ToList(),
                 menu.DefaultValues.ToList()
-            ).Build();
+            );
     }
 }

@@ -147,7 +147,7 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
         string categoryId = StrongInteractionIds.HelpSelectMenu(InteractionId, HelpSelectMenuType.Category);
         _commandId = StrongInteractionIds.HelpSelectMenu(InteractionId, HelpSelectMenuType.Command);
         _currentCategory = "";
-        _categorySelectMenu = new ActionRowBuilder().AddComponent(new SelectMenuBuilder(categoryId, _helpData.CategoryOptions, "Choose a category").Build());
+        _categorySelectMenu = new ActionRowBuilder().AddComponent(new SelectMenuBuilder(categoryId, _helpData.CategoryOptions, "Choose a category"));
     }
 
     private MessageComponent GenerateMessageComponent(List<SelectMenuOptionBuilder> commandOptions)
@@ -156,7 +156,7 @@ internal sealed class HelpSelectMenuPaginationManager : InstanceManager<HelpSele
             ActionRows =
             [
                 _categorySelectMenu,
-                new ActionRowBuilder { Components = [new SelectMenuBuilder(_commandId, commandOptions, "Choose a command").Build()] }
+                new ActionRowBuilder { Components = [new SelectMenuBuilder(_commandId, commandOptions, "Choose a command")] }
             ]
         }.Build();
 

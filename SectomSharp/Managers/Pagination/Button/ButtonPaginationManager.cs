@@ -87,8 +87,8 @@ internal sealed class ButtonPaginationManager : InstanceManager<ButtonPagination
     /// <summary>
     ///     Gets a message component list containing of the button builders used to navigate pages.
     /// </summary>
-    private List<IMessageComponent> ButtonComponents
-        => PageNavigationButtons.Select(IMessageComponent (pageNavigatorButton) =>
+    private List<IMessageComponentBuilder> ButtonComponents
+        => PageNavigationButtons.Select(IMessageComponentBuilder (pageNavigatorButton) =>
                                      {
                                          string label = pageNavigatorButton.ToString();
                                          return new ButtonBuilder(
@@ -101,7 +101,7 @@ internal sealed class ButtonPaginationManager : InstanceManager<ButtonPagination
                                                  PageNavigationButton.End or PageNavigationButton.Next => _currentPageIndex == Embeds.Length - 1,
                                                  _ => false
                                              }
-                                         ).Build();
+                                         );
                                      }
                                  )
                                 .ToList();
@@ -109,14 +109,7 @@ internal sealed class ButtonPaginationManager : InstanceManager<ButtonPagination
     /// <summary>
     ///     Gets the message component containing navigation buttons and extra action rows.
     /// </summary>
-    private MessageComponent MessageComponent
-        => new ComponentBuilder
-        {
-            ActionRows =
-            [
-                new ActionRowBuilder { Components = ButtonComponents }
-            ]
-        }.Build();
+    private MessageComponent MessageComponent => new ComponentBuilder { ActionRows = [new ActionRowBuilder { Components = ButtonComponents }] }.Build();
 
     /// <summary>
     ///     Gets the array of embeds to paginate through.

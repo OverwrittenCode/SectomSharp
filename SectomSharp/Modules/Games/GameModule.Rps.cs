@@ -59,25 +59,25 @@ public sealed partial class GameModule
         {
             AllMoves = Enum.GetValues<Move>();
 
-            List<IMessageComponent> buttons = AllMoves.Select(IMessageComponent (move) =>
-                                                           {
-                                                               string s = move.ToString();
-                                                               var emote = new Emoji(
-                                                                   move switch
-                                                                   {
-                                                                       Move.Rock => "🪨",
-                                                                       Move.Paper => "📄",
-                                                                       Move.Scissors => "✂️",
-                                                                       Move.Lizard => "🦎",
-                                                                       Move.Spock => "🖖",
-                                                                       _ => ""
-                                                                   }
-                                                               );
+            List<IMessageComponentBuilder> buttons = AllMoves.Select(IMessageComponentBuilder (move) =>
+                                                                  {
+                                                                      string s = move.ToString();
+                                                                      var emote = new Emoji(
+                                                                          move switch
+                                                                          {
+                                                                              Move.Rock => "🪨",
+                                                                              Move.Paper => "📄",
+                                                                              Move.Scissors => "✂️",
+                                                                              Move.Lizard => "🦎",
+                                                                              Move.Spock => "🖖",
+                                                                              _ => ""
+                                                                          }
+                                                                      );
 
-                                                               return new ButtonBuilder(s, s, emote: emote, style: ButtonStyle.Secondary).Build();
-                                                           }
-                                                       )
-                                                      .ToList();
+                                                                      return ButtonBuilder.CreateSecondaryButton(s, s, emote);
+                                                                  }
+                                                              )
+                                                             .ToList();
 
             Components = new ComponentBuilder { ActionRows = [new ActionRowBuilder { Components = buttons }] }.Build();
         }

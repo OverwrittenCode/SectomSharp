@@ -14,12 +14,12 @@ namespace SectomSharp.Utils;
 internal static class CaseUtils
 {
     private static readonly Func<ApplicationDbContext, ulong, BotLogType, Task<ulong?>> GetGuildWithMatchedLogChannels =
-        EF.CompileAsyncQuery((ApplicationDbContext context, ulong guildId, BotLogType logType) => context
-                                                                                                 .BotLogChannels.Where(channel => channel.GuildId == guildId
-                                                                                                                        && channel.Type.HasFlag(logType)
-                                                                                                  )
-                                                                                                 .Select(channel => (ulong?)channel.Id)
-                                                                                                 .FirstOrDefault()
+        EF.CompileAsyncQuery((ApplicationDbContext context, ulong guildId, BotLogType logType) => context.BotLogChannels
+                                                                                                         .Where(channel => channel.GuildId == guildId
+                                                                                                                 && channel.Type.HasFlag(logType)
+                                                                                                          )
+                                                                                                         .Select(channel => (ulong?)channel.Id)
+                                                                                                         .FirstOrDefault()
         );
 
     /// <summary>
@@ -33,16 +33,7 @@ internal static class CaseUtils
 
         if (logMessageUrl is not null)
         {
-            component.AddRow(
-                new ActionRowBuilder().AddComponent(
-                    new ButtonBuilder
-                    {
-                        Style = ButtonStyle.Link,
-                        Label = "View Log Message",
-                        Url = logMessageUrl
-                    }.Build()
-                )
-            );
+            component.AddRow(new ActionRowBuilder().AddComponent(ButtonBuilder.CreateLinkButton("View Log Message", logMessageUrl)));
         }
 
         return component.Build();
@@ -284,7 +275,7 @@ internal static class CaseUtils
                                             "notice",
                                             ButtonStyle.Secondary,
                                             isDisabled: true
-                                        ).Build()
+                                        )
                                     ]
                                 }
                             ]
