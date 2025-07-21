@@ -25,28 +25,26 @@ Sectom offers a variety of slash commands across multiple categories:
 <details>
 <summary>⚙️ <strong>Admin</strong></summary>
 
-| Command                                      | Description                                               |
-|----------------------------------------------|-----------------------------------------------------------|
-| `config leveling set-accumulate-multipliers` | Set if multipliers should accumulate                      |
-| `config leveling set-global-multiplier`      | Set the global multiplier                                 |
-| `config leveling set-global-cooldown`        | Set the global cooldown in seconds                        |
-| `config leveling add-auto-role`              | Adds an auto role on reaching a certain level             |
-| `config leveling remove-auto-role`           | Removes an auto role for a certain level                  |
-| `config leveling view-auto-roles`            | View the configured auto roles                            |
-| `config leveling disable`                    | Disable this configuration                                |
-| `config leveling enable`                     | Enable this configuration                                 |
-| `config log-channel set-bot-log`             | Add or modify a bot log channel configuration             |
-| `config log-channel set-audit-log`           | Add or modify an audit log channel configuration          |
-| `config log-channel remove-bot-log`          | Remove a bot log channel configuration                    |
-| `config log-channel remove-audit-log`        | Remove an audit log channel configuration                 |
-| `config log-channel view-bot-log`            | View the bot log channel configuration                    |
-| `config log-channel view-audit-log`          | View the audit log channel configuration                  |
-| `config warn add-timeout-punishment`         | Add a timeout punishment on reaching a number of warnings |
-| `config warn add-ban-punishment`             | Add a ban punishment on reaching a number of warnings     |
-| `config warn remove-punishment`              | Remove a current punishment configuration                 |
-| `config warn view-thresholds`                | View the configured warning thresholds                    |
-| `config warn disable`                        | Disable this configuration                                |
-| `config warn enable`                         | Enable this configuration                                 |
+| Command                               | Description                                               |
+|---------------------------------------|-----------------------------------------------------------|
+| `config leveling modify-settings`     | Modify the settings                                       |
+| `config leveling add-auto-role`       | Adds an auto role on reaching a certain level             |
+| `config leveling remove-auto-role`    | Removes an auto role for a certain level                  |
+| `config leveling view-auto-roles`     | View the configured auto roles                            |
+| `config leveling disable`             | Disable this configuration                                |
+| `config leveling enable`              | Enable this configuration                                 |
+| `config log-channel set-bot-log`      | Add or modify a bot log channel configuration             |
+| `config log-channel set-audit-log`    | Add or modify an audit log channel configuration          |
+| `config log-channel remove-bot-log`   | Remove a bot log channel configuration                    |
+| `config log-channel remove-audit-log` | Remove an audit log channel configuration                 |
+| `config log-channel view-bot-log`     | View the bot log channel configuration                    |
+| `config log-channel view-audit-log`   | View the audit log channel configuration                  |
+| `config warn add-timeout-punishment`  | Add a timeout punishment on reaching a number of warnings |
+| `config warn add-ban-punishment`      | Add a ban punishment on reaching a number of warnings     |
+| `config warn remove-punishment`       | Remove a current punishment configuration                 |
+| `config warn view-thresholds`         | View the configured warning thresholds                    |
+| `config warn disable`                 | Disable this configuration                                |
+| `config warn enable`                  | Enable this configuration                                 |
 
 </details>
 

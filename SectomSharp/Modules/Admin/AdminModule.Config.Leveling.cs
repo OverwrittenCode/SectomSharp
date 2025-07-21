@@ -26,44 +26,46 @@ public sealed partial class AdminModule
             /// <inheritdoc />
             public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
-            private async Task ModifySettingsAsync(string? reason, bool? accumulateMultipliers = null, double? globalMultiplier = null, uint? globalCooldown = null)
+            [SlashCmd("Modify the settings")]
+            public async Task ModifySettings(
+                [Summary(description: "if multipliers should accumulate")] bool? accumulateMultipliers = null,
+                [Summary(description: "the global multiplier")] [MinValue(1)] [MaxValue(10)] double? globalMultiplier = null,
+                [Summary(description: "the global cooldown in seconds")] [MinValue(1)] uint? globalCooldown = null,
+                [ReasonMaxLength] string? reason = null
+            )
             {
-                await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                if (!accumulateMultipliers.HasValue && !globalMultiplier.HasValue && !globalCooldown.HasValue)
                 {
-                    cmd.CommandText = """
-                                      UPDATE "Guilds"
-                                      SET
-                                          "Configuration_Leveling_AccumulateMultipliers" = COALESCE(@accumulateMultipliers, "Configuration_Leveling_AccumulateMultipliers"),
-                                          "Configuration_Leveling_GlobalMultiplier" = COALESCE(@globalMultiplier, "Configuration_Leveling_GlobalMultiplier"),
-                                          "Configuration_Leveling_GlobalCooldown" = COALESCE(@globalCooldown, "Configuration_Leveling_GlobalCooldown")
-                                      WHERE
-                                          "Id" = @guildId
-                                          AND
-                                          (
-                                              (@accumulateMultipliers IS NOT NULL AND @accumulateMultipliers != "Configuration_Leveling_AccumulateMultipliers")
-                                              OR (@globalMultiplier IS NOT NULL AND @globalMultiplier != "Configuration_Leveling_GlobalMultiplier")
-                                              OR (@globalCooldown IS NOT NULL AND @globalCooldown != "Configuration_Leveling_GlobalCooldown")
-                                          )
-                                      RETURNING 1
-                                      """;
-
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("accumulateMultipliers", accumulateMultipliers));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("globalMultiplier", globalMultiplier));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("globalCooldown", globalCooldown));
-
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                    await RespondAsync(AtLeastOneMessage);
+                    return;
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is null)
+                await DeferAsync();
+                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
+
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                int affectedRows = await db.Guilds
+                                           .Where(guild => guild.Id == Context.Guild.Id
+                                                        && ((accumulateMultipliers.HasValue && accumulateMultipliers.Value != guild.Configuration.Leveling.AccumulateMultipliers)
+                                                         || (globalMultiplier.HasValue && globalMultiplier.Value != guild.Configuration.Leveling.GlobalMultiplier)
+                                                         || (globalCooldown.HasValue && globalCooldown.Value != guild.Configuration.Leveling.GlobalCooldown))
+                                            )
+                                           .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls
+                                                                                  .SetProperty(
+                                                                                       guild => guild.Configuration.Leveling.AccumulateMultipliers,
+                                                                                       guild => accumulateMultipliers ?? guild.Configuration.Leveling.AccumulateMultipliers
+                                                                                   )
+                                                                                  .SetProperty(
+                                                                                       guild => guild.Configuration.Leveling.GlobalMultiplier,
+                                                                                       guild => globalMultiplier ?? guild.Configuration.Leveling.GlobalMultiplier
+                                                                                   )
+                                                                                  .SetProperty(
+                                                                                       guild => guild.Configuration.Leveling.GlobalCooldown,
+                                                                                       guild => globalCooldown ?? guild.Configuration.Leveling.GlobalCooldown
+                                                                                   )
+                                            );
+
+                if (affectedRows == 0)
                 {
                     await FollowupAsync(AlreadyConfiguredMessage);
                     return;
@@ -71,18 +73,6 @@ public sealed partial class AdminModule
 
                 await LogAsync(db, Context, reason);
             }
-
-            [SlashCmd("Set if multipliers should accumulate")]
-            public async Task SetAccumulateMultipliers(bool accumulateMultipliers, [ReasonMaxLength] string? reason = null)
-                => await ModifySettingsAsync(reason, accumulateMultipliers);
-
-            [SlashCmd("Set the global multiplier")]
-            public async Task SetGlobalMultiplier([MinValue(1)] [MaxValue(10)] double globalMultiplier, [ReasonMaxLength] string? reason = null)
-                => await ModifySettingsAsync(reason, globalMultiplier: globalMultiplier);
-
-            [SlashCmd("Set the global cooldown in seconds")]
-            public async Task SetGlobalCooldown([MinValue(1)] uint globalCooldown, [ReasonMaxLength] string? reason = null)
-                => await ModifySettingsAsync(reason, globalCooldown: globalCooldown);
 
             [SlashCmd("Adds an auto role on reaching a certain level")]
             public async Task AddAutoRole(
