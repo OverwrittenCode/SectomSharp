@@ -84,11 +84,11 @@ public sealed partial class DiscordEvent
     }
 
     [MustDisposeResource]
-    private async Task<DiscordWebhookClient?> GetDiscordWebhookClientAsync(IGuild guild, AuditLogType auditLogType)
+    private async Task<DiscordWebhookClient?> GetDiscordWebhookClientAsync(ulong guildId, AuditLogType auditLogType)
     {
         await using ApplicationDbContext db = await _dbFactory.CreateDbContextAsync();
 
-        string? webhookUrl = await db.AuditLogChannels.Where(channel => channel.GuildId == guild.Id && channel.Type.HasFlag(auditLogType))
+        string? webhookUrl = await db.AuditLogChannels.Where(channel => channel.GuildId == guildId && channel.Type.HasFlag(auditLogType))
                                      .Select(channel => channel.WebhookUrl)
                                      .FirstOrDefaultAsync();
 

@@ -1,4 +1,9 @@
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
@@ -11,12 +16,10 @@ public sealed partial class DiscordEvent
 {
     private static bool TryGetGuildChannel(SocketChannel socketChannel, [MaybeNullWhen(false)] out IGuildChannel guildChannel)
     {
-        guildChannel = null;
-        ChannelType? channelType = socketChannel.GetChannelType();
-
         if (socketChannel is not IGuildChannel value
-         || channelType is null or ChannelType.GuildDirectory or ChannelType.Store or ChannelType.PrivateThread or ChannelType.PublicThread)
+         || socketChannel.GetChannelType() is null or ChannelType.GuildDirectory or ChannelType.Store or ChannelType.PrivateThread or ChannelType.PublicThread)
         {
+            guildChannel = null;
             return false;
         }
 
@@ -25,59 +28,27 @@ public sealed partial class DiscordEvent
     }
 
     private static ChannelDetails GetChannelDetails(IGuildChannel channel)
-        => channel switch
+    {
+        string name = channel.Name;
+        int position = channel.Position;
+        ImmutableArray<Overwrite> overwrites = [..channel.PermissionOverwrites];
+
+        return channel switch
         {
-            IVoiceChannel voice => new ChannelDetails(
-                channel.Name,
-                channel.Position,
-                ChannelType.Voice,
-                voice.CategoryId,
-                Bitrate: voice.Bitrate,
-                UserLimit: voice.UserLimit,
-                Overwrites: channel.PermissionOverwrites
-            ),
-
-            IForumChannel forum => new ChannelDetails(
-                channel.Name,
-                channel.Position,
-                ChannelType.Forum,
-                forum.CategoryId,
-                IsNsfw: forum.IsNsfw,
-                Overwrites: channel.PermissionOverwrites
-            ),
-
+            IVoiceChannel voice => new ChannelDetails(name, position, ChannelType.Voice, overwrites, voice.CategoryId, Bitrate: voice.Bitrate, UserLimit: voice.UserLimit),
+            IForumChannel forum => new ChannelDetails(name, position, ChannelType.Forum, overwrites, forum.CategoryId, IsNsfw: forum.IsNsfw),
             ITextChannel text => new ChannelDetails(
-                channel.Name,
-                channel.Position,
+                name,
+                position,
                 channel.GetChannelType() ?? ChannelType.Text,
+                overwrites,
                 text.CategoryId,
                 text.Topic,
                 text.IsNsfw,
-                text.SlowModeInterval,
-                Overwrites: channel.PermissionOverwrites
+                text.SlowModeInterval
             ),
-
-            _ => new ChannelDetails(channel.Name, channel.Position, channel.GetChannelType() ?? ChannelType.Text, Overwrites: channel.PermissionOverwrites)
+            _ => new ChannelDetails(name, position, channel.GetChannelType() ?? ChannelType.Text, overwrites)
         };
-
-    private static string GetOverwriteTargetDisplay(Overwrite overwrite)
-        => overwrite.TargetType == PermissionTarget.User ? $"**Mention:** <@{overwrite.TargetId}>" : $"**Mention:** <@&{overwrite.TargetId}>";
-
-    private static string FormatPermissionLists(List<ChannelPermission> allowed, List<ChannelPermission> denied)
-    {
-        var parts = new List<string>(2);
-
-        if (allowed.Count > 0)
-        {
-            parts.Add($"**Allowed:** {String.Join(", ", allowed)}");
-        }
-
-        if (denied.Count > 0)
-        {
-            parts.Add($"**Denied:** {String.Join(", ", denied)}");
-        }
-
-        return String.Join('\n', parts);
     }
 
     private async Task HandleChannelAlteredAsync(SocketChannel socketChannel, OperationType operationType)
@@ -88,8 +59,9 @@ public sealed partial class DiscordEvent
         }
 
         ChannelDetails details = GetChannelDetails(guildChannel);
+        ReadOnlySpan<Overwrite> overwrites = details.Overwrites.AsSpan();
 
-        var builders = new List<EmbedFieldBuilder>(10)
+        var builders = new List<EmbedFieldBuilder>(9 + overwrites.Length)
         {
             EmbedFieldBuilderFactory.Create("Name", details.Name),
             EmbedFieldBuilderFactory.Create("Type", details.Type),
@@ -110,35 +82,38 @@ public sealed partial class DiscordEvent
             builders.Add(EmbedFieldBuilderFactory.Create("NSFW", "True"));
         }
 
-        if (details.SlowMode is { } slowmode and > 0)
+        if (details.SlowMode is > 0)
         {
-            builders.Add(EmbedFieldBuilderFactory.Create("Slowmode", TimeSpan.FromSeconds(slowmode)));
+            builders.Add(EmbedFieldBuilderFactory.Create("Slowmode", TimeSpan.FromSeconds(details.SlowMode.Value)));
         }
 
-        if (details.Bitrate is { } bitrate)
+        if (details.Bitrate.HasValue)
         {
-            builders.Add(EmbedFieldBuilderFactory.Create("Bitrate", bitrate));
+            builders.Add(EmbedFieldBuilderFactory.Create("Bitrate", details.Bitrate.Value));
         }
 
-        if (details.UserLimit is { } userLimit)
+        if (details.UserLimit.HasValue)
         {
-            builders.Add(EmbedFieldBuilderFactory.Create("User Limit", userLimit));
+            builders.Add(EmbedFieldBuilderFactory.Create("User Limit", details.UserLimit.Value));
         }
 
-        if (details.Overwrites is not null)
+        if (overwrites.IsEmpty)
         {
-            builders.AddRange(
-                from overwrite in details.Overwrites
-                let value = FormatPermissionLists(overwrite.Permissions.ToAllowList(), overwrite.Permissions.ToDenyList())
-                where !String.IsNullOrEmpty(value)
-                select EmbedFieldBuilderFactory.CreateTruncated(
-                    overwrite.TargetId.ToString(),
-                    $"""
-                     {GetOverwriteTargetDisplay(overwrite)}
-                     {value}
-                     """
-                )
-            );
+            foreach (ref readonly Overwrite overwrite in overwrites)
+            {
+                OverwritePermissions permissions = overwrite.Permissions;
+                ulong allowed = permissions.AllowValue;
+                ulong denied = permissions.DenyValue;
+                if (allowed == 0 && denied == 0)
+                {
+                    continue;
+                }
+
+                ulong targetId = overwrite.TargetId;
+                builders.Add(
+                    EmbedFieldBuilderFactory.CreateTruncated(targetId.ToString(), BufferWriter.FormatPermissionDisplayEfficient(allowed, denied, overwrite.TargetType, targetId))
+                );
+            }
         }
 
         if (builders.Count == 0)
@@ -146,7 +121,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guildChannel.Guild, AuditLogType.Channel);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guildChannel.GuildId, AuditLogType.Channel);
         if (webhookClient is null)
         {
             return;
@@ -167,8 +142,10 @@ public sealed partial class DiscordEvent
             return;
         }
 
+        // ReSharper disable UseDeconstruction
         ChannelDetails before = GetChannelDetails(oldChannel);
         ChannelDetails after = GetChannelDetails(newChannel);
+        // ReSharper restore UseDeconstruction
 
         var builders = new List<EmbedFieldBuilder>(10);
         AddIfChanged(builders, "Name", before.Name, after.Name);
@@ -182,47 +159,74 @@ public sealed partial class DiscordEvent
 
         AddIfChanged(builders, "Bitrate", before.Bitrate, after.Bitrate);
         AddIfChanged(builders, "User Limit", before.UserLimit, after.UserLimit);
-        if ((before.Overwrites, after.Overwrites) is (not null, not null))
+
+        ImmutableArray<Overwrite> beforeOverwrites = before.Overwrites;
+        ImmutableArray<Overwrite> afterOverwrites = after.Overwrites;
+        if (!beforeOverwrites.IsDefaultOrEmpty || !afterOverwrites.IsDefaultOrEmpty)
         {
-            IEnumerable<Overwrite> mergedOverwrites = after.Overwrites.UnionBy(before.Overwrites, overwrite => overwrite.TargetId);
+            Dictionary<ulong, Overwrite> beforeLookup = beforeOverwrites.ToDictionary(o => o.TargetId);
+            Dictionary<ulong, Overwrite> afterLookup = afterOverwrites.ToDictionary(o => o.TargetId);
 
-            foreach (Overwrite overwrite in mergedOverwrites)
+            var allTargetIds = new HashSet<ulong>(beforeLookup.Keys);
+            allTargetIds.UnionWith(afterLookup.Keys);
+
+            foreach (ulong targetId in allTargetIds)
             {
-                Overwrite? beforeOverwrite = before.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
-                Overwrite? afterOverwrite = after.Overwrites.FirstOrDefault(o => o.TargetId == overwrite.TargetId);
+                bool hasBeforeOverwrite = beforeLookup.TryGetValue(targetId, out Overwrite beforeOverwrite);
+                bool hasAfterOverwrite = afterLookup.TryGetValue(targetId, out Overwrite afterOverwrite);
 
-                string? value = (beforeOverwrite, afterOverwrite) switch
+                string value;
+                string key;
+                switch (hasBeforeOverwrite)
                 {
-                    ({ } prev, { } curr) => FormatPermissionLists(
-                        curr.Permissions.ToAllowList().Except(prev.Permissions.ToAllowList()).ToList(),
-                        prev.Permissions.ToAllowList().Except(curr.Permissions.ToAllowList()).ToList()
-                    ),
-                    (null, { } added) => FormatPermissionLists(added.Permissions.ToAllowList(), added.Permissions.ToDenyList()),
-                    ({ } removed, null) => FormatPermissionLists(removed.Permissions.ToAllowList(), removed.Permissions.ToDenyList()),
-                    _ => null
-                };
+                    case true when hasAfterOverwrite:
+                        {
+                            ulong currAllowValue = afterOverwrite.Permissions.AllowValue;
+                            ulong prevAllowValue = beforeOverwrite.Permissions.AllowValue;
+                            ulong allowed = currAllowValue & ~prevAllowValue;
+                            ulong denied = prevAllowValue & ~currAllowValue;
+                            if (allowed == 0 && denied == 0)
+                            {
+                                continue;
+                            }
 
-                if (String.IsNullOrEmpty(value))
-                {
-                    continue;
+                            value = BufferWriter.FormatPermissionDisplayEfficient(allowed, denied, afterOverwrite.TargetType, targetId);
+                            key = targetId.ToString();
+                            break;
+                        }
+
+                    case true:
+                        {
+                            OverwritePermissions removedPermissions = beforeOverwrite.Permissions;
+                            ulong allowed = removedPermissions.AllowValue;
+                            ulong denied = removedPermissions.DenyValue;
+                            if (allowed == 0 && denied == 0)
+                            {
+                                continue;
+                            }
+
+                            value = BufferWriter.FormatPermissionDisplayEfficient(allowed, denied, beforeOverwrite.TargetType, targetId);
+                            key = $"{targetId} (Removed)";
+                            break;
+                        }
+
+                    default:
+                        {
+                            OverwritePermissions addedPermissions = afterOverwrite.Permissions;
+                            ulong allowed = addedPermissions.AllowValue;
+                            ulong denied = addedPermissions.DenyValue;
+                            if (allowed == 0 && denied == 0)
+                            {
+                                continue;
+                            }
+
+                            value = BufferWriter.FormatPermissionDisplayEfficient(allowed, denied, afterOverwrite.TargetType, targetId);
+                            key = $"{targetId} (Added)";
+                            break;
+                        }
                 }
 
-                string key = (beforeOverwrite, afterOverwrite) switch
-                {
-                    (null, not null) => $"{overwrite.TargetId} (Added)",
-                    (not null, null) => $"{overwrite.TargetId} (Removed)",
-                    _ => overwrite.TargetId.ToString()
-                };
-
-                builders.Add(
-                    EmbedFieldBuilderFactory.CreateTruncated(
-                        key,
-                        $"""
-                         {GetOverwriteTargetDisplay(overwrite)}
-                         {value}
-                         """
-                    )
-                );
+                builders.Add(EmbedFieldBuilderFactory.CreateTruncated(key, value));
             }
         }
 
@@ -231,7 +235,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newChannel.Guild, AuditLogType.Channel);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newChannel.GuildId, AuditLogType.Channel);
         if (webhookClient is null)
         {
             return;
@@ -245,12 +249,147 @@ public sealed partial class DiscordEvent
         string Name,
         int Position,
         ChannelType Type,
+        ImmutableArray<Overwrite> Overwrites,
         ulong? CategoryId = null,
         string? Topic = null,
         bool IsNsfw = false,
         int? SlowMode = null,
         int? Bitrate = null,
-        int? UserLimit = null,
-        IReadOnlyCollection<Overwrite>? Overwrites = null
+        int? UserLimit = null
     );
+
+    private static unsafe class BufferWriter
+    {
+        private const string AllowedPrefix = "**Allowed:** ";
+        private const string DeniedPrefix = "**Denied:** ";
+
+        private const string MentionPrefix = "**Mention:** ";
+        private const string RoleMentionStart = "<@&";
+        private const string UserMentionStart = "<@";
+        private const char MentionEnd = '>';
+
+        private static readonly string?[] PermissionNamesByBitIndex;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SkipLocalsInit]
+        private static void WritePermissionList(ref char* destination, ulong allowed, ref string? firstName)
+        {
+            bool first = true;
+            while (allowed != 0)
+            {
+                int i = BitOperations.TrailingZeroCount(allowed);
+                string? source = Unsafe.Add(ref firstName, i);
+                if (source is not null)
+                {
+                    if (!first)
+                    {
+                        StringUtils.WriteFixed2(ref destination, ',', ' ');
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+
+                    StringUtils.CopyTo(ref destination, source);
+                }
+
+                allowed &= allowed - 1;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int CountPermissionListLength(ulong value, ref string? firstName)
+        {
+            int totalSize = 0;
+            int totalElements = 0;
+            while (value != 0)
+            {
+                int i = BitOperations.TrailingZeroCount(value);
+                string? source = Unsafe.Add(ref firstName, i);
+
+                if (source != null)
+                {
+                    totalSize += source.Length;
+                    totalElements++;
+                }
+
+                value &= value - 1;
+            }
+
+            totalSize += ", ".Length * (totalElements - 1);
+            return totalSize;
+        }
+
+        [SkipLocalsInit]
+        public static string FormatPermissionDisplayEfficient(ulong allowed, ulong denied, PermissionTarget targetType, ulong targetId)
+        {
+            Debug.Assert(allowed != 0 || denied != 0);
+
+            ref string? firstName = ref MemoryMarshal.GetArrayDataReference(PermissionNamesByBitIndex);
+
+            int targetIdLength = FormattingUtils.CountDigits(null, targetId);
+
+            int mentionLength = targetType == PermissionTarget.Role
+                ? MentionPrefix.Length + RoleMentionStart.Length + targetIdLength + 1
+                : MentionPrefix.Length + UserMentionStart.Length + targetIdLength + 1;
+
+            int permissionsLength = allowed != 0
+                ? denied != 0
+                    ? AllowedPrefix.Length + CountPermissionListLength(allowed, ref firstName) + 1 + DeniedPrefix.Length + CountPermissionListLength(denied, ref firstName)
+                    : AllowedPrefix.Length + CountPermissionListLength(allowed, ref firstName)
+                : DeniedPrefix.Length + CountPermissionListLength(denied, ref firstName);
+
+            int totalLength = mentionLength + 1 + permissionsLength;
+
+            string buffer = StringUtils.FastAllocateString(null, totalLength);
+            fixed (char* bufferPtr = buffer)
+            {
+                char* ptr = bufferPtr;
+
+                if (targetType == PermissionTarget.Role)
+                {
+                    StringUtils.CopyTo(ref ptr, MentionPrefix + RoleMentionStart);
+                }
+                else
+                {
+                    StringUtils.CopyTo(ref ptr, MentionPrefix + UserMentionStart);
+                }
+
+                targetId.TryFormat(new Span<char>(ptr, targetIdLength), out _);
+                ptr += targetIdLength;
+
+                StringUtils.WriteFixed2(ref ptr, MentionEnd, '\n');
+
+                if (allowed != 0)
+                {
+                    StringUtils.CopyTo(ref ptr, AllowedPrefix);
+                    WritePermissionList(ref ptr, allowed, ref firstName);
+                    if (denied == 0)
+                    {
+                        return buffer;
+                    }
+
+                    *ptr++ = '\n';
+                }
+
+                StringUtils.CopyTo(ref ptr, DeniedPrefix);
+                WritePermissionList(ref ptr, denied, ref firstName);
+
+                Debug.Assert(ptr == bufferPtr + totalLength);
+            }
+
+            return buffer;
+        }
+
+        static BufferWriter()
+        {
+            const int maxBits = 53;
+            PermissionNamesByBitIndex = new string?[maxBits];
+            foreach (ChannelPermission channelPermission in Enum.GetValues<ChannelPermission>())
+            {
+                int i = BitOperations.TrailingZeroCount((ulong)channelPermission);
+                PermissionNamesByBitIndex[i] = channelPermission.ToString();
+            }
+        }
+    }
 }

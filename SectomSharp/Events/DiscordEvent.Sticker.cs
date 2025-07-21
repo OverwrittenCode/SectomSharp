@@ -10,7 +10,7 @@ public sealed partial class DiscordEvent
 {
     private async Task HandleGuildStickerAlteredAsync(SocketCustomSticker sticker, OperationType operationType)
     {
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(sticker.Guild, AuditLogType.Sticker);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(sticker.Guild.Id, AuditLogType.Sticker);
         if (webhookClient is null)
         {
             return;
@@ -46,7 +46,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newSticker.Guild, AuditLogType.Sticker);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newSticker.Guild.Id, AuditLogType.Sticker);
         if (webhookClient is null)
         {
             return;

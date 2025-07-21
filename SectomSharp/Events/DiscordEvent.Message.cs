@@ -262,7 +262,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild, AuditLogType.Message);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild.Id, AuditLogType.Message);
         if (webhookClient is null)
         {
             return;
@@ -273,7 +273,7 @@ public sealed partial class DiscordEvent
 
     public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
     {
-        if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } oldMessage })
+        if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: SocketGuildChannel { Guild: { } guild } } oldMessage })
         {
             return;
         }
@@ -283,7 +283,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild, AuditLogType.Message);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(guild.Id, AuditLogType.Message);
         if (webhookClient is null)
         {
             return;

@@ -23,7 +23,8 @@ public sealed partial class DiscordEvent
             int addedCount = newGuildEmotes.Length - oldGuildEmotes.Length;
             for (int i = newGuildEmotes.Length - addedCount; i < newGuildEmotes.Length; i++)
             {
-                await HandleGuildEmoteAddedAsync(newGuild, discordWebhookClient, newGuildEmotes[i]);
+                GuildEmote emote = newGuildEmotes[i];
+                await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Create, emote);
             }
 
             return;
@@ -31,11 +32,15 @@ public sealed partial class DiscordEvent
 
         if (oldGuildEmotes.Length > newGuildEmotes.Length)
         {
-            foreach (GuildEmote emote in new HashSet<GuildEmote>(oldGuildEmotes).Except(new HashSet<GuildEmote>(newGuildEmotes)))
+            HashSet<GuildEmote> newEmotesSet = newGuildEmotes.ToHashSet();
+            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+            foreach (GuildEmote emote in oldGuildEmotes)
             {
-                await HandleGuildEmoteRemovedAsync(newGuild, discordWebhookClient, emote);
+                if (!newEmotesSet.Contains(emote))
+                {
+                    await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Delete, emote);
+                }
             }
-
             return;
         }
 
@@ -45,7 +50,15 @@ public sealed partial class DiscordEvent
             GuildEmote newEmote = newGuildEmotes[i];
             if (oldEmote.Name != newEmote.Name)
             {
-                await HandleGuildEmoteUpdatedAsync(newGuild, discordWebhookClient, oldEmote, newEmote);
+                await LogAsync(
+                    newGuild,
+                    discordWebhookClient,
+                    AuditLogType.Emoji,
+                    OperationType.Update,
+                    [EmbedFieldBuilderFactory.Create("Name", GetChangeEntry(oldEmote.Name, newEmote.Name))],
+                    newEmote.Id,
+                    newEmote.Name
+                );
             }
         }
     }
@@ -64,22 +77,5 @@ public sealed partial class DiscordEvent
             ],
             emote.Id,
             emote.Name
-        );
-
-    private static Task HandleGuildEmoteAddedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
-        => HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Create, emote);
-
-    private static Task HandleGuildEmoteRemovedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
-        => HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Delete, emote);
-
-    private static Task HandleGuildEmoteUpdatedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote oldEmote, GuildEmote newEmote)
-        => LogAsync(
-            newGuild,
-            discordWebhookClient,
-            AuditLogType.Emoji,
-            OperationType.Update,
-            [EmbedFieldBuilderFactory.Create("Name", GetChangeEntry(oldEmote.Name, newEmote.Name))],
-            newEmote.Id,
-            newEmote.Name
         );
 }

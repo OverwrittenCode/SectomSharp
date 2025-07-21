@@ -1,4 +1,10 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Discord;
+using SectomSharp.Utils;
 
 namespace SectomSharp.Extensions;
 
@@ -35,33 +41,99 @@ internal static class DiscordExtensions
     ///     URL that displays its hex code.
     /// </summary>
     /// <returns>The URL.</returns>
-    public static string ToHyperlinkedColourPicker(this Color colour)
+    [SkipLocalsInit]
+    public static unsafe string ToHyperlinkedColourPicker(this Color color)
     {
         const string prefix = "[#";
         const string middleFix = "](https://imagecolorpicker.com/color-code/";
-        const string suffix = ")";
         const int hexLength = 6;
+        const char suffix = ')';
 
-        int totalLength = prefix.Length + hexLength + middleFix.Length + hexLength + suffix.Length;
+        int totalLength = prefix.Length + hexLength + middleFix.Length + hexLength + 1;
+        string buffer = StringUtils.FastAllocateString(null, totalLength);
+        fixed (char* bufferPtr = buffer)
+        {
+            char* ptr = bufferPtr;
+            StringUtils.CopyTo(ref ptr, prefix);
 
-        return String.Create(
-            totalLength,
-            colour.RawValue,
-            static (span, value) =>
+            char* hexStartPtr = ptr;
+
+            // Write 6 hex digits of the color as uppercase characters.
+            //
+            // If AVX2, SSSE3, and SSE2 intrinsics are supported, use SIMD to convert all 6 nibbles
+            // in one go, storing 8 UTF-16 chars (16 bytes) at once. Only the first 6 chars contain
+            // valid hex digits; the last 2 chars are overwritten but unused, so the buffer must
+            // have space for at least 8 chars to avoid memory corruption.
+            //
+            // Otherwise, fall back to a simple loop converting each nibble to hex manually.
+            //
+            // In either case, advance the pointer by 6 chars after writing.
+            if (Avx2.IsSupported && Ssse3.IsSupported && Sse2.IsSupported)
             {
-                Span<char> hex = stackalloc char[hexLength];
-                value.TryFormat(hex, out _, "X6");
+                Vector128<int> v = Sse2.Shuffle(Sse2.ConvertScalarToVector128Int32((int)color.RawValue), 0b00_00_00_00);
 
-                prefix.CopyTo(span);
-                int i = prefix.Length;
-                hex.CopyTo(span[i..]);
-                i += hexLength;
-                middleFix.CopyTo(span[i..]);
-                i += middleFix.Length;
-                hex.CopyTo(span[i..]);
-                i += 6;
-                suffix.CopyTo(span[i..]);
+                var shifts1 = Vector128.Create(20U, 16, 12, 8);
+                var shifts2 = Vector128.Create(4U, 0, 0, 0);
+
+                Vector128<int> nibs0To3 = Avx2.ShiftRightLogicalVariable(v, shifts1);
+                nibs0To3 = Sse2.And(nibs0To3, Vector128.Create(0xF));
+
+                Vector128<int> nibs4To5 = Avx2.ShiftRightLogicalVariable(v, shifts2);
+                nibs4To5 = Sse2.And(nibs4To5, Vector128.Create(0xF));
+
+                Vector128<short> packed16 = Sse2.PackSignedSaturate(nibs0To3, nibs4To5);
+                Vector128<byte> packed8 = Sse2.PackUnsignedSaturate(packed16, packed16);
+
+                var lookupTable = Vector128.Create(
+                    (byte)'0',
+                    (byte)'1',
+                    (byte)'2',
+                    (byte)'3',
+                    (byte)'4',
+                    (byte)'5',
+                    (byte)'6',
+                    (byte)'7',
+                    (byte)'8',
+                    (byte)'9',
+                    (byte)'A',
+                    (byte)'B',
+                    (byte)'C',
+                    (byte)'D',
+                    (byte)'E',
+                    (byte)'F'
+                );
+
+                Vector128<byte> asciiBytes = Ssse3.Shuffle(lookupTable, packed8);
+                Vector128<ushort> utf16Chars = Sse2.UnpackLow(asciiBytes, Vector128<byte>.Zero).AsUInt16();
+
+                // Store 8 UTF-16 chars (16 bytes) because Sse2.Store writes the full 128-bit vector.
+                // Only the first 6 chars contain valid hex digits; the last 2 chars are overwritten but unused.
+                // The buffer must have space for at least 8 chars to avoid memory corruption.
+                Sse2.Store((ushort*)ptr, utf16Chars);
             }
-        );
+            else
+            {
+                uint val = color.RawValue;
+
+                ReadOnlySpan<char> lut = "0123456789ABCDEF";
+
+                *ptr++ = Unsafe.Add(ref MemoryMarshal.GetReference(lut), (int)((val >> 20) & 0xF));
+                *ptr++ = Unsafe.Add(ref MemoryMarshal.GetReference(lut), (int)((val >> 16) & 0xF));
+                *ptr++ = Unsafe.Add(ref MemoryMarshal.GetReference(lut), (int)((val >> 12) & 0xF));
+                *ptr++ = Unsafe.Add(ref MemoryMarshal.GetReference(lut), (int)((val >> 8) & 0xF));
+                *ptr++ = Unsafe.Add(ref MemoryMarshal.GetReference(lut), (int)((val >> 4) & 0xF));
+                *ptr++ = Unsafe.Add(ref MemoryMarshal.GetReference(lut), (int)((val >> 0) & 0xF));
+            }
+
+            ptr += hexLength;
+
+            StringUtils.CopyTo(ref ptr, middleFix);
+            StringUtils.CopyTo(ref ptr, hexStartPtr, hexLength);
+            *ptr++ = suffix;
+
+            Debug.Assert(ptr == bufferPtr + totalLength);
+        }
+
+        return buffer;
     }
 }

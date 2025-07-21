@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Discord;
+﻿using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +30,7 @@ public sealed partial class DiscordEvent
         if (auditLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(AuditLogType.Emoji))?.WebhookUrl is { } emojiChannelWebhookUrl)
         {
             using var webhookClient = new DiscordWebhookClient(emojiChannelWebhookUrl);
-            await HandleGuildEmoteAsync(newGuild, webhookClient, (ImmutableArray<GuildEmote>)oldGuild.Emotes, (ImmutableArray<GuildEmote>)newGuild.Emotes);
+            await HandleGuildEmoteAsync(newGuild, webhookClient, [..oldGuild.Emotes], [..newGuild.Emotes]);
         }
 
         if (auditLogChannels.FirstOrDefault(channel => channel.Type.HasFlag(AuditLogType.Server))?.WebhookUrl is not { } serverChannelWebhookUrl)

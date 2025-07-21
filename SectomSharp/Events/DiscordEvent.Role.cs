@@ -13,7 +13,7 @@ public sealed partial class DiscordEvent
 
     private async Task HandleRoleAlteredAsync(SocketRole role, OperationType operationType)
     {
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(role.Guild, AuditLogType.Role);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(role.Guild.Id, AuditLogType.Role);
         if (webhookClient is null)
         {
             return;
@@ -83,7 +83,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newRole.Guild, AuditLogType.Role);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newRole.Guild.Id, AuditLogType.Role);
         if (webhookClient is null)
         {
             return;

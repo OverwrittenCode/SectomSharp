@@ -10,7 +10,7 @@ public sealed partial class DiscordEvent
 {
     private async Task HandleThreadAlteredAsync(SocketThreadChannel thread, OperationType operationType)
     {
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(thread.Guild, AuditLogType.Thread);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(thread.Guild.Id, AuditLogType.Thread);
         if (webhookClient is null)
         {
             return;
@@ -56,7 +56,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newThread.Guild, AuditLogType.Thread);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newThread.Guild.Id, AuditLogType.Thread);
         if (webhookClient is null)
         {
             return;

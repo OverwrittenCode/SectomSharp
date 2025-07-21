@@ -32,7 +32,7 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newUser.Guild, AuditLogType.Member);
+        using DiscordWebhookClient? webhookClient = await GetDiscordWebhookClientAsync(newUser.Guild.Id, AuditLogType.Member);
         if (webhookClient is null)
         {
             return;

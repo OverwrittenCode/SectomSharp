@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Discord;
 using Discord.Interactions;
@@ -620,6 +621,7 @@ public sealed partial class AdminModule
                                              {Bar0}
                                              """;
 
+                [SkipLocalsInit]
                 public static unsafe string FormatResults(uint upvotes, uint downvotes)
                 {
                     double totalVotes = upvotes + downvotes;
@@ -628,79 +630,112 @@ public sealed partial class AdminModule
                         return Empty;
                     }
 
-                    const int upvoteEmojiLength = 2;    // ControlEmojis.UpvoteUnicode.Length;
-                    const int spaceLength = 1;          // " ".Length
-                    const int maxVoteDigits = 7;        //"2500000".Length;
-                    const int upvoteLabelLength = 10;   // " upvotes (".Length; 
-                    const int maxPercentLength = 5;     // "100.0".Length;
-                    const int percentSuffixLength = 2;  // "%)".Length;       
-                    const int separatorLength = 3;      // " • ".Length;          
-                    const int downvoteEmojiLength = 2;  // ControlEmojis.DownvoteUnicode.Length;
-                    const int downvoteLabelLength = 12; // " downvotes (".Length;
-
-                    const int firstLineMaxLength = upvoteEmojiLength
-                                                 + spaceLength
-                                                 + maxVoteDigits
-                                                 + upvoteLabelLength
-                                                 + maxPercentLength
-                                                 + percentSuffixLength
-                                                 + separatorLength
-                                                 + downvoteEmojiLength
-                                                 + spaceLength
-                                                 + maxVoteDigits
-                                                 + downvoteLabelLength
-                                                 + maxPercentLength
-                                                 + percentSuffixLength;
-
-                    const int lineBreakLength = 1; // "\n".Length
-                    const int totalMaxLength = firstLineMaxLength + lineBreakLength + ProgressBarFullLength;
-
                     double upPercent = upvotes / totalVotes * 100;
                     double downPercent = downvotes / totalVotes * 100;
                     int filled = Math.Clamp((int)Math.Round(upvotes / totalVotes * ProgressBarLength), 0, ProgressBarLength);
 
-                    string formatResults = String.Create(totalMaxLength, (upvotes, downvotes, upPercent, downPercent, filled), Action);
-                    return formatResults;
+                    int upvoteDigits = FormattingUtils.CountDigits(null, upvotes);
+                    int downvoteDigits = FormattingUtils.CountDigits(null, downvotes);
 
-                    static void Action(Span<char> span, (uint upvotes, uint downvotes, double upPercent, double downPercent, int filled) state)
+                    int upPercentLen = CountPercentageDigitsFixedF1(upPercent, out int upPercentIntPart, out int upPercentFracPart);
+                    int downPercentLen = CountPercentageDigitsFixedF1(downPercent, out int downPercentIntPart, out int downPercentFracPart);
+
+                    const string upvoteLabel = " upvotes (";
+                    const string downvoteLabel = " downvotes (";
+                    const string percentSuffix = "%)\n";
+                    const string upvotePrefix = $"{ControlEmojis.UpvoteUnicode} ";
+                    const string midSeparator = $"%) • {ControlEmojis.DownvoteUnicode} ";
+
+                    int totalLength = upvotePrefix.Length
+                                    + upvoteDigits
+                                    + upvoteLabel.Length
+                                    + upPercentLen
+                                    + midSeparator.Length
+                                    + downvoteDigits
+                                    + downvoteLabel.Length
+                                    + downPercentLen
+                                    + percentSuffix.Length
+                                    + ProgressBarFullLength;
+
+                    string buffer = StringUtils.FastAllocateString(null, totalLength);
+                    fixed (char* bufferPtr = buffer)
                     {
-                        (uint upvotes, uint downvotes, double upPercent, double downPercent, int filled) = state;
-                        int pos = 0;
+                        char* ptr = bufferPtr;
 
-                        $"{ControlEmojis.UpvoteUnicode} ".AsSpan().CopyTo(span);
-                        pos += upvoteEmojiLength + spaceLength;
+                        StringUtils.CopyTo(ref ptr, upvotePrefix);
 
-                        upvotes.TryFormat(span[pos..], out int upvoteLen);
-                        pos += upvoteLen;
+                        upvotes.TryFormat(new Span<char>(ptr, upvoteDigits), out _);
+                        ptr += upvoteDigits;
 
-                        " upvotes (".CopyTo(span[pos..]);
-                        pos += upvoteLabelLength;
+                        StringUtils.CopyTo(ref ptr, upvoteLabel);
+                        FormatPercentageDigitsFixedF1(ref ptr, upPercentIntPart, upPercentFracPart);
 
-                        upPercent.TryFormat(span[pos..], out int upPercentLen, "F1");
-                        pos += upPercentLen;
+                        StringUtils.CopyTo(ref ptr, midSeparator);
 
-                        $"%) • {ControlEmojis.DownvoteUnicode} ".CopyTo(span[pos..]);
-                        pos += percentSuffixLength + separatorLength + downvoteEmojiLength + spaceLength;
+                        downvotes.TryFormat(new Span<char>(ptr, downvoteDigits), out _);
+                        ptr += downvoteDigits;
 
-                        downvotes.TryFormat(span[pos..], out int downvoteLen);
-                        pos += downvoteLen;
+                        StringUtils.CopyTo(ref ptr, downvoteLabel);
+                        FormatPercentageDigitsFixedF1(ref ptr, downPercentIntPart, downPercentFracPart);
 
-                        " downvotes (".CopyTo(span[pos..]);
-                        pos += downvoteLabelLength;
+                        StringUtils.CopyTo(ref ptr, percentSuffix);
 
-                        downPercent.TryFormat(span[pos..], out int downPercentLen, "F1");
-                        pos += downPercentLen;
-
-                        "%)\n".CopyTo(span[pos..]);
-                        pos += percentSuffixLength + lineBreakLength;
-
-                        fixed (char* srcPtr = AllProgressBars)
-                        fixed (char* dstPtr = &MemoryMarshal.GetReference(span))
+                        fixed (char* src = AllProgressBars)
                         {
-                            char* srcOffset = srcPtr + filled * ProgressBarFullLength;
-                            char* dstOffset = dstPtr + pos;
-                            Buffer.MemoryCopy(srcOffset, dstOffset, (span.Length - pos) * sizeof(char), ProgressBarFullLength * sizeof(char));
+                            char* srcOffset = src + filled * ProgressBarFullLength;
+                            Buffer.MemoryCopy(srcOffset, ptr, ProgressBarFullLength * sizeof(char), ProgressBarFullLength * sizeof(char));
                         }
+
+                        Debug.Assert(ptr == bufferPtr + totalLength);
+                    }
+
+                    return buffer;
+
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    [SkipLocalsInit]
+                    static void FormatPercentageDigitsFixedF1(ref char* destination, int intPart, int fracPart)
+                    {
+                        if ((uint)(intPart - 10) < 90)
+                        {
+                            StringUtils.WriteFixed4(ref destination, (char)('0' + intPart / 10), (char)('0' + intPart % 10), '.', (char)('0' + fracPart));
+                            return;
+                        }
+
+                        if (intPart == 100)
+                        {
+                            StringUtils.CopyTo(ref destination, "100.0");
+                            return;
+                        }
+
+                        *destination++ = (char)('0' + intPart);
+                        StringUtils.WriteFixed2(ref destination, '.', (char)('0' + fracPart));
+                    }
+
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    static int CountPercentageDigitsFixedF1(double value, out int intPart, out int fracPart)
+                    {
+                        ReadOnlySpan<int> f1PercentageFormatLookupTable =
+                        [
+                            // 0..9 -> 3 chars ("0.0" to "9.9")
+                            3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                            // 10..99 -> 4 chars ("10.0" to "99.9")
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 10-19
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 20-29
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 30-39
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 40-49
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 50-59
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 60-69
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 70-79
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 80-89
+                            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // 90-99
+                            // 100 -> 5 chars ("100.0")
+                            5
+                        ];
+
+                        int scaled = (int)Math.Round(value * 10);
+                        intPart = Math.DivRem(scaled, 10, out fracPart);
+
+                        return Unsafe.Add(ref MemoryMarshal.GetReference(f1PercentageFormatLookupTable), intPart);
                     }
                 }
             }
