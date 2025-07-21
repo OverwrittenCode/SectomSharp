@@ -32,6 +32,10 @@ public sealed class GuildConfiguration : SnowflakeIdConfiguration<Guild>
                         levelBuilder.Property(level => level.GlobalCooldown).IsRequiredNonNegativeInt().HasDefaultValue(3).ValueGeneratedOnAdd();
                     }
                 );
+                configBuilder.OwnsOne(
+                    configuration => configuration.Suggestion,
+                    suggestionBuilder => suggestionBuilder.Property(suggestion => suggestion.IsDisabled).IsRequired().HasDefaultValue(false)
+                );
             }
         );
 

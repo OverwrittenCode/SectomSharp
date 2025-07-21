@@ -11,11 +11,12 @@ It offers a wide range of features including moderation tools, fun games, and se
 - 🛠️ **Miscellaneous**: Utility commands like avatar, ping, help, and more.
 - 🎮 **Games**: Enjoy interactive games like Rock Paper Scissors (RPS) and Tic-Tac-Toe (TTT).
 - 🏆 **Leveling System**: Engage your community with an XP-based leveling system, including leaderboards and rank commands.
+- 💡 **Suggestion System**: Allow users to submit and vote on suggestions for your server.
 
 ## ⌚ Coming Soon
 
 - 🎫 **Ticket System**: Efficiently manage user inquiries and support requests.
-- 💡 **Suggestion System**: Allow users to submit and vote on suggestions for your server.
+
 
 ## 🔧 Commands
 
@@ -39,6 +40,15 @@ Sectom offers a variety of slash commands across multiple categories:
 | `config log-channel remove-audit-log` | Remove an audit log channel configuration                 |
 | `config log-channel view-bot-log`     | View the bot log channel configuration                    |
 | `config log-channel view-audit-log`   | View the audit log channel configuration                  |
+| `config suggestion add-panel`         | Add a panel to group components into an embed             |
+| `config suggestion remove-panel`      | Remove a panel by name                                    |
+| `config suggestion modify-panel`      | Modify a panel                                            |
+| `config suggestion add-component`     | Add a component to a given panel                          |
+| `config suggestion remove-component`  | Remove a component from a panel                           |
+| `config suggestion modify-component`  | Modify a component                                        |
+| `config suggestion send-panel`        | Send a panel to the current or a specified text channel   |
+| `config suggestion view-panels`       | View the configured panels                                |
+| `config suggestion view-components`   | View the components from a specified panel                |
 | `config warn add-timeout-punishment`  | Add a timeout punishment on reaching a number of warnings |
 | `config warn add-ban-punishment`      | Add a ban punishment on reaching a number of warnings     |
 | `config warn remove-punishment`       | Remove a current punishment configuration                 |

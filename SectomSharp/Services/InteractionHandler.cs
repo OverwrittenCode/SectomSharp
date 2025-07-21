@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Extensions;
 using SectomSharp.Managers.Pagination.SelectMenu;
+using SectomSharp.TypeConverters;
 using SectomSharp.Utils;
 
 namespace SectomSharp.Services;
@@ -72,6 +73,9 @@ public sealed class InteractionHandler : BackgroundService
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _interactionService.AddTypeConverter<Color>(new ColorConverter());
+        _interactionService.AddTypeConverter<IEmote>(new RichEmojiConverter());
+
         await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
         IEnumerable<ICommandInfo> commandInfos = _interactionService.Modules.SelectMany(module => module.SlashCommands.Cast<ICommandInfo>()
                                                                                                         .Concat(module.ContextCommands)

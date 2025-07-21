@@ -16,6 +16,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Case> Cases { get; set; } = null!;
     public DbSet<LevelingRole> LevelingRoles { get; set; } = null!;
     public DbSet<WarningThreshold> WarningThresholds { get; set; } = null!;
+    public DbSet<SuggestionPanel> SuggestionPanels { get; set; } = null!;
+    public DbSet<SuggestionComponent> SuggestionComponents { get; set; } = null!;
+    public DbSet<SuggestionPost> SuggestionPosts { get; set; } = null!;
+    public DbSet<SuggestionVote> SuggestionVotes { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
