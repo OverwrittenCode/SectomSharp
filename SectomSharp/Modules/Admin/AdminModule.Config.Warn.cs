@@ -71,20 +71,20 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogCreateAsync(db, Context, reason);
             }
 
             [SlashCmd("Add a timeout punishment on reaching a number of warnings")]
-            public async Task AddTimeoutPunishment(
+            public Task AddTimeoutPunishment(
                 [MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold,
                 [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
                 [ReasonMaxLength] string? reason = null
             )
-                => await AddPunishment(threshold, duration, reason, BotLogType.Timeout);
+                => AddPunishment(threshold, duration, reason, BotLogType.Timeout);
 
             [SlashCmd("Add a ban punishment on reaching a number of warnings")]
-            public async Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold, [ReasonMaxLength] string? reason = null)
-                => await AddPunishment(threshold, null, reason, BotLogType.Ban);
+            public Task AddBanPunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold, [ReasonMaxLength] string? reason = null)
+                => AddPunishment(threshold, null, reason, BotLogType.Ban);
 
             [SlashCmd("Remove a current punishment configuration")]
             public async Task RemovePunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold, [ReasonMaxLength] string? reason = null)
@@ -100,7 +100,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogDeleteAsync(db, Context, reason);
             }
 
             [SlashCmd("View the configured warning thresholds")]

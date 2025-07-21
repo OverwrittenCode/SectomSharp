@@ -155,9 +155,9 @@ public sealed partial class DiscordEvent
         await LogAsync(guildChannel.Guild, webhookClient, AuditLogType.Channel, operationType, builders, guildChannel.Id, guildChannel.Name);
     }
 
-    public async Task HandleChannelCreatedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Create);
+    public Task HandleChannelCreatedAsync(SocketChannel socketChannel) => HandleChannelAlteredAsync(socketChannel, OperationType.Create);
 
-    public async Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => await HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
+    public Task HandleChannelDestroyedAsync(SocketChannel socketChannel) => HandleChannelAlteredAsync(socketChannel, OperationType.Delete);
 
     public async Task HandleChannelUpdatedAsync(SocketChannel oldSocketChannel, SocketChannel newSocketChannel)
     {

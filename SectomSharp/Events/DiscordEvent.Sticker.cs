@@ -32,9 +32,9 @@ public sealed partial class DiscordEvent
         );
     }
 
-    public async Task HandleGuildStickerCreatedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Create);
+    public Task HandleGuildStickerCreatedAsync(SocketCustomSticker sticker) => HandleGuildStickerAlteredAsync(sticker, OperationType.Create);
 
-    public async Task HandleGuildStickerDeletedAsync(SocketCustomSticker sticker) => await HandleGuildStickerAlteredAsync(sticker, OperationType.Delete);
+    public Task HandleGuildStickerDeletedAsync(SocketCustomSticker sticker) => HandleGuildStickerAlteredAsync(sticker, OperationType.Delete);
 
     public async Task HandleGuildStickerUpdatedAsync(SocketCustomSticker oldSticker, SocketCustomSticker newSticker)
     {

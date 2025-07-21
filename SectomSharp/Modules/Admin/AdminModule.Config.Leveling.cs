@@ -44,25 +44,29 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
 
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
-                int affectedRows = await db.Guilds
-                                           .Where(guild => guild.Id == Context.Guild.Id
-                                                        && ((accumulateMultipliers.HasValue && accumulateMultipliers.Value != guild.Configuration.Leveling.AccumulateMultipliers)
-                                                         || (globalMultiplier.HasValue && globalMultiplier.Value != guild.Configuration.Leveling.GlobalMultiplier)
-                                                         || (globalCooldown.HasValue && globalCooldown.Value != guild.Configuration.Leveling.GlobalCooldown))
+                int affectedRows = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id
+                                                               && ((accumulateMultipliers.HasValue
+                                                                 && accumulateMultipliers.Value != guild.Configuration.Leveling.AccumulateMultipliers)
+                                                                || (globalMultiplier.HasValue && globalMultiplier.Value != guild.Configuration.Leveling.GlobalMultiplier)
+                                                                || (globalCooldown.HasValue && globalCooldown.Value != guild.Configuration.Leveling.GlobalCooldown))
                                             )
-                                           .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls
-                                                                                  .SetProperty(
-                                                                                       guild => guild.Configuration.Leveling.AccumulateMultipliers,
-                                                                                       guild => accumulateMultipliers ?? guild.Configuration.Leveling.AccumulateMultipliers
-                                                                                   )
-                                                                                  .SetProperty(
-                                                                                       guild => guild.Configuration.Leveling.GlobalMultiplier,
-                                                                                       guild => globalMultiplier ?? guild.Configuration.Leveling.GlobalMultiplier
-                                                                                   )
-                                                                                  .SetProperty(
-                                                                                       guild => guild.Configuration.Leveling.GlobalCooldown,
-                                                                                       guild => globalCooldown ?? guild.Configuration.Leveling.GlobalCooldown
-                                                                                   )
+                                           .ExecuteUpdateAsync(builder =>
+                                                {
+                                                    if (accumulateMultipliers.HasValue)
+                                                    {
+                                                        builder.SetProperty(guild => guild.Configuration.Leveling.AccumulateMultipliers, accumulateMultipliers);
+                                                    }
+
+                                                    if (globalMultiplier.HasValue)
+                                                    {
+                                                        builder.SetProperty(guild => guild.Configuration.Leveling.GlobalMultiplier, globalMultiplier);
+                                                    }
+
+                                                    if (globalCooldown.HasValue)
+                                                    {
+                                                        builder.SetProperty(guild => guild.Configuration.Leveling.GlobalCooldown, globalCooldown);
+                                                    }
+                                                }
                                             );
 
                 if (affectedRows == 0)
@@ -71,7 +75,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogUpdateAsync(db, Context, reason);
             }
 
             [SlashCmd("Adds an auto role on reaching a certain level")]
@@ -124,7 +128,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogCreateAsync(db, Context, reason);
             }
 
             [SlashCmd("Removes an auto role for a certain level")]
@@ -140,7 +144,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogDeleteAsync(db, Context, reason);
             }
 
             [SlashCmd("View the configured auto roles")]

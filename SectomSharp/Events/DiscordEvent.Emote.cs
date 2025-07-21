@@ -50,8 +50,8 @@ public sealed partial class DiscordEvent
         }
     }
 
-    private static async Task HandleGuildEmoteAlteredAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, OperationType operationType, GuildEmote emote)
-        => await LogAsync(
+    private static Task HandleGuildEmoteAlteredAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, OperationType operationType, GuildEmote emote)
+        => LogAsync(
             newGuild,
             discordWebhookClient,
             AuditLogType.Emoji,
@@ -66,14 +66,14 @@ public sealed partial class DiscordEvent
             emote.Name
         );
 
-    private static async Task HandleGuildEmoteAddedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
-        => await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Create, emote);
+    private static Task HandleGuildEmoteAddedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
+        => HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Create, emote);
 
-    private static async Task HandleGuildEmoteRemovedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
-        => await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Delete, emote);
+    private static Task HandleGuildEmoteRemovedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote emote)
+        => HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Delete, emote);
 
-    private static async Task HandleGuildEmoteUpdatedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote oldEmote, GuildEmote newEmote)
-        => await LogAsync(
+    private static Task HandleGuildEmoteUpdatedAsync(SocketGuild newGuild, DiscordWebhookClient discordWebhookClient, GuildEmote oldEmote, GuildEmote newEmote)
+        => LogAsync(
             newGuild,
             discordWebhookClient,
             AuditLogType.Emoji,

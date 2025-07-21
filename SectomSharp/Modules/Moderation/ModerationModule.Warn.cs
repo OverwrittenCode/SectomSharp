@@ -157,14 +157,14 @@ public sealed partial class ModerationModule
 
         return;
 
-        static async Task LogCaseAsync(
+        static Task LogCaseAsync(
             ApplicationDbContext db,
             ModerationModule moderationModule,
             (BotLogType LogType, uint Value, TimeSpan? Span) punishmentThreshold,
             IGuildUser user,
             int currentWarnings
         )
-            => await CaseUtils.LogAsync(
+            => CaseUtils.LogAsync(
                 db,
                 moderationModule.Context,
                 punishmentThreshold.LogType,
@@ -174,8 +174,8 @@ public sealed partial class ModerationModule
                 reason: $"A configured threshold was matched for `{currentWarnings}` warnings."
             );
 
-        static async Task SendFailureMessageAsync(ModerationModule moderationModule, string logTypeAction, int currentWarnings)
-            => await moderationModule.FollowupAsync(
+        static Task SendFailureMessageAsync(ModerationModule moderationModule, string logTypeAction, int currentWarnings)
+            => moderationModule.FollowupAsync(
                 $"Warning configuration is setup to {logTypeAction} a user on reaching `{currentWarnings}` warnings but I lack permission to do so. Please contact a server administrator to fix this."
             );
     }

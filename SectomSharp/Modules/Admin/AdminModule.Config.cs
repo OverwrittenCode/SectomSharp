@@ -22,8 +22,14 @@ public sealed partial class AdminModule
         private const string NotConfiguredMessage = "You cannot remove this configuration as it has not been configured.";
         private const string AtLeastOneMessage = "At least one new value must be provided.";
 
-        private static async Task LogAsync(ApplicationDbContext db, SocketInteractionContext context, string? reason = null, ulong? channelId = null)
-            => await CaseUtils.LogAsync(db, context, BotLogType.Configuration, OperationType.Update, channelId: channelId, reason: reason);
+        private static Task LogCreateAsync(ApplicationDbContext db, SocketInteractionContext context, string? reason = null, ulong? channelId = null)
+            => CaseUtils.LogAsync(db, context, BotLogType.Configuration, OperationType.Create, channelId: channelId, reason: reason);
+
+        private static Task LogUpdateAsync(ApplicationDbContext db, SocketInteractionContext context, string? reason = null, ulong? channelId = null)
+            => CaseUtils.LogAsync(db, context, BotLogType.Configuration, OperationType.Update, channelId: channelId, reason: reason);
+
+        private static Task LogDeleteAsync(ApplicationDbContext db, SocketInteractionContext context, string? reason = null, ulong? channelId = null)
+            => CaseUtils.LogAsync(db, context, BotLogType.Configuration, OperationType.Delete, channelId: channelId, reason: reason);
 
         /// <inheritdoc />
         public ConfigModule(ILogger<ConfigModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
@@ -72,14 +78,14 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogUpdateAsync(db, Context, reason);
             }
 
             [SlashCmd("Disable this configuration")]
-            public async Task Disable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(true, reason);
+            public Task Disable([ReasonMaxLength] string? reason = null) => SetIsDisabledAsync(true, reason);
 
             [SlashCmd("Enable this configuration")]
-            public async Task Enable([ReasonMaxLength] string? reason = null) => await SetIsDisabledAsync(false, reason);
+            public Task Enable([ReasonMaxLength] string? reason = null) => SetIsDisabledAsync(false, reason);
         }
 
         public interface IDisableableModule<TThis>

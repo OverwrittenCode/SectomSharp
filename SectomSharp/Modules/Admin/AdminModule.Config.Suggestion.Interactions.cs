@@ -289,7 +289,7 @@ public sealed partial class AdminModule
                 await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
                     rowsAffected = await db.SuggestionPosts.Where(post => post.GuildId == Context.Guild.Id && post.Id == id)
-                                           .ExecuteUpdateAsync(x => x.SetProperty(post => post.Status, status));
+                                           .ExecuteUpdateAsync(builder => builder.SetProperty(post => post.Status, status));
                 }
 
                 if (rowsAffected == 0)

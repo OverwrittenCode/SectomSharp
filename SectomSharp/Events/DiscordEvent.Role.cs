@@ -36,9 +36,9 @@ public sealed partial class DiscordEvent
         await LogAsync(role.Guild, webhookClient, AuditLogType.Role, operationType, builders, role.Id, GetRoleDisplayName(role), role.GetIconUrl(), role.Color);
     }
 
-    public async Task HandleRoleCreatedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Create);
+    public Task HandleRoleCreatedAsync(SocketRole role) => HandleRoleAlteredAsync(role, OperationType.Create);
 
-    public async Task HandleRoleDeletedAsync(SocketRole role) => await HandleRoleAlteredAsync(role, OperationType.Delete);
+    public Task HandleRoleDeletedAsync(SocketRole role) => HandleRoleAlteredAsync(role, OperationType.Delete);
 
     public async Task HandleRoleUpdateAsync(SocketRole oldRole, SocketRole newRole)
     {

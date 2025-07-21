@@ -6,8 +6,8 @@ namespace SectomSharp.Modules.Games;
 public sealed partial class GameModule
 {
     [SlashCmd("Play rock-paper-scissors-lizard-spock")]
-    public async Task Rps(IGuildUser? opponent = null)
-        => await HandleDualInputGameSession(
+    public Task Rps(IGuildUser? opponent = null)
+        => HandleDualInputGameSession(
             ComponentType.Button,
             "Rock-Paper-Scissors-Lizard-Spock",
             opponent,

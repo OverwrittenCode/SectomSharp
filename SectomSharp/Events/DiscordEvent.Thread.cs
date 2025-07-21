@@ -33,7 +33,7 @@ public sealed partial class DiscordEvent
         );
     }
 
-    public async Task HandleThreadCreatedAsync(SocketThreadChannel thread) => await HandleThreadAlteredAsync(thread, OperationType.Create);
+    public Task HandleThreadCreatedAsync(SocketThreadChannel thread) => HandleThreadAlteredAsync(thread, OperationType.Create);
 
     public async Task HandleThreadDeleteAsync(Cacheable<SocketThreadChannel, ulong> partialThread)
         => await HandleThreadAlteredAsync(await partialThread.GetOrDownloadAsync(), OperationType.Delete);

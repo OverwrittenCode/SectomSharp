@@ -13,5 +13,5 @@ public sealed partial class PaginationModule : BaseModule<PaginationModule>
     public PaginationModule(ILogger<PaginationModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
     [StrongButtonInteraction]
-    private async Task Button(ulong id, PageNavigationButton position) => await ButtonPaginationManager.OnHit((SocketMessageComponent)Context.Interaction, id, position);
+    private Task Button(ulong id, PageNavigationButton position) => ButtonPaginationManager.OnHit((SocketMessageComponent)Context.Interaction, id, position);
 }

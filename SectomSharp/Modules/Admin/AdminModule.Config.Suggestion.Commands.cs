@@ -69,7 +69,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogCreateAsync(db, Context, reason);
             }
 
             [SlashCmd("Remove a panel by name")]
@@ -84,7 +84,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogDeleteAsync(db, Context, reason);
             }
 
             [SlashCmd("Modify a panel")]
@@ -122,12 +122,23 @@ public sealed partial class AdminModule
                                                                : (newDescription != null && newDescription != panel.Description)
                                                               || (newColor.HasValue && newColor.Value != panel.Color))
                                             )
-                                           .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls.SetProperty(panel => panel.Name, panel => newName ?? panel.Name)
-                                                                                                   .SetProperty(
-                                                                                                        panel => panel.Description,
-                                                                                                        panel => newDescription ?? panel.Description
-                                                                                                    )
-                                                                                                   .SetProperty(panel => panel.Color, panel => newColor ?? panel.Color)
+                                           .ExecuteUpdateAsync(builder =>
+                                                {
+                                                    if (newName is not null)
+                                                    {
+                                                        builder.SetProperty(panel => panel.Name, newName);
+                                                    }
+
+                                                    if (newDescription is not null)
+                                                    {
+                                                        builder.SetProperty(panel => panel.Description, newDescription);
+                                                    }
+
+                                                    if (newColor.HasValue)
+                                                    {
+                                                        builder.SetProperty(panel => panel.Color, newColor.Value);
+                                                    }
+                                                }
                                             );
 
                 if (affectedRows == 0)
@@ -136,7 +147,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogUpdateAsync(db, Context, reason);
             }
 
             [SlashCmd("Add a component to a given panel")]
@@ -184,7 +195,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogCreateAsync(db, Context, reason);
             }
 
             [SlashCmd("Remove a component from a panel")]
@@ -233,7 +244,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogDeleteAsync(db, Context, reason);
             }
 
             [SlashCmd("Modify a component")]
@@ -263,21 +274,32 @@ public sealed partial class AdminModule
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
                 ulong guildId = Context.Guild.Id;
                 // ReSharper disable once AccessToDisposedClosure
-                int affectedRows = await db.SuggestionComponents
-                                           .Where(component => component.Panel.GuildId == guildId
-                                                            && component.Panel.Name == panelName
-                                                            && (isRenaming
-                                                                   ? !db.SuggestionComponents.Any(other => other.GuildId == guildId && other.Name == newComponentName)
-                                                                   : (newDescription != null && newDescription != component.Description)
-                                                                  || (newEmote != null && newEmote != component.Emote))
+                int affectedRows = await db.SuggestionComponents.Where(component => component.Panel.GuildId == guildId
+                                                                                 && component.Panel.Name == panelName
+                                                                                 && (isRenaming
+                                                                                        ? !db.SuggestionComponents.Any(other => other.GuildId == guildId
+                                                                                                                        && other.Name == newComponentName
+                                                                                        )
+                                                                                        : (newDescription != null && newDescription != component.Description)
+                                                                                       || (newEmote != null && newEmote != component.Emote))
                                             )
-                                           .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls
-                                                                                  .SetProperty(component => component.Name, component => newComponentName ?? component.Name)
-                                                                                  .SetProperty(
-                                                                                       component => component.Description,
-                                                                                       component => newDescription ?? component.Description
-                                                                                   )
-                                                                                  .SetProperty(component => component.Emote, component => newEmote ?? component.Emote)
+                                           .ExecuteUpdateAsync(builder =>
+                                                {
+                                                    if (newComponentName is not null)
+                                                    {
+                                                        builder.SetProperty(component => component.Name, newComponentName);
+                                                    }
+
+                                                    if (newDescription is not null)
+                                                    {
+                                                        builder.SetProperty(component => component.Description, newDescription);
+                                                    }
+
+                                                    if (newEmote is not null)
+                                                    {
+                                                        builder.SetProperty(component => component.Emote, newEmote);
+                                                    }
+                                                }
                                             );
 
                 if (affectedRows == 0)
@@ -286,7 +308,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                await LogUpdateAsync(db, Context, reason);
             }
 
             [SlashCmd("Send a panel to the current or a specified text channel")]

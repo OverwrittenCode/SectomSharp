@@ -5,7 +5,6 @@ using Discord;
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -47,7 +46,7 @@ public sealed partial class AdminModule
                 /// <summary>
                 ///     The flag has been updated.
                 /// </summary>
-                [UsedImplicitly] Updated = 1,
+                Updated = 1,
 
                 /// <summary>
                 ///     An audit log channel has been inserted with a temporary empty string for the webhook url.
@@ -84,9 +83,9 @@ public sealed partial class AdminModule
                                               WHERE
                                                   EXISTS (SELECT 1 FROM guild_upsert)
                                                   OR ("BotLogChannels"."Type" & @action) = 0
-                                              RETURNING 1
+                                              RETURNING (xmax = 0) AS "is_insert"
                                           )
-                                      SELECT 1 FROM channel_upsert;
+                                      SELECT is_insert FROM channel_upsert;
                                       """;
 
                     cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
@@ -99,13 +98,20 @@ public sealed partial class AdminModule
                 }
 
                 Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is null)
+                if (scalarResult is not bool isInsert)
                 {
                     await FollowupAsync(AlreadyConfiguredMessage);
                     return;
                 }
 
-                await LogAsync(db, Context, reason);
+                if (isInsert)
+                {
+                    await LogCreateAsync(db, Context, reason);
+                }
+                else
+                {
+                    await LogUpdateAsync(db, Context, reason);
+                }
             }
 
             [SlashCmd("Add or modify an audit log channel configuration")]
@@ -176,7 +182,8 @@ public sealed partial class AdminModule
                                               );
 
                         string webhookUrl = $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}";
-                        await db.AuditLogChannels.Where(x => x.Id == channel.Id).ExecuteUpdateAsync(x => x.SetProperty(c => c.WebhookUrl, webhookUrl));
+                        await db.AuditLogChannels.Where(auditLogChannel => auditLogChannel.Id == channel.Id)
+                                .ExecuteUpdateAsync(builder => builder.SetProperty(c => c.WebhookUrl, webhookUrl));
                     }
 
                     await transaction.CommitAsync();
@@ -187,13 +194,18 @@ public sealed partial class AdminModule
                     Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 }
 
-                if (result is AuditLogUpsertResult.NoChange)
+                switch (result)
                 {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
+                    case AuditLogUpsertResult.NoChange:
+                        await FollowupAsync(AlreadyConfiguredMessage);
+                        return;
+                    case AuditLogUpsertResult.Updated:
+                        await LogUpdateAsync(db, Context, reason, channel.Id);
+                        return;
+                    default:
+                        await LogCreateAsync(db, Context, reason, channel.Id);
+                        return;
                 }
-
-                await LogAsync(db, Context, reason, channel.Id);
             }
 
             [SlashCmd("Remove a bot log channel configuration")]
@@ -253,7 +265,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason, channel.Id);
+                await LogDeleteAsync(db, Context, reason, channel.Id);
             }
 
             [SlashCmd("Remove an audit log channel configuration")]
@@ -313,7 +325,7 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                await LogAsync(db, Context, reason, channel.Id);
+                await LogDeleteAsync(db, Context, reason, channel.Id);
             }
 
             [SlashCmd("View the bot log channel configuration")]

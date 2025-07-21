@@ -17,7 +17,6 @@ It offers a wide range of features including moderation tools, fun games, and se
 
 - 🎫 **Ticket System**: Efficiently manage user inquiries and support requests.
 
-
 ## 🔧 Commands
 
 Sectom offers a variety of slash commands across multiple categories:
