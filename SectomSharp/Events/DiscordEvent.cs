@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Data;
+using SectomSharp.Data.Entities;
 using SectomSharp.Data.Enums;
 using SectomSharp.Utils;
 
@@ -88,10 +89,22 @@ public sealed partial class DiscordEvent
     {
         await using ApplicationDbContext db = await _dbFactory.CreateDbContextAsync();
 
-        string? webhookUrl = await db.AuditLogChannels.Where(channel => channel.GuildId == guildId && channel.Type.HasFlag(auditLogType))
-                                     .Select(channel => channel.WebhookUrl)
-                                     .FirstOrDefaultAsync();
+        IQueryable<AuditLogChannel> queryable = db.AuditLogChannels.Where(channel => channel.GuildId == guildId && channel.Type.HasFlag(auditLogType));
+        string? webhookUrl = await queryable.Select(channel => channel.WebhookUrl).FirstOrDefaultAsync();
 
-        return webhookUrl is null ? null : new DiscordWebhookClient(webhookUrl);
+        if (webhookUrl is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return new DiscordWebhookClient(webhookUrl);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "Could not find a webhook with the supplied credentials.")
+        {
+            await queryable.ExecuteDeleteAsync();
+            return null;
+        }
     }
 }
