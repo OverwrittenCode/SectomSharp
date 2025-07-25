@@ -41,6 +41,7 @@ public sealed partial class DiscordEvent
                     await HandleGuildEmoteAlteredAsync(newGuild, discordWebhookClient, OperationType.Delete, emote);
                 }
             }
+
             return;
         }
 

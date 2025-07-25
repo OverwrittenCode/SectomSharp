@@ -12,6 +12,7 @@ using SectomSharp.Data.Enums;
 using SectomSharp.Extensions;
 using SectomSharp.Graphics;
 using SectomSharp.Utils;
+using MentionUtils = SectomSharp.Utils.MentionUtils;
 
 namespace SectomSharp.Events;
 
@@ -217,7 +218,7 @@ public sealed partial class DiscordEvent
         using var stream = new MemoryStream(imageBytes);
         try
         {
-            await msg.Channel.SendFileAsync(stream, "RankCard.png", $"<@{author.Id}> has ranked up to **Level {newLevel}** 🎉");
+            await msg.Channel.SendFileAsync(stream, "RankCard.png", $"{MentionUtils.MentionUser(author.Id)} has ranked up to **Level {newLevel}** 🎉");
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.MissingPermissions) { }
     }
@@ -232,24 +233,24 @@ public sealed partial class DiscordEvent
         var builders = new List<EmbedFieldBuilder>(8)
         {
             EmbedFieldBuilderFactory.Create("Channel Id", message.Channel.Id),
-            EmbedFieldBuilderFactory.Create("Author", $"<@{message.Author.Id}>"),
+            EmbedFieldBuilderFactory.Create("Author", MentionUtils.MentionUser(message.Author.Id)),
             EmbedFieldBuilderFactory.Create("Created At", message.Timestamp.GetRelativeTimestamp()),
             EmbedFieldBuilderFactory.CreateTruncated("Content", message.Content)
         };
 
         if (message.MentionedChannelIds.Count > 0)
         {
-            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(id => $"<#{id}>"))));
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(MentionUtils.MentionChannel))));
         }
 
         if (message.MentionedRoleIds.Count > 0)
         {
-            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(id => $"<@&{id}>"))));
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(MentionUtils.MentionRole))));
         }
 
         if (message.MentionedUserIds.Count > 0)
         {
-            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(id => $"<@{id}>"))));
+            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(MentionUtils.MentionUser))));
         }
 
         if (message.MentionedEveryone)

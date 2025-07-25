@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using SectomSharp.Data.Entities;
@@ -9,8 +8,6 @@ namespace SectomSharp.Utils;
 
 internal static partial class StringUtils
 {
-    private static ReadOnlySpan<byte> ByteSpan => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"u8;
-
     [GeneratedRegex(@"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")]
     private static partial Regex HumanisePascalCase { get; }
 
@@ -22,19 +19,23 @@ internal static partial class StringUtils
     /// </summary>
     /// <returns>A unique identifier string.</returns>
     [SkipLocalsInit]
-    public static unsafe string GenerateUniqueId()
+    [Pure]
+    public static string GenerateUniqueId()
     {
         string buffer = FastAllocateString(null, CaseConfiguration.IdLength);
-        fixed (char* bufferPtr = buffer)
-        {
-            char* ptr = bufferPtr;
-            for (int i = 0; i < CaseConfiguration.IdLength; i++)
-            {
-                *ptr++ = (char)Unsafe.Add(ref MemoryMarshal.GetReference(ByteSpan), Random.Shared.Next(ByteSpan.Length));
-            }
+        ref char start = ref GetFirstChar(buffer);
+        ref char current = ref start;
 
-            Debug.Assert(ptr == bufferPtr + CaseConfiguration.IdLength);
+        const string idContents = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        ref char reference = ref GetFirstChar(idContents);
+        for (int i = 0; i < CaseConfiguration.IdLength; i++)
+        {
+            current = Unsafe.Add(ref reference, Random.Shared.Next(idContents.Length));
+            current = ref Unsafe.Add(ref current, 1);
         }
+
+        ref char end = ref Unsafe.Add(ref start, CaseConfiguration.IdLength);
+        Debug.Assert(Unsafe.AreSame(ref current, ref end));
 
         return buffer;
     }
@@ -44,6 +45,7 @@ internal static partial class StringUtils
     /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>The transformed string.</returns>
+    [Pure]
     public static string PascalCaseToSentenceCase(string input) => HumanisePascalCase.Replace(input, " ");
 
     /// <summary>
@@ -51,6 +53,7 @@ internal static partial class StringUtils
     /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>The transformed string.</returns>
+    [Pure]
     public static string PascalCaseToKebabCase(string input) => HumanisePascalCase.Replace(input, "-").ToLower();
 
     /// <summary>
@@ -69,59 +72,87 @@ internal static partial class StringUtils
     public extern static string FastAllocateString([UnsafeAccessorType("System.String, System.Private.CoreLib")] object? ignored, int length);
 
     /// <summary>
-    ///     Copies the contents of the given source string into the destination pointer and advances the <paramref name="destination" /> pointer.
+    ///     Returns a reference to the first character of the specified string's internal buffer.
     /// </summary>
-    /// <param name="destination">Reference to the destination pointer to copy into.</param>
-    /// <param name="source">The source string to copy.</param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyTo(ref char* destination, string source)
-    {
-        Memmove(null, ref *destination, ref Unsafe.AsRef(in source.GetPinnableReference()), (uint)source.Length);
-        destination += source.Length;
-    }
+    /// <param name="str">The string.</param>
+    /// <returns>
+    ///     A reference to the first character of the string.
+    /// </returns>
+    /// <remarks>
+    ///     This method is intended to be used together with <see cref="FastAllocateString" /> to efficiently write directly into the string's character buffer
+    ///     without requiring <c>fixed</c> statements or unsafe pointer pinning.
+    ///     <para />
+    ///     The caller must ensure that the string remains alive and unmodified for the duration of usage of this reference.
+    ///     Using this reference after the string is collected or replaced results in undefined behavior.
+    /// </remarks>
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_firstChar")]
+    [Pure]
+    public extern static ref char GetFirstChar(string str);
 
     /// <summary>
-    ///     Copies a sequence of characters from the source pointer into the destination pointer and advances the <paramref name="destination" /> pointer.
+    ///     Copies the contents of the given source string into the given destination managed pointer.
     /// </summary>
-    /// <param name="destination">Reference to the destination pointer to copy into.</param>
-    /// <param name="source">Pointer to the source characters to copy.</param>
-    /// <param name="length">The number of characters to copy.</param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyTo(ref char* destination, char* source, uint length)
-    {
-        Memmove(null, ref *destination, ref *source, length);
-        destination += length;
-    }
-
-    /// <summary>
-    ///     Writes two fixed characters to the destination pointer as a single <see cref="UInt32" /> write and advances the <paramref name="destination" /> pointer.
-    /// </summary>
-    /// <param name="destination">Reference to the destination pointer to write into.</param>
-    /// <param name="c0">The first character to write.</param>
-    /// <param name="c1">The second character to write.</param>
+    /// <param name="destination">The managed pointer to write to.</param>
+    /// <param name="source">The source string to copy from.</param>
+    /// <returns>A managed pointer to the position immediately after the written characters.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
-    public static unsafe void WriteFixed2(ref char* destination, char c0, char c1)
+    [MustUseReturnValue("Return value advances the managed destination pointer; use it when performing subsequent writes.")]
+    public static ref char CopyTo(ref char destination, string source)
     {
-        *(uint*)destination = BitConverter.IsLittleEndian ? c0 | ((uint)c1 << 16) : ((uint)c0 << 16) | c1;
-        destination += 2;
+        Memmove(null, ref destination, ref GetFirstChar(source), (uint)source.Length);
+        return ref Unsafe.Add(ref destination, source.Length);
     }
 
     /// <summary>
-    ///     Writes four fixed characters to the destination pointer as a single <see cref="UInt64" /> write and advances the <paramref name="destination" /> pointer.
+    ///     Copies the contents of the given source string into the given destination managed pointer.
     /// </summary>
-    /// <param name="destination">Reference to the destination pointer to write into.</param>
+    /// <param name="destination">The managed pointer to write to.</param>
+    /// <param name="source">The managed pointer to copy from.</param>
+    /// <param name="length">The number of characters to copy.</param>
+    /// <returns>A managed pointer to the position immediately after the written characters.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
+    [MustUseReturnValue("Return value advances the managed destination pointer; use it when performing subsequent writes.")]
+    public static ref char CopyTo(ref char destination, scoped ref char source, uint length)
+    {
+        Memmove(null, ref destination, ref source, length);
+        return ref Unsafe.Add(ref destination, length);
+    }
+
+    /// <summary>
+    ///     Writes two fixed characters into the given destination managed pointer as a single <see cref="uint" /> write.
+    /// </summary>
+    /// <param name="destination">The managed pointer to write into.</param>
+    /// <param name="c0">The first character to write.</param>
+    /// <param name="c1">The second character to write.</param>
+    /// <returns>A managed pointer to the position immediately after the written characters.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
+    [MustUseReturnValue("Return value advances the managed destination pointer; use it when performing subsequent writes.")]
+    public static ref char WriteFixed2(ref char destination, char c0, char c1)
+    {
+        uint value = BitConverter.IsLittleEndian ? c0 | ((uint)c1 << 16) : ((uint)c0 << 16) | c1;
+        Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref destination), value);
+        return ref Unsafe.Add(ref destination, 2);
+    }
+
+    /// <summary>
+    ///     Writes four fixed characters into the given destination managed pointer as a single <see cref="ulong" /> write.
+    /// </summary>
+    /// <param name="destination">The managed pointer to write into.</param>
     /// <param name="c0">The first character to write.</param>
     /// <param name="c1">The second character to write.</param>
     /// <param name="c2">The third character to write.</param>
     /// <param name="c3">The fourth character to write.</param>
+    /// <returns>A managed pointer to the position immediately after the written characters.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
-    public static unsafe void WriteFixed4(ref char* destination, char c0, char c1, char c2, char c3)
+    [MustUseReturnValue]
+    public static ref char WriteFixed4(ref char destination, char c0, char c1, char c2, char c3)
     {
-        (*(ulong*)destination) = BitConverter.IsLittleEndian
-            ? c0 | ((ulong)c1 << 16) | ((ulong)c2 << 32) | ((ulong)c3 << 48)
-            : ((ulong)c0 << 48) | ((ulong)c1 << 32) | ((ulong)c2 << 16) | c3;
-        destination += 4;
+        ulong value = BitConverter.IsLittleEndian ? c0 | ((ulong)c1 << 16) | ((ulong)c2 << 32) | ((ulong)c3 << 48) : ((ulong)c0 << 48) | ((ulong)c1 << 32) | ((ulong)c2 << 16) | c3;
+        Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref destination), value);
+        return ref Unsafe.Add(ref destination, 4);
     }
 }

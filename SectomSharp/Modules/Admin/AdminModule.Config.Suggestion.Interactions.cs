@@ -8,6 +8,7 @@ using Discord.Interactions;
 using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
@@ -622,7 +623,7 @@ public sealed partial class AdminModule
                                              """;
 
                 [SkipLocalsInit]
-                public static unsafe string FormatResults(uint upvotes, uint downvotes)
+                public static string FormatResults(uint upvotes, uint downvotes)
                 {
                     double totalVotes = upvotes + downvotes;
                     if (totalVotes == 0)
@@ -658,60 +659,58 @@ public sealed partial class AdminModule
                                     + ProgressBarFullLength;
 
                     string buffer = StringUtils.FastAllocateString(null, totalLength);
-                    fixed (char* bufferPtr = buffer)
-                    {
-                        char* ptr = bufferPtr;
+                    ref char start = ref StringUtils.GetFirstChar(buffer);
+                    ref char current = ref start;
+                    current = ref StringUtils.CopyTo(ref current, upvotePrefix);
 
-                        StringUtils.CopyTo(ref ptr, upvotePrefix);
+                    upvotes.TryFormat(MemoryMarshal.CreateSpan(ref current, upvoteDigits), out _);
+                    current = ref Unsafe.Add(ref current, upvoteDigits);
 
-                        upvotes.TryFormat(new Span<char>(ptr, upvoteDigits), out _);
-                        ptr += upvoteDigits;
+                    current = ref StringUtils.CopyTo(ref current, upvoteLabel);
+                    current = ref FormatPercentageDigitsFixedF1(ref current, upPercentIntPart, upPercentFracPart);
 
-                        StringUtils.CopyTo(ref ptr, upvoteLabel);
-                        FormatPercentageDigitsFixedF1(ref ptr, upPercentIntPart, upPercentFracPart);
+                    current = ref StringUtils.CopyTo(ref current, midSeparator);
 
-                        StringUtils.CopyTo(ref ptr, midSeparator);
+                    downvotes.TryFormat(MemoryMarshal.CreateSpan(ref current, downvoteDigits), out _);
+                    current = ref Unsafe.Add(ref current, downvoteDigits);
 
-                        downvotes.TryFormat(new Span<char>(ptr, downvoteDigits), out _);
-                        ptr += downvoteDigits;
+                    current = ref StringUtils.CopyTo(ref current, downvoteLabel);
+                    current = ref FormatPercentageDigitsFixedF1(ref current, downPercentIntPart, downPercentFracPart);
 
-                        StringUtils.CopyTo(ref ptr, downvoteLabel);
-                        FormatPercentageDigitsFixedF1(ref ptr, downPercentIntPart, downPercentFracPart);
+                    current = ref StringUtils.CopyTo(ref current, percentSuffix);
 
-                        StringUtils.CopyTo(ref ptr, percentSuffix);
+                    ref char reference = ref StringUtils.GetFirstChar(AllProgressBars);
+                    ref char src = ref Unsafe.Add(ref reference, filled * ProgressBarFullLength);
+                    Unsafe.CopyBlockUnaligned(ref Unsafe.As<char, byte>(ref current), ref Unsafe.As<char, byte>(ref src), ProgressBarFullLength * sizeof(char));
 
-                        fixed (char* src = AllProgressBars)
-                        {
-                            char* srcOffset = src + filled * ProgressBarFullLength;
-                            Buffer.MemoryCopy(srcOffset, ptr, ProgressBarFullLength * sizeof(char), ProgressBarFullLength * sizeof(char));
-                        }
-
-                        Debug.Assert(ptr == bufferPtr + totalLength);
-                    }
+                    ref char end = ref Unsafe.Add(ref start, totalLength);
+                    Debug.Assert(Unsafe.AreSame(ref current, ref end));
 
                     return buffer;
 
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                     [SkipLocalsInit]
-                    static void FormatPercentageDigitsFixedF1(ref char* destination, int intPart, int fracPart)
+                    [MustUseReturnValue("Return value advances the managed destination pointer; use it when performing subsequent writes.")]
+                    static ref char FormatPercentageDigitsFixedF1(ref char destination, int intPart, int fracPart)
                     {
                         if ((uint)(intPart - 10) < 90)
                         {
-                            StringUtils.WriteFixed4(ref destination, (char)('0' + intPart / 10), (char)('0' + intPart % 10), '.', (char)('0' + fracPart));
-                            return;
+                            return ref StringUtils.WriteFixed4(ref destination, (char)('0' + intPart / 10), (char)('0' + intPart % 10), '.', (char)('0' + fracPart));
                         }
 
                         if (intPart == 100)
                         {
-                            StringUtils.CopyTo(ref destination, "100.0");
-                            return;
+                            return ref StringUtils.CopyTo(ref destination, "100.0");
                         }
 
-                        *destination++ = (char)('0' + intPart);
-                        StringUtils.WriteFixed2(ref destination, '.', (char)('0' + fracPart));
+                        destination = (char)('0' + intPart);
+                        destination = ref Unsafe.Add(ref destination, 1);
+
+                        return ref StringUtils.WriteFixed2(ref destination, '.', (char)('0' + fracPart));
                     }
 
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    [SkipLocalsInit]
                     static int CountPercentageDigitsFixedF1(double value, out int intPart, out int fracPart)
                     {
                         ReadOnlySpan<int> f1PercentageFormatLookupTable =

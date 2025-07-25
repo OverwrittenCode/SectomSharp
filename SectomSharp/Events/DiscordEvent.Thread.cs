@@ -3,6 +3,7 @@ using Discord.Webhook;
 using Discord.WebSocket;
 using SectomSharp.Data.Enums;
 using SectomSharp.Utils;
+using MentionUtils = SectomSharp.Utils.MentionUtils;
 
 namespace SectomSharp.Events;
 
@@ -25,7 +26,7 @@ public sealed partial class DiscordEvent
                 EmbedFieldBuilderFactory.Create("Id", thread.Id),
                 EmbedFieldBuilderFactory.Create("Name", thread.Name),
                 EmbedFieldBuilderFactory.Create("Type", thread.Type),
-                EmbedFieldBuilderFactory.Create("Parent", $"<#{thread.ParentChannel.Id}>"),
+                EmbedFieldBuilderFactory.Create("Parent", MentionUtils.MentionChannel(thread.ParentChannel.Id)),
                 EmbedFieldBuilderFactory.Create("Topic", thread.Topic)
             ],
             thread.Id,
@@ -47,7 +48,12 @@ public sealed partial class DiscordEvent
         AddIfChanged(builders, "Type", oldThread.Type, newThread.Type);
         if (oldThread.ParentChannel.Id != newThread.ParentChannel.Id)
         {
-            builders.Add(EmbedFieldBuilderFactory.Create("Parent", GetChangeEntry($"<#{oldThread.ParentChannel.Id}>", $"<#{newThread.ParentChannel.Id}>")));
+            builders.Add(
+                EmbedFieldBuilderFactory.Create(
+                    "Parent",
+                    GetChangeEntry(MentionUtils.MentionChannel(oldThread.ParentChannel.Id), MentionUtils.MentionChannel(newThread.ParentChannel.Id))
+                )
+            );
         }
 
         AddIfChanged(builders, "Topic", oldThread.Topic, newThread.Topic);

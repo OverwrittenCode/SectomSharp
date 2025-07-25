@@ -3,6 +3,7 @@ using Discord.Rest;
 using SectomSharp.Attributes;
 using SectomSharp.Extensions;
 using SectomSharp.Utils;
+using MentionUtils = SectomSharp.Utils.MentionUtils;
 
 namespace SectomSharp.Modules.Misc;
 
@@ -84,9 +85,11 @@ public sealed partial class MiscModule
         const int roleMentionLength = literalLength + snowflakeIdLength;
         const int separatorLength = 2;
         const int maxItems = (EmbedFieldBuilder.MaxFieldValueLength + separatorLength) / (roleMentionLength + separatorLength);
-        if (restUser.RoleIds.Skip(1).Take(maxItems).Select(id => $"<@&{id}>").ToArray() is { Length: > 1 and var roleCount } roleMentions)
+        int countToTake = Math.Min(maxItems, Math.Max(0, restUser.RoleIds.Count - 1));
+        if (countToTake > 1)
         {
-            fields.Add(EmbedFieldBuilderFactory.Create($"Roles [{roleCount}]", String.Join(", ", roleMentions)));
+            IEnumerable<string> roleMentions = restUser.RoleIds.Skip(1).Take(countToTake).Select(MentionUtils.MentionRole);
+            fields.Add(EmbedFieldBuilderFactory.Create($"Roles [{countToTake}]", String.Join(", ", roleMentions)));
         }
 
         GuildPermissions perms = restUser.GuildPermissions;

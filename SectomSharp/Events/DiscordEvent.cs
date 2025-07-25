@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Webhook;
+using Discord.WebSocket;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,9 +16,7 @@ namespace SectomSharp.Events;
 
 public sealed partial class DiscordEvent
 {
-    private static async Task LogAsync<T>(
-        IGuild guild,
-        DiscordWebhookClient webhookClient,
+    private static Embed CreateLogEmbed<T>(
         AuditLogType auditLogType,
         OperationType operationType,
         List<EmbedFieldBuilder> embedFieldBuilders,
@@ -48,9 +47,29 @@ public sealed partial class DiscordEvent
             Footer = new EmbedFooterBuilder { Text = $"{footerPrefix} | {auditLogType}{operationType}" },
             Timestamp = DateTimeOffset.UtcNow
         };
+        return embedBuilder.Build();
+    }
 
+    private static async Task LogAsync(IGuild guild, DiscordWebhookClient webhookClient, Embed[] embeds)
+    {
         IGuildUser bot = await guild.GetCurrentUserAsync();
-        await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: [embedBuilder.Build()]);
+        await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: embeds);
+    }
+
+    private static Task LogAsync<T>(
+        IGuild guild,
+        DiscordWebhookClient webhookClient,
+        AuditLogType auditLogType,
+        OperationType operationType,
+        List<EmbedFieldBuilder> embedFieldBuilders,
+        T footerPrefix,
+        string authorName,
+        string? authorIconUrl = null,
+        Color? colour = null
+    )
+    {
+        Embed embed = CreateLogEmbed(auditLogType, operationType, embedFieldBuilders, footerPrefix, authorName, authorIconUrl, colour);
+        return LogAsync(guild, webhookClient, [embed]);
     }
 
     private static string GetChangeEntry<T>(T before, T after)
@@ -77,11 +96,13 @@ public sealed partial class DiscordEvent
 
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
     private readonly ILogger<DiscordEvent> _logger;
+    private readonly DiscordSocketClient _client;
 
-    public DiscordEvent(IDbContextFactory<ApplicationDbContext> dbFactory, ILogger<DiscordEvent> logger)
+    public DiscordEvent(IDbContextFactory<ApplicationDbContext> dbFactory, ILogger<DiscordEvent> logger, DiscordSocketClient client)
     {
         _dbFactory = dbFactory;
         _logger = logger;
+        _client = client;
     }
 
     [MustDisposeResource]

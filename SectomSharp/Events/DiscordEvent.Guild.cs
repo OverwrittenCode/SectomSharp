@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SectomSharp.Data;
 using SectomSharp.Data.Enums;
 using SectomSharp.Utils;
+using MentionUtils = SectomSharp.Utils.MentionUtils;
 
 namespace SectomSharp.Events;
 
@@ -76,8 +77,8 @@ public sealed partial class DiscordEvent
                 EmbedFieldBuilderFactory.Create(
                     "Safety Alerts Channel",
                     GetChangeEntry(
-                        oldGuild.SafetyAlertsChannel is { Id: var oldGuildSafetyAlertsChannelId } ? $"<#{oldGuildSafetyAlertsChannelId}>" : null,
-                        newGuild.SafetyAlertsChannel is { Id: var newGuildSafetyAlertsChannelId } ? $"<#{newGuildSafetyAlertsChannelId}>" : null
+                        oldGuild.SafetyAlertsChannel is { Id: var oldGuildSafetyAlertsChannelId } ? MentionUtils.MentionChannel(oldGuildSafetyAlertsChannelId) : null,
+                        newGuild.SafetyAlertsChannel is { Id: var newGuildSafetyAlertsChannelId } ? MentionUtils.MentionChannel(newGuildSafetyAlertsChannelId) : null
                     )
                 )
             );
