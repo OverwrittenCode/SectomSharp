@@ -61,57 +61,60 @@ public sealed partial class AdminModule
                 options.Deconstruct(out SocketTextChannel channel, out BotLogType action, out string? reason);
 
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    cmd.CommandText = """
-                                      WITH
-                                          guild_upsert AS (
-                                              INSERT INTO "Guilds" ("Id")
-                                              VALUES (@guildId)
-                                              ON CONFLICT ("Id") DO NOTHING
-                                              RETURNING 1
-                                          ),
-                                          channel_upsert AS (
-                                              INSERT INTO "BotLogChannels" ("Id", "GuildId", "Type")
-                                              VALUES (@channelId, @guildId, @action)
-                                              ON CONFLICT ("Id") DO UPDATE SET "Type" = EXCLUDED."Type" | "BotLogChannels"."Type"
-                                              WHERE
-                                                  EXISTS (SELECT 1 FROM guild_upsert)
-                                                  OR ("BotLogChannels"."Type" & @action) = 0
-                                              RETURNING (xmax = 0) AS "is_insert"
-                                          )
-                                      SELECT is_insert FROM channel_upsert;
-                                      """;
+                    await db.Database.OpenConnectionAsync();
 
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                    object? scalarResult;
+                    Stopwatch stopwatch;
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = """
+                                          WITH
+                                              guild_upsert AS (
+                                                  INSERT INTO "Guilds" ("Id")
+                                                  VALUES (@guildId)
+                                                  ON CONFLICT ("Id") DO NOTHING
+                                                  RETURNING 1
+                                              ),
+                                              channel_upsert AS (
+                                                  INSERT INTO "BotLogChannels" ("Id", "GuildId", "Type")
+                                                  VALUES (@channelId, @guildId, @action)
+                                                  ON CONFLICT ("Id") DO UPDATE SET "Type" = EXCLUDED."Type" | "BotLogChannels"."Type"
+                                                  WHERE
+                                                      EXISTS (SELECT 1 FROM guild_upsert)
+                                                      OR ("BotLogChannels"."Type" & @action) = 0
+                                                  RETURNING (xmax = 0) AS "is_insert"
+                                              )
+                                          SELECT is_insert FROM channel_upsert;
+                                          """;
 
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+
+                        stopwatch = Stopwatch.StartNew();
+                        scalarResult = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                    }
+
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                    if (scalarResult is bool isInsert)
+                    {
+                        if (isInsert)
+                        {
+                            await LogCreateAsync(db, Context, reason);
+                        }
+                        else
+                        {
+                            await LogUpdateAsync(db, Context, reason);
+                        }
+
+                        return;
+                    }
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is not bool isInsert)
-                {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                if (isInsert)
-                {
-                    await LogCreateAsync(db, Context, reason);
-                }
-                else
-                {
-                    await LogUpdateAsync(db, Context, reason);
-                }
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("Add or modify an audit log channel configuration")]
@@ -127,85 +130,89 @@ public sealed partial class AdminModule
                     return;
                 }
 
-                AuditLogUpsertResult result;
-
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-                await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
-                var stopwatch = new Stopwatch();
-                try
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    await db.Database.OpenConnectionAsync();
+                    await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
+                    var stopwatch = new Stopwatch();
+                    AuditLogUpsertResult result;
+                    try
                     {
-                        cmd.Transaction = transaction.GetDbTransaction();
+                        await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                        {
+                            cmd.Transaction = transaction.GetDbTransaction();
 
-                        cmd.CommandText = """
-                                          WITH
-                                              guild_upsert AS (
-                                                  INSERT INTO "Guilds" ("Id")
-                                                  VALUES (@guildId)
-                                                  ON CONFLICT ("Id") DO NOTHING
-                                              ),
-                                              channel_upsert AS (
-                                                  INSERT INTO "AuditLogChannels" ("Id", "GuildId", "Type", "WebhookUrl")
-                                                  VALUES (@channelId, @guildId, @action, '')
-                                                  ON CONFLICT ("Id") DO UPDATE SET "Type" = "AuditLogChannels"."Type" | EXCLUDED."Type"
-                                                  WHERE ("AuditLogChannels"."Type" & @action) = 0
-                                                  RETURNING
-                                                      CASE
-                                                          WHEN xmax = 0 THEN 2
-                                                          WHEN "WebhookUrl" <> '' THEN 1
-                                                          ELSE 0
-                                                      END AS result_tag
-                                              )
-                                          SELECT * FROM channel_upsert;
-                                          """;
-                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                        cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                            cmd.CommandText = """
+                                              WITH
+                                                  guild_upsert AS (
+                                                      INSERT INTO "Guilds" ("Id")
+                                                      VALUES (@guildId)
+                                                      ON CONFLICT ("Id") DO NOTHING
+                                                  ),
+                                                  channel_upsert AS (
+                                                      INSERT INTO "AuditLogChannels" ("Id", "GuildId", "Type", "WebhookUrl")
+                                                      VALUES (@channelId, @guildId, @action, '')
+                                                      ON CONFLICT ("Id") DO UPDATE SET "Type" = "AuditLogChannels"."Type" | EXCLUDED."Type"
+                                                      WHERE ("AuditLogChannels"."Type" & @action) = 0
+                                                      RETURNING
+                                                          CASE
+                                                              WHEN xmax = 0 THEN 2
+                                                              WHEN "WebhookUrl" <> '' THEN 1
+                                                              ELSE 0
+                                                          END AS result_tag
+                                                  )
+                                              SELECT * FROM channel_upsert;
+                                              """;
+                            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                            cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
 
-                        stopwatch.Start();
-                        object? rawValue = await cmd.ExecuteScalarAsync();
+                            stopwatch.Start();
+                            object? rawValue = await cmd.ExecuteScalarAsync();
+                            stopwatch.Stop();
+                            Debug.Assert(rawValue is not null);
+
+                            result = (AuditLogUpsertResult)(int)rawValue;
+                        }
+
+                        if (result is AuditLogUpsertResult.InsertedAndNeedsWebhookUrl)
+                        {
+                            RestWebhook webhook = (await channel.GetWebhooksAsync()).FirstOrDefault(w => w.Creator.Id == Context.Guild.CurrentUser.Id)
+                                               ?? await channel.CreateWebhookAsync(
+                                                      Context.Guild.CurrentUser.DisplayName,
+                                                      options: DiscordUtils.GetAuditReasonRequestOptions(Context, "Automated webhook creation")
+                                                  );
+
+                            string webhookUrl = $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}";
+                            await db.AuditLogChannels.Where(auditLogChannel => auditLogChannel.Id == channel.Id)
+                                    .ExecuteUpdateAsync(builder => builder.SetProperty(c => c.WebhookUrl, webhookUrl));
+                        }
+
+                        await transaction.CommitAsync();
+                    }
+                    finally
+                    {
                         stopwatch.Stop();
-                        Debug.Assert(rawValue is not null);
-
-                        result = (AuditLogUpsertResult)(int)rawValue;
+                        Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                     }
 
-                    if (result is AuditLogUpsertResult.InsertedAndNeedsWebhookUrl)
+                    if (result != AuditLogUpsertResult.NoChange)
                     {
-                        RestWebhook webhook = (await channel.GetWebhooksAsync()).FirstOrDefault(w => w.Creator.Id == Context.Guild.CurrentUser.Id)
-                                           ?? await channel.CreateWebhookAsync(
-                                                  Context.Guild.CurrentUser.DisplayName,
-                                                  options: DiscordUtils.GetAuditReasonRequestOptions(Context, "Automated webhook creation")
-                                              );
+                        if (result == AuditLogUpsertResult.Updated)
+                        {
+                            await LogUpdateAsync(db, Context, reason, channel.Id);
+                        }
+                        else
+                        {
+                            await LogCreateAsync(db, Context, reason, channel.Id);
+                        }
 
-                        string webhookUrl = $"https://discord.com/api/webhooks/{webhook.Id}/{webhook.Token}";
-                        await db.AuditLogChannels.Where(auditLogChannel => auditLogChannel.Id == channel.Id)
-                                .ExecuteUpdateAsync(builder => builder.SetProperty(c => c.WebhookUrl, webhookUrl));
+                        return;
                     }
-
-                    await transaction.CommitAsync();
-                }
-                finally
-                {
-                    stopwatch.Stop();
-                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
                 }
 
-                switch (result)
-                {
-                    case AuditLogUpsertResult.NoChange:
-                        await FollowupAsync(AlreadyConfiguredMessage);
-                        return;
-                    case AuditLogUpsertResult.Updated:
-                        await LogUpdateAsync(db, Context, reason, channel.Id);
-                        return;
-                    default:
-                        await LogCreateAsync(db, Context, reason, channel.Id);
-                        return;
-                }
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("Remove a bot log channel configuration")]
@@ -214,58 +221,60 @@ public sealed partial class AdminModule
                 options.Deconstruct(out SocketTextChannel channel, out BotLogType action, out string? reason);
 
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    cmd.CommandText = """
-                                      WITH
-                                          deleted AS (
-                                              DELETE
-                                              FROM "BotLogChannels"
-                                              WHERE
-                                                  "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" = @action
-                                              RETURNING 1
-                                          ),
-                                          updated AS (
-                                              UPDATE "BotLogChannels"
-                                              SET "Type" = "Type" & ~@action
-                                              WHERE
-                                                  NOT EXISTS (SELECT 1 FROM deleted)
-                                                  AND "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" & @action <> 0
-                                              RETURNING 1
-                                          )
-                                      SELECT EXISTS (
-                                          SELECT 1 FROM deleted
-                                          UNION ALL
-                                          SELECT 1 FROM updated
-                                      );
-                                      """;
+                    await db.Database.OpenConnectionAsync();
 
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                    object? scalarResult;
+                    Stopwatch stopwatch;
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = """
+                                          WITH
+                                              deleted AS (
+                                                  DELETE
+                                                  FROM "BotLogChannels"
+                                                  WHERE
+                                                      "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" = @action
+                                                  RETURNING 1
+                                              ),
+                                              updated AS (
+                                                  UPDATE "BotLogChannels"
+                                                  SET "Type" = "Type" & ~@action
+                                                  WHERE
+                                                      NOT EXISTS (SELECT 1 FROM deleted)
+                                                      AND "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" & @action <> 0
+                                                  RETURNING 1
+                                              )
+                                          SELECT EXISTS (
+                                              SELECT 1 FROM deleted
+                                              UNION ALL
+                                              SELECT 1 FROM updated
+                                          );
+                                          """;
 
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+
+                        stopwatch = Stopwatch.StartNew();
+                        scalarResult = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                    }
+
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                    if (scalarResult is true)
+                    {
+                        await LogDeleteAsync(db, Context, reason, channel.Id);
+                        return;
+                    }
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is not true)
-                {
-                    await FollowupAsync(NotConfiguredMessage);
-                    return;
-                }
-
-                await LogDeleteAsync(db, Context, reason, channel.Id);
+                await FollowupAsync(NotConfiguredMessage);
             }
 
             [SlashCmd("Remove an audit log channel configuration")]
@@ -274,58 +283,60 @@ public sealed partial class AdminModule
                 options.Deconstruct(out SocketTextChannel channel, out AuditLogType action, out string? reason);
 
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    cmd.CommandText = """
-                                      WITH
-                                          deleted AS (
-                                              DELETE
-                                              FROM "BotLogChannels"
-                                              WHERE
-                                                  "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" = @action
-                                              RETURNING 1
-                                          ),
-                                          updated AS (
-                                              UPDATE "BotLogChannels"
-                                              SET "Type" = "Type" & ~@action
-                                              WHERE
-                                                  NOT EXISTS (SELECT 1 FROM deleted)
-                                                  AND "Id" = @channelId
-                                                  AND "GuildId" = @guildId
-                                                  AND "Type" & @action <> 0
-                                              RETURNING 1
-                                          )
-                                      SELECT EXISTS (
-                                          SELECT 1 FROM deleted
-                                          UNION ALL
-                                          SELECT 1 FROM updated
-                                      );
-                                      """;
+                    await db.Database.OpenConnectionAsync();
 
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+                    object? scalarResult;
+                    Stopwatch stopwatch;
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = """
+                                          WITH
+                                              deleted AS (
+                                                  DELETE
+                                                  FROM "BotLogChannels"
+                                                  WHERE
+                                                      "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" = @action
+                                                  RETURNING 1
+                                              ),
+                                              updated AS (
+                                                  UPDATE "BotLogChannels"
+                                                  SET "Type" = "Type" & ~@action
+                                                  WHERE
+                                                      NOT EXISTS (SELECT 1 FROM deleted)
+                                                      AND "Id" = @channelId
+                                                      AND "GuildId" = @guildId
+                                                      AND "Type" & @action <> 0
+                                                  RETURNING 1
+                                              )
+                                          SELECT EXISTS (
+                                              SELECT 1 FROM deleted
+                                              UNION ALL
+                                              SELECT 1 FROM updated
+                                          );
+                                          """;
 
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("channelId", channel.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("action", action));
+
+                        stopwatch = Stopwatch.StartNew();
+                        scalarResult = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                    }
+
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                    if (scalarResult is true)
+                    {
+                        await LogDeleteAsync(db, Context, reason, channel.Id);
+                        return;
+                    }
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is not true)
-                {
-                    await FollowupAsync(NotConfiguredMessage);
-                    return;
-                }
-
-                await LogDeleteAsync(db, Context, reason, channel.Id);
+                await FollowupAsync(NotConfiguredMessage);
             }
 
             [SlashCmd("View the bot log channel configuration")]

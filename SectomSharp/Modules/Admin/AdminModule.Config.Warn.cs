@@ -32,46 +32,48 @@ public sealed partial class AdminModule
             private async Task AddPunishment(uint threshold, TimeSpan? duration, string? reason, BotLogType punishment)
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    cmd.CommandText = """
-                                      WITH
-                                          guild_upsert AS (
-                                              INSERT INTO "Guilds" ("Id")
-                                              VALUES (@guildId)
-                                              ON CONFLICT ("Id") DO NOTHING
-                                          ),
-                                          inserted AS (
-                                              INSERT INTO "WarningThresholds" ("GuildId", "Value", "LogType", "Span")
-                                              VALUES (@guildId, @threshold, @logType, @duration)
-                                              ON CONFLICT DO NOTHING
-                                              RETURNING 1
-                                          )
-                                      SELECT 1 FROM inserted;
-                                      """;
+                    await db.Database.OpenConnectionAsync();
+                    object? scalarResult;
+                    Stopwatch stopwatch;
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = """
+                                          WITH
+                                              guild_upsert AS (
+                                                  INSERT INTO "Guilds" ("Id")
+                                                  VALUES (@guildId)
+                                                  ON CONFLICT ("Id") DO NOTHING
+                                              ),
+                                              inserted AS (
+                                                  INSERT INTO "WarningThresholds" ("GuildId", "Value", "LogType", "Span")
+                                                  VALUES (@guildId, @threshold, @logType, @duration)
+                                                  ON CONFLICT DO NOTHING
+                                                  RETURNING 1
+                                              )
+                                          SELECT 1 FROM inserted;
+                                          """;
 
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("threshold", threshold));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("threshold", threshold));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromEnum32("logType", punishment));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromTimeSpan("duration", duration));
 
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                        stopwatch = Stopwatch.StartNew();
+                        scalarResult = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                    }
+
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                    if (scalarResult is not null)
+                    {
+                        await LogCreateAsync(db, Context, reason);
+                        return;
+                    }
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is null)
-                {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                await LogCreateAsync(db, Context, reason);
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("Add a timeout punishment on reaching a number of warnings")]
@@ -90,17 +92,19 @@ public sealed partial class AdminModule
             public async Task RemovePunishment([MinValue(MinThreshold)] [MaxValue(MaxThreshold)] uint threshold, [ReasonMaxLength] string? reason = null)
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                int affectedRows = await db.WarningThresholds.Where(warningThreshold => warningThreshold.GuildId == Context.Guild.Id && warningThreshold.Value == threshold)
-                                           .ExecuteDeleteAsync();
-
-                if (affectedRows == 0)
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
+                    int affectedRows = await db.WarningThresholds.Where(warningThreshold => warningThreshold.GuildId == Context.Guild.Id && warningThreshold.Value == threshold)
+                                               .ExecuteDeleteAsync();
+
+                    if (affectedRows != 0)
+                    {
+                        await LogDeleteAsync(db, Context, reason);
+                        return;
+                    }
                 }
 
-                await LogDeleteAsync(db, Context, reason);
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("View the configured warning thresholds")]

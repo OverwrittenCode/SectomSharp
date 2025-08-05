@@ -56,29 +56,31 @@ public sealed partial class AdminModule
             private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    cmd.CommandText = DisableQuery;
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
+                    await db.Database.OpenConnectionAsync();
+                    object? scalarResult;
+                    Stopwatch stopwatch;
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = DisableQuery;
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromBoolean("isDisabled", isDisabled));
 
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                        stopwatch = Stopwatch.StartNew();
+                        scalarResult = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                    }
+
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                    if (scalarResult is not null)
+                    {
+                        await LogUpdateAsync(db, Context, reason);
+                        return;
+                    }
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is null)
-                {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                await LogUpdateAsync(db, Context, reason);
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("Disable this configuration")]

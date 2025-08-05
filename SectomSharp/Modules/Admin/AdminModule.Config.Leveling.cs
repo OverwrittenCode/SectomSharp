@@ -41,41 +41,43 @@ public sealed partial class AdminModule
                 }
 
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
 
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
-                int affectedRows = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id
-                                                               && ((accumulateMultipliers.HasValue
-                                                                 && accumulateMultipliers.Value != guild.Configuration.Leveling.AccumulateMultipliers)
-                                                                || (globalMultiplier.HasValue && globalMultiplier.Value != guild.Configuration.Leveling.GlobalMultiplier)
-                                                                || (globalCooldown.HasValue && globalCooldown.Value != guild.Configuration.Leveling.GlobalCooldown))
-                                            )
-                                           .ExecuteUpdateAsync(builder =>
-                                                {
-                                                    if (accumulateMultipliers.HasValue)
-                                                    {
-                                                        builder.SetProperty(guild => guild.Configuration.Leveling.AccumulateMultipliers, accumulateMultipliers);
-                                                    }
-
-                                                    if (globalMultiplier.HasValue)
-                                                    {
-                                                        builder.SetProperty(guild => guild.Configuration.Leveling.GlobalMultiplier, globalMultiplier);
-                                                    }
-
-                                                    if (globalCooldown.HasValue)
-                                                    {
-                                                        builder.SetProperty(guild => guild.Configuration.Leveling.GlobalCooldown, globalCooldown);
-                                                    }
-                                                }
-                                            );
-
-                if (affectedRows == 0)
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
+                    int affectedRows = await db.Guilds.Where(guild => guild.Id == Context.Guild.Id
+                                                                   && ((accumulateMultipliers.HasValue
+                                                                     && accumulateMultipliers.Value != guild.Configuration.Leveling.AccumulateMultipliers)
+                                                                    || (globalMultiplier.HasValue && globalMultiplier.Value != guild.Configuration.Leveling.GlobalMultiplier)
+                                                                    || (globalCooldown.HasValue && globalCooldown.Value != guild.Configuration.Leveling.GlobalCooldown))
+                                                )
+                                               .ExecuteUpdateAsync(builder =>
+                                                    {
+                                                        if (accumulateMultipliers.HasValue)
+                                                        {
+                                                            builder.SetProperty(guild => guild.Configuration.Leveling.AccumulateMultipliers, accumulateMultipliers);
+                                                        }
+
+                                                        if (globalMultiplier.HasValue)
+                                                        {
+                                                            builder.SetProperty(guild => guild.Configuration.Leveling.GlobalMultiplier, globalMultiplier);
+                                                        }
+
+                                                        if (globalCooldown.HasValue)
+                                                        {
+                                                            builder.SetProperty(guild => guild.Configuration.Leveling.GlobalCooldown, globalCooldown);
+                                                        }
+                                                    }
+                                                );
+
+                    if (affectedRows != 0)
+                    {
+                        await LogUpdateAsync(db, Context, reason);
+                        return;
+                    }
                 }
 
-                await LogUpdateAsync(db, Context, reason);
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("Adds an auto role on reaching a certain level")]
@@ -88,63 +90,67 @@ public sealed partial class AdminModule
             )
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                await db.Database.OpenConnectionAsync();
-                object? scalarResult;
-                Stopwatch stopwatch;
-                await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    cmd.CommandText = """
-                                      WITH
-                                          guild_upsert AS (
-                                              INSERT INTO "Guilds" ("Id")
-                                              VALUES (@guildId)
-                                              ON CONFLICT ("Id") DO NOTHING
-                                          ),
-                                          inserted AS (
-                                              INSERT INTO "LevelingRoles" ("Id", "GuildId", "Level", "Multiplier", "Cooldown")
-                                              VALUES (@roleId, @guildId, @level, @multiplier, @cooldown)
-                                              ON CONFLICT DO NOTHING
-                                              RETURNING 1
-                                          )
-                                      SELECT 1 FROM inserted;
-                                      """;
+                    await db.Database.OpenConnectionAsync();
+                    object? scalarResult;
+                    Stopwatch stopwatch;
+                    await using (DbCommand cmd = db.Database.GetDbConnection().CreateCommand())
+                    {
+                        cmd.CommandText = """
+                                          WITH
+                                              guild_upsert AS (
+                                                  INSERT INTO "Guilds" ("Id")
+                                                  VALUES (@guildId)
+                                                  ON CONFLICT ("Id") DO NOTHING
+                                              ),
+                                              inserted AS (
+                                                  INSERT INTO "LevelingRoles" ("Id", "GuildId", "Level", "Multiplier", "Cooldown")
+                                                  VALUES (@roleId, @guildId, @level, @multiplier, @cooldown)
+                                                  ON CONFLICT DO NOTHING
+                                                  RETURNING 1
+                                              )
+                                          SELECT 1 FROM inserted;
+                                          """;
 
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("roleId", role.Id));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("level", level));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
-                    cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("roleId", role.Id));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("level", level));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromDouble("multiplier", multiplier));
+                        cmd.Parameters.Add(NpgsqlParameterFactory.FromNonNegativeInt32("cooldown", cooldown));
 
-                    stopwatch = Stopwatch.StartNew();
-                    scalarResult = await cmd.ExecuteScalarAsync();
-                    stopwatch.Stop();
+                        stopwatch = Stopwatch.StartNew();
+                        scalarResult = await cmd.ExecuteScalarAsync();
+                        stopwatch.Stop();
+                    }
+
+                    Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
+                    if (scalarResult is not null)
+                    {
+                        await LogCreateAsync(db, Context, reason);
+                        return;
+                    }
                 }
 
-                Logger.SqlQueryExecuted(stopwatch.ElapsedMilliseconds);
-                if (scalarResult is null)
-                {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
-                }
-
-                await LogCreateAsync(db, Context, reason);
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("Removes an auto role for a certain level")]
             public async Task RemoveAutoRole([Summary(description: "The level to remove")] [MinValue(1)] uint level, [ReasonMaxLength] string? reason = null)
             {
                 await DeferAsync();
-                await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
-                int affectedRows = await db.LevelingRoles.Where(role => role.GuildId == Context.Guild.Id && role.Level == level).ExecuteDeleteAsync();
-
-                if (affectedRows == 0)
+                await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
                 {
-                    await FollowupAsync(AlreadyConfiguredMessage);
-                    return;
+                    int affectedRows = await db.LevelingRoles.Where(role => role.GuildId == Context.Guild.Id && role.Level == level).ExecuteDeleteAsync();
+
+                    if (affectedRows != 0)
+                    {
+                        await LogDeleteAsync(db, Context, reason);
+                        return;
+                    }
                 }
 
-                await LogDeleteAsync(db, Context, reason);
+                await FollowupAsync(AlreadyConfiguredMessage);
             }
 
             [SlashCmd("View the configured auto roles")]
