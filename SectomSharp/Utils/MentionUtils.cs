@@ -8,10 +8,14 @@ namespace SectomSharp.Utils;
 [PublicAPI]
 internal static class MentionUtils
 {
-    private const string ChannelMentionStart = "<#";
+    public const string ChannelMentionStart = "<#";
     public const string RoleMentionStart = "<@&";
     public const string UserMentionStart = "<@";
     public const char MentionEnd = '>';
+    public const int SnowflakeIdMaxLength = 20;
+    public const int ChannelMentionMaxLength = SnowflakeIdMaxLength + 3 + 1;
+    public const int UserMentionMaxLength = SnowflakeIdMaxLength + 3 + 1;
+    public const int RoleMentionMaxLength = SnowflakeIdMaxLength + 4 + 1;
 
     /// <summary>
     ///     Writes a snowflake id to the destination pointer and advances the destination pointer.
@@ -177,7 +181,6 @@ internal static class MentionUtils
     /// <returns>
     ///     A user mention string (e.g. &lt;@80351110224678912&gt;).
     /// </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     [Pure]
     public static string MentionUser(ulong id)
@@ -223,7 +226,6 @@ internal static class MentionUtils
     /// <returns>
     ///     A role mention string (e.g. &lt;@&amp;165511591545143296&gt;).
     /// </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     [Pure]
     public static string MentionRole(ulong id)
@@ -269,7 +271,6 @@ internal static class MentionUtils
     /// <returns>
     ///     A channel mention string (e.g. &lt;#103735883630395392&gt;).
     /// </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     [Pure]
     public static string MentionChannel(ulong id)

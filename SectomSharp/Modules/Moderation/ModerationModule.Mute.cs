@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Utils;
@@ -11,7 +12,7 @@ public sealed partial class ModerationModule
     [SlashCmd("Mute a user in their current voice channel")]
     [DefaultMemberPermissions(GuildPermission.MuteMembers)]
     [RequireBotPermission(GuildPermission.MuteMembers)]
-    public async Task Mute([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
+    public async Task Mute([DoHierarchyCheck] SocketGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         if (user.IsMuted)
         {

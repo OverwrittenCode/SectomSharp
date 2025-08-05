@@ -1,4 +1,5 @@
 using Discord;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Games;
@@ -6,7 +7,7 @@ namespace SectomSharp.Modules.Games;
 public sealed partial class GameModule
 {
     [SlashCmd("Play rock-paper-scissors-lizard-spock")]
-    public Task Rps(IGuildUser? opponent = null)
+    public Task Rps(SocketGuildUser? opponent = null)
         => HandleDualInputGameSession(
             ComponentType.Button,
             "Rock-Paper-Scissors-Lizard-Spock",

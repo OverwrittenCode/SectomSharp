@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Immutable;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using Discord;
@@ -25,7 +26,7 @@ public sealed partial class DiscordEvent
 
     public async Task HandleMessageReceivedAsync(SocketMessage msg)
     {
-        if (msg is not SocketUserMessage { Author: SocketGuildUser { IsBot: false } author, Channel: IGuildChannel { Guild: { } guild } channel } message)
+        if (msg is not SocketUserMessage { Author: SocketGuildUser { IsBot: false } author, Channel: SocketGuildChannel { Guild: { CurrentUser: { } bot } guild } channel } message)
         {
             return;
         }
@@ -187,7 +188,6 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        IGuildUser bot = await guild.GetCurrentUserAsync();
         if (roleId is { } autoRoleId
          && bot.GuildPermissions.Has(GuildPermission.ManageRoles)
          && guild.Roles.FirstOrDefault(r => r.Id == autoRoleId) is { } role
@@ -218,47 +218,14 @@ public sealed partial class DiscordEvent
         using var stream = new MemoryStream(imageBytes);
         try
         {
-            await msg.Channel.SendFileAsync(stream, "RankCard.png", $"{MentionUtils.MentionUser(author.Id)} has ranked up to **Level {newLevel}** 🎉");
+            await msg.Channel.SendFileAsync(stream, "RankCard.png", $"<@{author.Id}> has ranked up to **Level {newLevel}** 🎉");
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.MissingPermissions) { }
     }
 
     public async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> partialMessage, Cacheable<IMessageChannel, ulong> _)
     {
-        if (partialMessage is not { Value: { Author.IsBot: false, Channel: IGuildChannel { Guild: { } guild } } message })
-        {
-            return;
-        }
-
-        var builders = new List<EmbedFieldBuilder>(8)
-        {
-            EmbedFieldBuilderFactory.Create("Channel Id", message.Channel.Id),
-            EmbedFieldBuilderFactory.Create("Author", MentionUtils.MentionUser(message.Author.Id)),
-            EmbedFieldBuilderFactory.Create("Created At", message.Timestamp.GetRelativeTimestamp()),
-            EmbedFieldBuilderFactory.CreateTruncated("Content", message.Content)
-        };
-
-        if (message.MentionedChannelIds.Count > 0)
-        {
-            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Channels", String.Join(", ", message.MentionedChannelIds.Select(MentionUtils.MentionChannel))));
-        }
-
-        if (message.MentionedRoleIds.Count > 0)
-        {
-            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Roles", String.Join(", ", message.MentionedRoleIds.Select(MentionUtils.MentionRole))));
-        }
-
-        if (message.MentionedUserIds.Count > 0)
-        {
-            builders.Add(EmbedFieldBuilderFactory.CreateTruncated("Mentioned Users", String.Join(", ", message.MentionedUserIds.Select(MentionUtils.MentionUser))));
-        }
-
-        if (message.MentionedEveryone)
-        {
-            builders.Add(EmbedFieldBuilderFactory.Create("Mentioned Everyone", message.MentionedEveryone));
-        }
-
-        if (builders.Count == 0)
+        if (partialMessage is not { Value: SocketUserMessage { Author: { IsBot: false } messageAuthor, Channel: SocketGuildChannel { Guild: { } guild } } message })
         {
             return;
         }
@@ -269,12 +236,47 @@ public sealed partial class DiscordEvent
             return;
         }
 
-        await LogAsync(guild, webhookClient, AuditLogType.Message, OperationType.Delete, builders, message.Id, message.Author.Username, message.Author.GetDisplayAvatarUrl());
+        var builders = new List<EmbedFieldBuilder>(8)
+        {
+            EmbedFieldBuilderFactory.Create("Channel Id", message.Channel.Id),
+            EmbedFieldBuilderFactory.Create("Author", MentionUtils.MentionUser(messageAuthor.Id)),
+            EmbedFieldBuilderFactory.Create("Created At", message.Timestamp.GetRelativeTimestamp()),
+            EmbedFieldBuilderFactory.CreateTruncated("Content", message.Content)
+        };
+
+        const int maxChannelMentionItems = (EmbedFieldBuilder.MaxFieldValueLength + 2) / (MentionUtils.ChannelMentionMaxLength + 2);
+        string channelMentions = String.Join(
+            ", ",
+            message.Tags.ToImmutableArray().Where(tag => tag.Type == TagType.ChannelMention).Take(maxChannelMentionItems).Select(tag => MentionUtils.MentionChannel(tag.Key))
+        );
+        if (channelMentions != String.Empty)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Mentioned Channels", channelMentions));
+        }
+
+        if (message.MentionedRoleIds.ToImmutableArray() is { Length: > 0 } mentionedRoleIds)
+        {
+            const int maxItems = (EmbedFieldBuilder.MaxFieldValueLength + 2) / (MentionUtils.RoleMentionMaxLength + 2);
+            builders.Add(EmbedFieldBuilderFactory.Create("Mentioned Roles", String.Join(", ", mentionedRoleIds.Take(maxItems).Select(MentionUtils.MentionRole))));
+        }
+
+        if (message.MentionedUserIds.ToImmutableArray() is { Length: > 0 } mentionUserIds)
+        {
+            const int maxItems = (EmbedFieldBuilder.MaxFieldValueLength + 2) / (MentionUtils.UserMentionMaxLength + 2);
+            builders.Add(EmbedFieldBuilderFactory.Create("Mentioned Users", String.Join(", ", mentionUserIds.Take(maxItems).Select(MentionUtils.MentionUser))));
+        }
+
+        if (message.MentionedEveryone)
+        {
+            builders.Add(EmbedFieldBuilderFactory.Create("Mentioned Everyone", message.MentionedEveryone));
+        }
+
+        await LogAsync(guild, webhookClient, AuditLogType.Message, OperationType.Delete, builders, message.Id, messageAuthor.Username, messageAuthor.GetDisplayAvatarUrl());
     }
 
     public async Task HandleMessageUpdatedAsync(Cacheable<IMessage, ulong> oldPartialMessage, SocketMessage newMessage, ISocketMessageChannel _)
     {
-        if (oldPartialMessage is not { Value: { Author.IsBot: false, Channel: SocketGuildChannel { Guild: { } guild } } oldMessage })
+        if (oldPartialMessage is not { Value: SocketUserMessage { Author: { IsBot: false } author, Channel: SocketGuildChannel { Guild: { } guild } } oldMessage })
         {
             return;
         }
@@ -297,8 +299,8 @@ public sealed partial class DiscordEvent
             OperationType.Update,
             [EmbedFieldBuilderFactory.CreateTruncated("Content", GetChangeEntry(oldMessage.Content, newMessage.Content))],
             newMessage.Id,
-            newMessage.Author.Username,
-            newMessage.Author.GetDisplayAvatarUrl()
+            author.Username,
+            author.GetDisplayAvatarUrl()
         );
     }
 }

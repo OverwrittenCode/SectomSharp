@@ -37,7 +37,7 @@ public abstract class BaseModule<TThis> : InteractionModuleBase<SocketInteractio
     /// </summary>
     /// <param name="logger">The logger.</param>
     /// <param name="dbContextFactory">The factory for creating <see cref="ApplicationDbContext" /> instances.</param>
-    protected BaseModule(ILogger<BaseModule<TThis>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory)
+    protected BaseModule(ILogger<TThis> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory)
     {
         Logger = logger;
         DbContextFactory = dbContextFactory;

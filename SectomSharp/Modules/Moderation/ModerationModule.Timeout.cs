@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Utils;
@@ -12,7 +13,7 @@ public sealed partial class ModerationModule
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     [RequireBotPermission(GuildPermission.ModerateMembers)]
     public async Task Timeout(
-        [DoHierarchyCheck] IGuildUser user,
+        [DoHierarchyCheck] SocketGuildUser user,
         [Summary(description: TimespanDescription)] [TimeoutRange] TimeSpan duration,
         [ReasonMaxLength] string? reason = null
     )
@@ -34,7 +35,7 @@ public sealed partial class ModerationModule
     [SlashCmd("Remove a timeout from a user on the server")]
     [DefaultMemberPermissions(GuildPermission.ModerateMembers)]
     [RequireBotPermission(GuildPermission.ModerateMembers)]
-    public async Task Untimeout([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
+    public async Task Untimeout([DoHierarchyCheck] SocketGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         if (user.TimedOutUntil is null)
         {

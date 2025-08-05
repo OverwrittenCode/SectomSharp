@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SectomSharp.Attributes;
@@ -123,7 +124,13 @@ public sealed partial class ModerationModule
         }
 
         [SlashCmd("List and filter all cases on the server")]
-        public async Task List(IUser? target = null, IUser? perpetrator = null, IChannel? channel = null, BotLogType? logType = null, OperationType? operationType = null)
+        public async Task List(
+            SocketUser? target = null,
+            SocketUser? perpetrator = null,
+            SocketChannel? channel = null,
+            BotLogType? logType = null,
+            OperationType? operationType = null
+        )
         {
             await DeferAsync();
 

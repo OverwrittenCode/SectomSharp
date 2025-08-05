@@ -40,7 +40,7 @@ public sealed partial class GameModule
     private async Task HandleDualInputGameSession<T>(
         ComponentType componentType,
         string gameTitle,
-        IGuildUser? opponent,
+        SocketGuildUser? opponent,
         MessageComponent components,
         [RequireStaticDelegate] DualInputProcessPlayerChoice<T> processPlayerChoice,
         [RequireStaticDelegate] Func<T> generateComputerMove,
@@ -55,12 +55,13 @@ public sealed partial class GameModule
         if (opponent?.IsBot == false)
         {
             embedBuilder = new EmbedBuilder();
-            if (await RequestOpponentToPlayAsync(embedBuilder, opponent, gameTitle) is not { } message)
+            ulong opponentId = opponent.Id;
+            if (await RequestOpponentToPlayAsync(embedBuilder, opponentId, gameTitle) is not { } message)
             {
                 return;
             }
 
-            if (await ObtainMultiPlayerChoiceAsync(componentType, message, embedBuilder, components, opponent.Id, processPlayerChoice) is not var (playerOne, playerTwo))
+            if (await ObtainMultiPlayerChoiceAsync(componentType, message, embedBuilder, components, opponentId, processPlayerChoice) is not var (playerOne, playerTwo))
             {
                 return;
             }

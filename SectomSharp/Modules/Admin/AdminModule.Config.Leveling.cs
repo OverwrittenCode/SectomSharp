@@ -24,7 +24,7 @@ public sealed partial class AdminModule
             public static string DisableColumnName => "Configuration_Leveling_IsDisabled";
 
             /// <inheritdoc />
-            public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+            public LevelingModule(ILogger<LevelingModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
             [SlashCmd("Modify the settings")]
             public async Task ModifySettings(

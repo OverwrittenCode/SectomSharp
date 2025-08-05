@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using Discord;
 using Discord.Rest;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 using SectomSharp.Extensions;
 using SectomSharp.Utils;
@@ -51,9 +53,9 @@ public sealed partial class MiscModule
                                                                                 );
 
     [SlashCmd("Get information about a user in the server")]
-    public async Task UserInfo(IGuildUser? user = null)
+    public async Task UserInfo(SocketGuildUser? user = null)
     {
-        RestGuildUser? restUser = await Context.Client.Rest.GetGuildUserAsync(Context.Guild.Id, (user ?? (IGuildUser)Context.User).Id);
+        RestGuildUser? restUser = await Context.Client.Rest.GetGuildUserAsync(Context.Guild.Id, user?.Id ?? Context.User.Id);
 
         EmbedFieldBuilder createdAtField = EmbedFieldBuilderFactory.Create("Created At", restUser.CreatedAt.GetRelativeTimestamp());
         var fields = new List<EmbedFieldBuilder>(7) { createdAtField };
@@ -80,20 +82,16 @@ public sealed partial class MiscModule
             fields.Add(EmbedFieldBuilderFactory.Create($"Badges [{badges.Length}]", String.Join(' ', badges)));
         }
 
-        const int literalLength = 4;
-        const int snowflakeIdLength = 20;
-        const int roleMentionLength = literalLength + snowflakeIdLength;
-        const int separatorLength = 2;
-        const int maxItems = (EmbedFieldBuilder.MaxFieldValueLength + separatorLength) / (roleMentionLength + separatorLength);
-        int countToTake = Math.Min(maxItems, Math.Max(0, restUser.RoleIds.Count - 1));
-        if (countToTake > 1)
+        if (restUser.RoleIds.ToImmutableArray() is { Length: > 1 and var roleIdsLength } roleIds)
         {
-            IEnumerable<string> roleMentions = restUser.RoleIds.Skip(1).Take(countToTake).Select(MentionUtils.MentionRole);
-            fields.Add(EmbedFieldBuilderFactory.Create($"Roles [{countToTake}]", String.Join(", ", roleMentions)));
+            const int maxItems = (EmbedFieldBuilder.MaxFieldValueLength + 2) / (MentionUtils.RoleMentionMaxLength + 2);
+            IEnumerable<string> values = roleIds.Skip(1).Take(maxItems).Select(MentionUtils.MentionRole);
+            fields.Add(EmbedFieldBuilderFactory.Create($"Roles [{roleIdsLength - 1}]", String.Join(", ", values)));
         }
 
         GuildPermissions perms = restUser.GuildPermissions;
-        if (DangerousGuildPermissionsArray.Where(tuple => perms.Has(tuple.permission)).ToArray() is { Length: > 0 and var dangerousPermissionCount } dangerousPermissions)
+        if (DangerousGuildPermissionsArray.Where(tuple => perms.Has(tuple.permission)).Select(tuple => tuple.sentenceCaseDisplay).ToArray() is
+            { Length: > 0 and var dangerousPermissionCount } dangerousPermissions)
         {
             fields.Add(EmbedFieldBuilderFactory.Create($"Dangerous Permissions [{dangerousPermissionCount}]", String.Join(", ", dangerousPermissions)));
         }

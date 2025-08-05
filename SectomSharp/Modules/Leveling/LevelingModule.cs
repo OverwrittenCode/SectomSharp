@@ -13,5 +13,5 @@ namespace SectomSharp.Modules.Leveling;
 public sealed partial class LevelingModule : BaseModule<LevelingModule>
 {
     /// <inheritdoc />
-    public LevelingModule(ILogger<BaseModule<LevelingModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+    public LevelingModule(ILogger<LevelingModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 }

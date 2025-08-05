@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
@@ -22,6 +23,7 @@ public sealed partial class LevelingModule
         int i = 0;
         bool hasRows;
         Stopwatch stopwatch;
+        SocketGuild guild = Context.Guild;
         await using (ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync())
         {
             await db.Database.OpenConnectionAsync();
@@ -39,7 +41,7 @@ public sealed partial class LevelingModule
                               LIMIT 5;
                               """;
 
-            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", Context.Guild.Id));
+            cmd.Parameters.Add(NpgsqlParameterFactory.FromSnowflakeId("guildId", guild.Id));
 
             stopwatch = Stopwatch.StartNew();
             await using (DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess | CommandBehavior.CloseConnection))
@@ -84,7 +86,7 @@ public sealed partial class LevelingModule
 
         var leaderboard = new LeaderboardBuilder
         {
-            Guild = Context.Guild,
+            Guild = guild,
             Players = leaderboardPlayers
         };
 

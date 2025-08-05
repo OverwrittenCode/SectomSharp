@@ -64,7 +64,7 @@ public sealed partial class GameModule
     private async Task HandleTurnInputGameSession<T>(
         ComponentType componentType,
         string gameTitle,
-        IGuildUser? opponent,
+        SocketGuildUser? opponent,
         MessageComponent components,
         [RequireStaticDelegate] TurnInputProcessPlayerChoice<T> processPlayerChoice,
         [RequireStaticDelegate] TurnInputProvideComputerChoice<T> provideComputerChoice
@@ -80,7 +80,8 @@ public sealed partial class GameModule
         var embedBuilder = new EmbedBuilder();
         if (opponent?.IsBot == false)
         {
-            if (await RequestOpponentToPlayAsync(embedBuilder, opponent, gameTitle) is not { } userMessage)
+            ulong opponentId = opponent.Id;
+            if (await RequestOpponentToPlayAsync(embedBuilder, opponentId, gameTitle) is not { } userMessage)
             {
                 return;
             }
@@ -88,7 +89,7 @@ public sealed partial class GameModule
             message = userMessage;
 
             var playerOne = new TurnInputPlayer<T>(PlayerType.One, Context.User.Id);
-            var playerTwo = new TurnInputPlayer<T>(PlayerType.Two, opponent.Id);
+            var playerTwo = new TurnInputPlayer<T>(PlayerType.Two, opponentId);
 
             TurnInputPlayer<T> currentPlayer;
 

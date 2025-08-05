@@ -16,7 +16,7 @@ public sealed partial class AdminModule
             public static string DisableColumnName => "Configuration_Suggestion_IsDisabled";
 
             /// <inheritdoc />
-            public SuggestionModule(ILogger<BaseModule<SuggestionModule>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+            public SuggestionModule(ILogger<SuggestionModule> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
         }
     }
 }

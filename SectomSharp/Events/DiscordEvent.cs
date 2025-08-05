@@ -50,14 +50,8 @@ public sealed partial class DiscordEvent
         return embedBuilder.Build();
     }
 
-    private static async Task LogAsync(IGuild guild, DiscordWebhookClient webhookClient, Embed[] embeds)
-    {
-        IGuildUser bot = await guild.GetCurrentUserAsync();
-        await webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: embeds);
-    }
-
-    private static Task LogAsync<T>(
-        IGuild guild,
+    private static Task<ulong> LogAsync<T>(
+        SocketGuild guild,
         DiscordWebhookClient webhookClient,
         AuditLogType auditLogType,
         OperationType operationType,
@@ -69,7 +63,8 @@ public sealed partial class DiscordEvent
     )
     {
         Embed embed = CreateLogEmbed(auditLogType, operationType, embedFieldBuilders, footerPrefix, authorName, authorIconUrl, colour);
-        return LogAsync(guild, webhookClient, [embed]);
+        SocketGuildUser bot = guild.CurrentUser;
+        return webhookClient.SendMessageAsync(username: bot.Username, avatarUrl: bot.GetAvatarUrl(), embeds: [embed]);
     }
 
     private static string GetChangeEntry<T>(T before, T after)

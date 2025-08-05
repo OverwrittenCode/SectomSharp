@@ -51,7 +51,7 @@ public sealed partial class AdminModule
                                                            """;
 
             /// <inheritdoc />
-            protected DisableableModule(ILogger<BaseModule<TThis>> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
+            protected DisableableModule(ILogger<TThis> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory) : base(logger, dbContextFactory) { }
 
             private async Task SetIsDisabledAsync(bool isDisabled, string? reason)
             {

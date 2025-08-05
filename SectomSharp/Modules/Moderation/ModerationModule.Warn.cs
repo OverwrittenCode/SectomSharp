@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using SectomSharp.Attributes;
 using SectomSharp.Data;
@@ -17,7 +18,7 @@ public sealed partial class ModerationModule
 {
     [SlashCmd("Hand out an infraction to a user on the server.")]
     [DefaultMemberPermissions(GuildPermission.KickMembers)]
-    public async Task Warn([DoHierarchyCheck] IGuildUser user, [ReasonMaxLength] string? reason = null)
+    public async Task Warn([DoHierarchyCheck] SocketGuildUser user, [ReasonMaxLength] string? reason = null)
     {
         await DeferAsync();
         await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -161,7 +162,7 @@ public sealed partial class ModerationModule
             ApplicationDbContext db,
             ModerationModule moderationModule,
             (BotLogType LogType, uint Value, TimeSpan? Span) punishmentThreshold,
-            IGuildUser user,
+            SocketGuildUser user,
             int currentWarnings
         )
             => CaseUtils.LogAsync(

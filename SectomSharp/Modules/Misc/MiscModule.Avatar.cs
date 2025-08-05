@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Rest;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Misc;
@@ -7,7 +8,7 @@ namespace SectomSharp.Modules.Misc;
 public sealed partial class MiscModule
 {
     [SlashCmd("Display the avatar of a user")]
-    public async Task Avatar(IUser? user = null)
+    public async Task Avatar(SocketUser? user = null)
     {
         RestUser? restUser = await Context.Client.Rest.GetUserAsync((user ?? Context.User).Id);
 

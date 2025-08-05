@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Discord;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 
 namespace SectomSharp.Modules.Games;
@@ -7,7 +8,7 @@ namespace SectomSharp.Modules.Games;
 public sealed partial class GameModule
 {
     [SlashCmd("ttt", "Play tic-tac-toe")]
-    public async Task TicTacToe(IGuildUser? opponent = null)
+    public async Task TicTacToe(SocketGuildUser? opponent = null)
     {
         await HandleTurnInputGameSession<int>(
             ComponentType.Button,

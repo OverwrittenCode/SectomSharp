@@ -76,7 +76,7 @@ public sealed partial class GameModule
     /// <param name="result">The round outcome.</param>
     /// <param name="color">The color.</param>
     /// <param name="summary">The summary.</param>
-    private void GetRoundOutcomeData(IGuildUser opponent, RoundOutcome result, out Color color, out string summary)
+    private void GetRoundOutcomeData(SocketGuildUser opponent, RoundOutcome result, out Color color, out string summary)
     {
         switch (result)
         {
@@ -175,12 +175,13 @@ public sealed partial class GameModule
     ///     Sends an embed requesting the opponent to play.
     /// </summary>
     /// <param name="embedBuilder">The embed builder to modify.</param>
-    /// <param name="opponent">The opponent.</param>
+    /// <param name="opponentId">The opponent user id.</param>
     /// <param name="gameTitle">The title used for the embed.</param>
     /// <returns>A task with the editable message if the opponent accepted the challenge.</returns>
-    private async Task<IUserMessage?> RequestOpponentToPlayAsync(EmbedBuilder embedBuilder, IGuildUser opponent, string gameTitle)
+    private async Task<IUserMessage?> RequestOpponentToPlayAsync(EmbedBuilder embedBuilder, ulong opponentId, string gameTitle)
     {
-        if (opponent.Id == Context.User.Id)
+        ulong userId = Context.User.Id;
+        if (opponentId == userId)
         {
             await RespondAsync("You cannot play against yourself.", ephemeral: true);
             return null;
@@ -188,7 +189,7 @@ public sealed partial class GameModule
 
         embedBuilder.Color = Color.Purple;
         embedBuilder.Title = gameTitle;
-        embedBuilder.Description = $"{Context.Interaction.User.Mention} has challenged {opponent.Mention}!";
+        embedBuilder.Description = $"<@{userId}> has challenged <@{opponentId}>!";
 
         string customId = StringUtils.GenerateUniqueId();
         string acceptId = $"{customId}-accept";
@@ -221,7 +222,7 @@ public sealed partial class GameModule
 
         async Task OnButtonExecuted(SocketMessageComponent button)
         {
-            if (button.User.Id != opponent.Id)
+            if (button.User.Id != opponentId)
             {
                 await button.RespondAsync(ComponentNotForYou, ephemeral: true);
                 return;

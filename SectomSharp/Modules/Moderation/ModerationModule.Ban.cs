@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using SectomSharp.Attributes;
 using SectomSharp.Data.Enums;
 using SectomSharp.Utils;
@@ -16,7 +17,7 @@ public sealed partial class ModerationModule
     [SlashCmd("Ban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Ban([DoHierarchyCheck] IUser user, [MaxValue(MaxPruneDays)] uint pruneDays = 0, [ReasonMaxLength] string? reason = null)
+    public async Task Ban([DoHierarchyCheck] SocketUser user, [MaxValue(MaxPruneDays)] uint pruneDays = 0, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
@@ -32,7 +33,7 @@ public sealed partial class ModerationModule
     [SlashCmd("Ban a user to prune their messages and then immediately unban them from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Softban([DoHierarchyCheck] IUser user, [MaxValue(MaxPruneDays)] uint pruneDays = 0, [ReasonMaxLength] string? reason = null)
+    public async Task Softban([DoHierarchyCheck] SocketUser user, [MaxValue(MaxPruneDays)] uint pruneDays = 0, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is not null)
         {
@@ -51,7 +52,7 @@ public sealed partial class ModerationModule
     [SlashCmd("Unban a user from the server")]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
-    public async Task Unban([DoHierarchyCheck] IUser user, [ReasonMaxLength] string? reason = null)
+    public async Task Unban([DoHierarchyCheck] SocketUser user, [ReasonMaxLength] string? reason = null)
     {
         if (await Context.Guild.GetBanAsync(user) is null)
         {
