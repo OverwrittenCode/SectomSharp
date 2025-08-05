@@ -17,7 +17,7 @@ namespace SectomSharp.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.6")
+                .HasAnnotation("ProductVersion", "10.0.0-preview.6.25358.103")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -47,7 +47,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasIndex("GuildId", "Id");
 
-                    b.ToTable("AuditLogChannels");
+                    b.ToTable("AuditLogChannels", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.BotLogChannel", b =>
@@ -70,7 +70,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasIndex("GuildId", "Id");
 
-                    b.ToTable("BotLogChannels");
+                    b.ToTable("BotLogChannels", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.Case", b =>
@@ -135,7 +135,7 @@ namespace SectomSharp.Data.Migrations
                         .HasDatabaseName("IX_Cases_GuildId_TargetId_Warn_Create")
                         .HasFilter("\"LogType\" = 1 AND \"OperationType\" = 0 ");
 
-                    b.ToTable("Cases");
+                    b.ToTable("Cases", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.Channel", b =>
@@ -155,7 +155,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasIndex("GuildId", "Id");
 
-                    b.ToTable("Channels");
+                    b.ToTable("Channels", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.Guild", b =>
@@ -170,7 +170,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Guilds");
+                    b.ToTable("Guilds", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.LevelingRole", b =>
@@ -203,7 +203,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasIndex("GuildId", "Level");
 
-                    b.ToTable("LevelingRoles");
+                    b.ToTable("LevelingRoles", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.SuggestionComponent", b =>
@@ -247,7 +247,7 @@ namespace SectomSharp.Data.Migrations
                     b.HasIndex("GuildId", "PanelId", "Name")
                         .IsUnique();
 
-                    b.ToTable("SuggestionComponents");
+                    b.ToTable("SuggestionComponents", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.SuggestionPanel", b =>
@@ -284,7 +284,7 @@ namespace SectomSharp.Data.Migrations
                     b.HasIndex("GuildId", "Name")
                         .IsUnique();
 
-                    b.ToTable("SuggestionPanels");
+                    b.ToTable("SuggestionPanels", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.SuggestionPost", b =>
@@ -325,7 +325,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasIndex("GuildId", "AuthorId");
 
-                    b.ToTable("SuggestionPosts");
+                    b.ToTable("SuggestionPosts", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.SuggestionVote", b =>
@@ -354,7 +354,7 @@ namespace SectomSharp.Data.Migrations
                     b.HasIndex("GuildId", "UserId", "SuggestionId")
                         .IsUnique();
 
-                    b.ToTable("SuggestionVotes");
+                    b.ToTable("SuggestionVotes", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.User", b =>
@@ -372,7 +372,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasKey("GuildId", "Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.WarningThreshold", b =>
@@ -396,7 +396,7 @@ namespace SectomSharp.Data.Migrations
 
                     b.HasKey("GuildId", "Value");
 
-                    b.ToTable("WarningThresholds");
+                    b.ToTable("WarningThresholds", (string)null);
                 });
 
             modelBuilder.Entity("SectomSharp.Data.Entities.AuditLogChannel", b =>
@@ -470,7 +470,7 @@ namespace SectomSharp.Data.Migrations
 
                             b1.HasKey("GuildId");
 
-                            b1.ToTable("Guilds");
+                            b1.ToTable("Guilds", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("GuildId");
@@ -500,7 +500,7 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.HasKey("ConfigurationGuildId");
 
-                                    b2.ToTable("Guilds");
+                                    b2.ToTable("Guilds", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("ConfigurationGuildId");
@@ -518,7 +518,7 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.HasKey("ConfigurationGuildId");
 
-                                    b2.ToTable("Guilds");
+                                    b2.ToTable("Guilds", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("ConfigurationGuildId");
@@ -536,7 +536,7 @@ namespace SectomSharp.Data.Migrations
 
                                     b2.HasKey("ConfigurationGuildId");
 
-                                    b2.ToTable("Guilds");
+                                    b2.ToTable("Guilds", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("ConfigurationGuildId");
@@ -669,7 +669,7 @@ namespace SectomSharp.Data.Migrations
 
                             b1.HasKey("UserGuildId", "UserId");
 
-                            b1.ToTable("Users");
+                            b1.ToTable("Users", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserGuildId", "UserId");

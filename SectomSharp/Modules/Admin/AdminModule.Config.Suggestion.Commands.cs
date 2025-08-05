@@ -22,8 +22,8 @@ public sealed partial class AdminModule
         {
             [SlashCmd("Add a panel to group components into an embed")]
             public async Task AddPanel(
-                [Summary(description: "The embed title")] [MaxLength(BasePanel.MaxNameLength)] string name,
-                [Summary(description: "The embed description")] [MaxLength(BasePanel.MaxDescriptionLength)] string description,
+                [Summary(description: "The embed title")] [MaxLength(SuggestionPanelConfiguration.MaxNameLength)] string name,
+                [Summary(description: "The embed description")] [MaxLength(SuggestionPanelConfiguration.MaxDescriptionLength)] string description,
                 [Summary(description: "The embed color")] Color? color = null,
                 [ReasonMaxLength] string? reason = null
             )
@@ -73,7 +73,7 @@ public sealed partial class AdminModule
             }
 
             [SlashCmd("Remove a panel by name")]
-            public async Task RemovePanel([MaxLength(BasePanel.MaxNameLength)] string name, [ReasonMaxLength] string? reason = null)
+            public async Task RemovePanel([MaxLength(SuggestionPanelConfiguration.MaxNameLength)] string name, [ReasonMaxLength] string? reason = null)
             {
                 await DeferAsync();
                 await using ApplicationDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -89,9 +89,9 @@ public sealed partial class AdminModule
 
             [SlashCmd("Modify a panel")]
             public async Task ModifyPanel(
-                [Summary(description: "The current embed title")] [MaxLength(BasePanel.MaxNameLength)] string name,
-                [Summary(description: "The new embed title")] [MaxLength(BasePanel.MaxNameLength)] string? newName = null,
-                [Summary(description: "The new embed description")] [MaxLength(BasePanel.MaxDescriptionLength)] string? newDescription = null,
+                [Summary(description: "The current embed title")] [MaxLength(SuggestionPanelConfiguration.MaxNameLength)] string name,
+                [Summary(description: "The new embed title")] [MaxLength(SuggestionPanelConfiguration.MaxNameLength)] string? newName = null,
+                [Summary(description: "The new embed description")] [MaxLength(SuggestionPanelConfiguration.MaxDescriptionLength)] string? newDescription = null,
                 [Summary(description: "The new embed color")] Color? newColor = null,
                 [ReasonMaxLength] string? reason = null
             )
@@ -152,10 +152,10 @@ public sealed partial class AdminModule
 
             [SlashCmd("Add a component to a given panel")]
             public async Task AddComponent(
-                [Summary(description: "The panel name to add the component to")] [MaxLength(BaseComponent.MaxNameLength)] string panelName,
-                [Summary(description: "The select menu choice label")] [MaxLength(BaseComponent.MaxNameLength)] string componentName,
-                [Summary(description: "The select menu choice description")] [MaxLength(BaseComponent.MaxDescriptionLength)] string description,
-                [Summary(description: "The select menu choice emoji")] [MaxLength(BaseComponent.MaxIEmoteLength)] IEmote? emote = null,
+                [Summary(description: "The panel name to add the component to")] [MaxLength(SuggestionComponentConfiguration.MaxNameLength)] string panelName,
+                [Summary(description: "The select menu choice label")] [MaxLength(SuggestionComponentConfiguration.MaxNameLength)] string componentName,
+                [Summary(description: "The select menu choice description")] [MaxLength(SuggestionComponentConfiguration.MaxDescriptionLength)] string description,
+                [Summary(description: "The select menu choice emoji")] [MaxLength(SuggestionComponentConfiguration.MaxIEmoteLength)] IEmote? emote = null,
                 [ReasonMaxLength] string? reason = null
             )
             {
@@ -200,8 +200,8 @@ public sealed partial class AdminModule
 
             [SlashCmd("Remove a component from a panel")]
             public async Task RemoveComponent(
-                [MaxLength(BasePanel.MaxNameLength)] string panelName,
-                [MaxLength(BaseComponent.MaxNameLength)] string componentName,
+                [MaxLength(SuggestionPanelConfiguration.MaxNameLength)] string panelName,
+                [MaxLength(SuggestionComponentConfiguration.MaxNameLength)] string componentName,
                 [ReasonMaxLength] string? reason = null
             )
             {
@@ -249,11 +249,11 @@ public sealed partial class AdminModule
 
             [SlashCmd("Modify a component")]
             public async Task ModifyComponent(
-                [Summary(description: "The panel name the component belongs to")] [MaxLength(BaseComponent.MaxNameLength)] string panelName,
-                [Summary(description: "The current select menu choice label")] [MaxLength(BaseComponent.MaxNameLength)] string componentName,
-                [Summary(description: "The new select menu choice label")] [MaxLength(BaseComponent.MaxNameLength)] string? newComponentName = null,
-                [Summary(description: "The new select menu choice description")] [MaxLength(BaseComponent.MaxDescriptionLength)] string? newDescription = null,
-                [Summary(description: "The new select menu choice emoji")] [MaxLength(BaseComponent.MaxIEmoteLength)] IEmote? newEmote = null,
+                [Summary(description: "The panel name the component belongs to")] [MaxLength(SuggestionComponentConfiguration.MaxNameLength)] string panelName,
+                [Summary(description: "The current select menu choice label")] [MaxLength(SuggestionComponentConfiguration.MaxNameLength)] string componentName,
+                [Summary(description: "The new select menu choice label")] [MaxLength(SuggestionComponentConfiguration.MaxNameLength)] string? newComponentName = null,
+                [Summary(description: "The new select menu choice description")] [MaxLength(SuggestionComponentConfiguration.MaxDescriptionLength)] string? newDescription = null,
+                [Summary(description: "The new select menu choice emoji")] [MaxLength(SuggestionComponentConfiguration.MaxIEmoteLength)] IEmote? newEmote = null,
                 [ReasonMaxLength] string? reason = null
             )
             {

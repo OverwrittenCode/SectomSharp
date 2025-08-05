@@ -13,10 +13,6 @@ It offers a wide range of features including moderation tools, fun games, and se
 - 🏆 **Leveling System**: Engage your community with an XP-based leveling system, including leaderboards and rank commands.
 - 💡 **Suggestion System**: Allow users to submit and vote on suggestions for your server.
 
-## ⌚ Coming Soon
-
-- 🎫 **Ticket System**: Efficiently manage user inquiries and support requests.
-
 ## 🔧 Commands
 
 Sectom offers a variety of slash commands across multiple categories:
